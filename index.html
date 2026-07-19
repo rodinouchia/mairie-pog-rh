@@ -618,16 +618,7 @@
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste</label>
                   <input type="text" x-model="newAgent.poste" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
-                </div>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste/Fonction</label>
-                  <input type="text" x-model="newAgent.poste_fonction" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste à l'embauche</label>
-                  <input type="text" x-model="newAgent.poste_embauche" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <p class="text-[10px] text-slate-400 mt-1">Sera aussi enregistré comme « poste à l'embauche », figé dans la fiche de l'agent.</p>
                 </div>
               </div>
             </div>
@@ -1012,6 +1003,14 @@
           <div><span class="text-slate-400 block">Section</span><strong x-text="selectedAgent?.section || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
+          <i data-lucide="badge-check" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Poste actuel</span><strong x-text="selectedAgent?.poste || '—'"></strong></div>
+        </div>
+        <div class="flex items-start gap-2">
+          <i data-lucide="lock" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Poste à l'embauche <span class="text-[9px] normal-case text-slate-300">(non modifiable)</span></span><strong x-text="selectedAgent?.poste_embauche || '—'"></strong></div>
+        </div>
+        <div class="flex items-start gap-2">
           <i data-lucide="wallet" class="w-4 h-4 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Rémunération de base</span><strong x-text="(selectedAgent?.salaire_base_actuel || 0).toLocaleString('fr-FR') + ' FCFA'"></strong></div>
         </div>
@@ -1117,7 +1116,7 @@
       newAgent: {
         nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
         date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
-        direction: '', service: '', section: '', localisation: '', poste: '', poste_fonction: '', poste_embauche: '',
+        direction: '', service: '', section: '', localisation: '', poste: '', poste_embauche: '',
         n_cnss: '', n_cnamgs: '', telephone: '', diplomes: '',
         fin_contrat1: '', debut_contrat2: '', fin_contrat2: '',
         hierarchie: '', categorie: '', classe: '', echelon: '', valeur_indiciaire: null,
@@ -1476,6 +1475,7 @@
         }
         this.updateRetraite();
         this.updateIndiciaire();
+        this.newAgent.poste_embauche = this.newAgent.poste;
         this.isLoading = true;
         const { data, error } = await supabaseClient.from('agents').insert([this.newAgent]).select();
         this.isLoading = false;
@@ -1487,7 +1487,7 @@
         this.newAgent = {
           nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
           date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
-          direction: '', service: '', section: '', localisation: '', poste: '', poste_fonction: '', poste_embauche: '',
+          direction: '', service: '', section: '', localisation: '', poste: '', poste_embauche: '',
           n_cnss: '', n_cnamgs: '', telephone: '', diplomes: '',
           fin_contrat1: '', debut_contrat2: '', fin_contrat2: '',
           hierarchie: '', categorie: '', classe: '', echelon: '', valeur_indiciaire: null,
@@ -1540,7 +1540,6 @@
           'Section': a.section || '',
           'Localisation': a.localisation || '',
           'Poste': a.poste || '',
-          'Poste/Fonction': a.poste_fonction || '',
           "Poste à l'embauche": a.poste_embauche || '',
           'N° CNSS': a.n_cnss || '',
           'N° CNAMGS': a.n_cnamgs || '',
