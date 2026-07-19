@@ -211,11 +211,6 @@
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition">
         <i data-lucide="users" class="w-[18px] h-[18px]"></i> <span>Annuaire des agents</span>
       </button>
-      <button x-show="userRole === 'admin_general' || userRole === 'rh'" @click="currentTab = 'ajouter'; mobileMenuOpen = false"
-              :class="currentTab === 'ajouter' ? 'active bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white'"
-              class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition">
-        <i data-lucide="user-plus" class="w-[18px] h-[18px]"></i> <span>Saisie nouvel agent</span>
-      </button>
       <button x-show="userRole === 'admin_general'" @click="currentTab = 'outils'; mobileMenuOpen = false"
               :class="currentTab === 'outils' ? 'active bg-gold-500/20 text-gold-300' : 'text-gold-300/70 hover:bg-gold-500/10 hover:text-gold-200'"
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition mt-3 border-t border-white/10 pt-4">
@@ -266,7 +261,46 @@
           <div class="flex items-center justify-between mb-1">
             <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950">Tableau de bord RH</h2>
           </div>
-          <p class="text-xs text-slate-500 mb-6" x-text="'Connecté en tant que ' + currentUser + ' · ' + roleLabel(userRole)"></p>
+          <p class="text-xs text-slate-500 mb-4" x-text="'Connecté en tant que ' + currentUser + ' · ' + roleLabel(userRole)"></p>
+
+          <!-- BANDEAU DATE / HEURE / METEO / LOCALISATION -->
+          <div class="bg-gradient-to-r from-navy-900 to-navy-800 rounded-2xl p-4 sm:p-5 mb-6 shadow-card">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-white">
+              <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="calendar" class="w-5 h-5 text-gold-300"></i></span>
+                <div class="min-w-0">
+                  <p class="text-[10px] uppercase tracking-wide text-navy-200">Date</p>
+                  <p class="text-sm font-semibold capitalize truncate" x-text="formattedDate()"></p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="clock" class="w-5 h-5 text-gold-300"></i></span>
+                <div class="min-w-0">
+                  <p class="text-[10px] uppercase tracking-wide text-navy-200">Heure locale</p>
+                  <p class="text-sm font-semibold truncate" x-text="formattedTime()"></p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="map-pin" class="w-5 h-5 text-gold-300"></i></span>
+                <div class="min-w-0">
+                  <p class="text-[10px] uppercase tracking-wide text-navy-200">Localisation</p>
+                  <p class="text-sm font-semibold truncate" x-text="locationName || 'Localisation…'"></p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                  <i :data-lucide="weatherIcon()" class="w-5 h-5 text-gold-300"></i>
+                </span>
+                <div class="min-w-0">
+                  <p class="text-[10px] uppercase tracking-wide text-navy-200">Météo</p>
+                  <p class="text-sm font-semibold truncate">
+                    <span x-show="weather.temp !== null" x-text="Math.round(weather.temp) + '°C · ' + weather.description"></span>
+                    <span x-show="weather.temp === null">Chargement…</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
@@ -345,10 +379,16 @@
               <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950">Annuaire des agents</h2>
               <p class="text-xs text-slate-500 mt-0.5" x-text="filteredAgents().length + ' agent(s) trouvé(s) sur ' + agents.length"></p>
             </div>
-            <button x-show="userRole === 'admin_general' || userRole === 'rh'" @click="exportExcel()"
-                    class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 transition text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm">
-              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exporter Excel
-            </button>
+            <div class="flex items-center gap-2">
+              <button x-show="hasPerm('add_agent')" @click="currentTab = 'ajouter'"
+                      class="inline-flex items-center gap-2 bg-navy-900 hover:bg-navy-800 transition text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Nouvel agent
+              </button>
+              <button x-show="hasPerm('export_data')" @click="exportExcel()"
+                      class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 transition text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exporter Excel
+              </button>
+            </div>
           </div>
 
           <div class="bg-white p-4 rounded-2xl shadow-card border border-slate-100 space-y-4">
@@ -435,8 +475,21 @@
 
         <!-- SAISIE NOUVEL AGENT -->
         <div x-show="currentTab === 'ajouter'" x-cloak>
-          <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950 mb-4">Saisie fiche agent</h2>
-          <form @submit.prevent="saveAgent()" class="bg-white p-6 rounded-2xl shadow-card border border-slate-100 space-y-5 max-w-2xl">
+          <template x-if="!hasPerm('add_agent')">
+            <div class="bg-white p-8 rounded-2xl shadow-card border border-slate-100 text-center max-w-md mx-auto">
+              <i data-lucide="lock" class="w-8 h-8 text-slate-300 mx-auto mb-3"></i>
+              <p class="text-sm text-slate-500">Vous n'avez pas l'autorisation d'ajouter un agent. Contactez l'administrateur général.</p>
+            </div>
+          </template>
+          <template x-if="hasPerm('add_agent')">
+          <div>
+          <div class="flex items-center gap-3 mb-4">
+            <button type="button" @click="currentTab = 'agents'" class="text-slate-400 hover:text-navy-700 transition">
+              <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950">Saisie fiche agent</h2>
+          </div>
+          <form @submit.prevent="saveAgent()" class="bg-white p-6 rounded-2xl shadow-card border border-slate-100 space-y-5 max-w-3xl">
 
             <div class="flex items-center gap-4">
               <img x-show="newAgent.photo_url" :src="newAgent.photo_url" class="w-14 h-14 rounded-full object-cover border-2 border-navy-100 shrink-0">
@@ -459,6 +512,67 @@
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Matricule</label>
                   <input type="text" x-model="newAgent.matricule" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none" placeholder="ex : APM092">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Sexe</label>
+                  <select x-model="newAgent.sexe" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                    <option value="">—</option><option value="M">M</option><option value="F">F</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nationalité</label>
+                  <input type="text" x-model="newAgent.nationalite" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none" placeholder="ex : Gabonaise">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Situation familiale</label>
+                  <select x-model="newAgent.situation_familiale" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                    <option value="">—</option>
+                    <option value="Célibataire">Célibataire</option>
+                    <option value="Marié(e)">Marié(e)</option>
+                    <option value="Veuve">Veuve</option>
+                    <option value="Divorcé(e)">Divorcé(e)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nbr enfants</label>
+                  <input type="number" min="0" x-model.number="newAgent.nbr_enfants" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date de naissance</label>
+                  <input type="date" x-model="newAgent.date_naissance" @change="updateRetraite()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Lieu de naissance</label>
+                  <input type="text" x-model="newAgent.lieu_naissance" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date de départ en retraite</label>
+                  <input type="date" :value="newAgent.date_retraite || calcDateRetraite(newAgent.date_naissance)" readonly class="w-full px-3 py-2 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm cursor-not-allowed">
+                  <p class="text-[10px] text-slate-400 mt-1">Calculée automatiquement (naissance + 60 ans)</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Téléphone</label>
+                  <input type="text" x-model="newAgent.telephone" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Diplômes</label>
+                  <input type="text" x-model="newAgent.diplomes" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">N° CNSS</label>
+                  <input type="text" x-model="newAgent.n_cnss" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">N° CNAMGS</label>
+                  <input type="text" x-model="newAgent.n_cnamgs" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 </div>
               </div>
             </div>
@@ -496,6 +610,54 @@
                   <p x-show="agentFormServiceId && !sectionsForForm().length" class="text-[10px] text-slate-400 mt-1">Aucune section configurée pour ce service.</p>
                 </div>
               </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Localisation</label>
+                  <input type="text" x-model="newAgent.localisation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste</label>
+                  <input type="text" x-model="newAgent.poste" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste/Fonction</label>
+                  <input type="text" x-model="newAgent.poste_fonction" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste à l'embauche</label>
+                  <input type="text" x-model="newAgent.poste_embauche" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-5">
+              <p class="text-xs font-bold uppercase text-navy-700 mb-3 tracking-wide flex items-center gap-1.5"><i data-lucide="file-signature" class="w-3.5 h-3.5"></i> Emploi & contrat</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date d'embauche</label>
+                  <input type="date" x-model="newAgent.date_embauche" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Imputation</label>
+                  <input type="text" x-model="newAgent.imputation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Fin contrat 1 (CDD)</label>
+                  <input type="date" x-model="newAgent.fin_contrat1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Début contrat 2 (CDD)</label>
+                  <input type="date" x-model="newAgent.debut_contrat2" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Fin contrat 2 (CDD)</label>
+                  <input type="date" x-model="newAgent.fin_contrat2" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+              </div>
             </div>
 
             <div class="border-t border-slate-100 pt-5">
@@ -503,7 +665,7 @@
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Hiérarchie</label>
-                  <select x-model="newAgent.hierarchie" @change="newAgent.categorie = ''" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <select x-model="newAgent.hierarchie" @change="newAgent.categorie = ''; updateIndiciaire()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">—</option>
                     <template x-for="h in ['A','B','C']" :key="h">
                       <option :value="h" x-text="h"></option>
@@ -512,7 +674,7 @@
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Catégorie</label>
-                  <select x-model="newAgent.categorie" :disabled="!newAgent.hierarchie" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                  <select x-model="newAgent.categorie" @change="updateIndiciaire()" :disabled="!newAgent.hierarchie" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
                     <option value="">—</option>
                     <template x-for="c in categorieOptions()" :key="c">
                       <option :value="c" x-text="c"></option>
@@ -521,7 +683,7 @@
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Classe</label>
-                  <select x-model="newAgent.classe" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <select x-model="newAgent.classe" @change="updateIndiciaire()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">—</option>
                     <template x-for="c in classeOptions" :key="c">
                       <option :value="c" x-text="c"></option>
@@ -530,7 +692,7 @@
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Échelon</label>
-                  <select x-model="newAgent.echelon" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <select x-model="newAgent.echelon" @change="updateIndiciaire()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">—</option>
                     <template x-for="e in echelonOptions" :key="e">
                       <option :value="e" x-text="e"></option>
@@ -538,11 +700,15 @@
                   </select>
                 </div>
               </div>
+              <div class="mt-3 bg-gold-50 border border-gold-200 rounded-lg px-3 py-2 inline-flex items-center gap-2">
+                <i data-lucide="hash" class="w-3.5 h-3.5 text-gold-700"></i>
+                <span class="text-xs text-gold-900">Valeur indiciaire : <strong x-text="newAgent.valeur_indiciaire ?? '— (sélectionner catégorie / classe / échelon)'"></strong></span>
+              </div>
             </div>
 
             <div class="border-t border-slate-100 pt-5">
               <p class="text-xs font-bold uppercase text-navy-700 mb-3 tracking-wide flex items-center gap-1.5"><i data-lucide="badge-euro" class="w-3.5 h-3.5"></i> Statut & rémunération</p>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Statut initial *</label>
                   <select x-model="newAgent.statut" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
@@ -550,12 +716,59 @@
                     <option value="Malade">Malade</option>
                     <option value="En détachement">En détachement</option>
                     <option value="Mis en disponibilité">Mis en disponibilité</option>
+                    <option value="CDD">CDD</option>
                     <option value="Inactif">Inactif</option>
                   </select>
                 </div>
                 <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Salaire d'entrée (FCFA)</label>
+                  <input type="number" min="0" x-model.number="newAgent.salaire_entree" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Salaire de base actuel (FCFA)</label>
                   <input type="number" min="0" x-model.number="newAgent.salaire_base_actuel" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime logement</label>
+                  <input type="number" min="0" x-model.number="newAgent.prime_logement" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime transport</label>
+                  <input type="number" min="0" x-model.number="newAgent.prime_transport" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Indemnité fonction</label>
+                  <input type="number" min="0" x-model.number="newAgent.indemnite_fonction" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Indemnité sujétion</label>
+                  <input type="number" min="0" x-model.number="newAgent.indemnite_sujetion" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime état civil</label>
+                  <input type="number" min="0" x-model.number="newAgent.prime_etat_civil" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Solidarité nationale</label>
+                  <input type="number" min="0" x-model.number="newAgent.solidarite_nationale" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime de risque</label>
+                  <input type="number" min="0" x-model.number="newAgent.prime_risque" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime salissure</label>
+                  <input type="number" min="0" x-model.number="newAgent.prime_salissure" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime perception</label>
+                  <input type="number" min="0" x-model.number="newAgent.prime_perception" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Autres primes</label>
+                  <input type="number" min="0" x-model.number="newAgent.autres_primes" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 </div>
               </div>
               <div x-show="newAgent.statut === 'Inactif'" x-cloak class="bg-rose-50 p-3 rounded-lg border border-rose-100 mt-3">
@@ -570,6 +783,8 @@
               </button>
             </div>
           </form>
+          </div>
+          </template>
         </div>
 
         <!-- OUTILS ADMIN -->
@@ -662,7 +877,7 @@
 
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-card">
               <h3 class="font-display font-bold text-sm text-navy-900 uppercase border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-                <i data-lucide="key-round" class="w-4 h-4 text-navy-500"></i> Comptes & droits d'accès
+                <i data-lucide="key-round" class="w-4 h-4 text-navy-500"></i> Comptes, niveaux d'accréditation & permissions
               </h3>
               <form @submit.prevent="createUser()" class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
                 <input type="text" x-model="newUser.username" placeholder="Identifiant" required class="px-2.5 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
@@ -672,17 +887,46 @@
                   <option value="rh">Service RH</option>
                   <option value="admin_general">Admin général</option>
                 </select>
+                <div class="sm:col-span-3 flex flex-wrap gap-3 bg-slate-50 rounded-lg px-3 py-2 text-[11px] text-slate-600">
+                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.add_agent"> Ajouter agent</label>
+                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.edit_agent"> Modifier agent</label>
+                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.delete_agent"> Supprimer agent</label>
+                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.manage_structure"> Gérer structure</label>
+                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.export_data"> Exporter Excel</label>
+                </div>
                 <button type="submit" class="sm:col-span-3 inline-flex items-center justify-center gap-1.5 bg-gold-600 hover:bg-gold-700 transition text-white py-2 rounded-lg text-xs font-bold">
                   <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Créer l'utilisateur
                 </button>
               </form>
-              <div class="max-h-40 overflow-y-auto border border-slate-100 rounded-lg text-xs divide-y divide-slate-100">
+              <div class="max-h-[28rem] overflow-y-auto border border-slate-100 rounded-lg text-xs divide-y divide-slate-100">
                 <template x-for="u in usersList" :key="u.id">
-                  <div class="p-2.5 flex justify-between items-center">
-                    <div><span class="font-bold text-slate-700" x-text="u.username"></span> <span class="text-slate-400" x-text="' (' + roleLabel(u.role) + ')'"></span></div>
-                    <button type="button" x-show="u.username !== 'admin'" @click="deleteUser(u.id)" class="text-rose-600 hover:text-rose-700 flex items-center gap-1 font-semibold">
-                      <i data-lucide="user-minus" class="w-3.5 h-3.5"></i> Révoquer
-                    </button>
+                  <div class="p-3 space-y-2">
+                    <div class="flex justify-between items-center">
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-700" x-text="u.username"></span>
+                        <select x-model="u.role" :disabled="u.username === 'admin'" class="px-2 py-1 border border-slate-200 rounded text-[11px] bg-white disabled:bg-slate-50">
+                          <option value="consultation">Consultation</option>
+                          <option value="rh">Service RH</option>
+                          <option value="admin_general">Admin général</option>
+                        </select>
+                      </div>
+                      <button type="button" x-show="u.username !== 'admin'" @click="deleteUser(u.id)" class="text-rose-600 hover:text-rose-700 flex items-center gap-1 font-semibold">
+                        <i data-lucide="user-minus" class="w-3.5 h-3.5"></i> Révoquer
+                      </button>
+                    </div>
+                    <div x-show="u.role !== 'admin_general'" class="flex flex-wrap gap-3 bg-slate-50 rounded-lg px-3 py-2 text-[11px] text-slate-600">
+                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.add_agent"> Ajouter agent</label>
+                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.edit_agent"> Modifier agent</label>
+                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.delete_agent"> Supprimer agent</label>
+                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.manage_structure"> Gérer structure</label>
+                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.export_data"> Exporter Excel</label>
+                    </div>
+                    <p x-show="u.role === 'admin_general'" class="text-[11px] text-gold-700 bg-gold-50 rounded-lg px-3 py-2">Accès complet (admin général) — tous les droits sont accordés automatiquement.</p>
+                    <div class="flex justify-end">
+                      <button type="button" @click="updateUserPermissions(u)" class="inline-flex items-center gap-1 bg-navy-800 hover:bg-navy-900 transition text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold">
+                        <i data-lucide="save" class="w-3 h-3"></i> Enregistrer les droits
+                      </button>
+                    </div>
                   </div>
                 </template>
                 <p x-show="!usersList.length" class="text-center text-slate-400 py-6">Aucun utilisateur.</p>
@@ -728,7 +972,7 @@
             <strong class="text-rose-900 block font-bold flex items-center gap-1.5"><i data-lucide="ban" class="w-3.5 h-3.5"></i> Agent actuellement inactif</strong>
             <span class="text-slate-600" x-text="'Motif enregistré : ' + (selectedAgent?.motif_inactif || 'non précisé')"></span>
           </div>
-          <button x-show="userRole === 'admin_general' || userRole === 'rh'" @click="reactivateAgent(selectedAgent.id)"
+          <button x-show="hasPerm('edit_agent')" @click="reactivateAgent(selectedAgent.id)"
                   class="inline-flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3 py-2 rounded-lg transition shadow-sm">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Réactiver l'agent
           </button>
@@ -736,6 +980,25 @@
       </template>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
+        <div class="flex items-start gap-2">
+          <i data-lucide="cake" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Date de naissance</span><strong x-text="selectedAgent?.date_naissance || '—'"></strong></div>
+        </div>
+        <div class="flex items-start gap-2">
+          <i data-lucide="calendar-clock" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Date de départ en retraite</span><strong x-text="selectedAgent?.date_retraite || '—'"></strong></div>
+        </div>
+        <div class="flex items-start gap-2">
+          <i data-lucide="phone" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Téléphone</span><strong x-text="selectedAgent?.telephone || '—'"></strong></div>
+        </div>
+        <div class="flex items-start gap-2">
+          <i data-lucide="calendar-check" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Date d'embauche</span><strong x-text="selectedAgent?.date_embauche || '—'"></strong></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs mt-3">
         <div class="flex items-start gap-2">
           <i data-lucide="building-2" class="w-4 h-4 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Direction affectée</span><strong x-text="selectedAgent?.direction || '—'"></strong></div>
@@ -754,7 +1017,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs mt-3">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs mt-3">
         <div>
           <span class="text-slate-400 block mb-1">Hiérarchie</span>
           <strong class="text-navy-900" x-text="selectedAgent?.hierarchie || '—'"></strong>
@@ -771,14 +1034,19 @@
           <span class="text-slate-400 block mb-1">Échelon</span>
           <strong class="text-navy-900" x-text="selectedAgent?.echelon || '—'"></strong>
         </div>
+        <div>
+          <span class="text-slate-400 block mb-1">Val. indiciaire</span>
+          <strong class="text-navy-900" x-text="selectedAgent?.valeur_indiciaire ?? '—'"></strong>
+        </div>
       </div>
 
+
       <div class="mt-6 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
-        <button type="button" x-show="(userRole === 'admin_general' || userRole === 'rh') && selectedAgent?.statut !== 'Inactif'" @click="openMotif(selectedAgent.id)"
+        <button type="button" x-show="hasPerm('edit_agent') && selectedAgent?.statut !== 'Inactif'" @click="openMotif(selectedAgent.id)"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 transition text-amber-700 rounded-lg text-xs font-medium">
           <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Mettre inactif
         </button>
-        <button type="button" x-show="userRole === 'admin_general' || userRole === 'rh'" @click="deleteAgent(selectedAgent.id)"
+        <button type="button" x-show="hasPerm('delete_agent')" @click="deleteAgent(selectedAgent.id)"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 transition text-rose-600 rounded-lg text-xs font-bold">
           <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Supprimer définitivement
         </button>
@@ -793,6 +1061,10 @@
   const SUPABASE_URL = 'https://wwnoqihrdcgeououzwxk.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_4STm6yjjJb8dRta1ZAQE8A_7TG5tQPW';
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Grille indiciaire officielle Catégorie|Classe|Échelon -> Valeur Indiciaire
+  // extraite du référentiel LISTEAGENTSCHAMPS.xlsx (79 combinaisons observées)
+  const INDICIARY_GRID = {"A5|1ère|1": 460, "A5|1ère|2": 500, "A5|1ère|3": 540, "A5|2ème|1": 370, "A5|2ème|3": 430, "A5|3ème|1": 295, "A5|3ème|2": 320, "A5|3ème|3": 345, "A5|classe unique|1": 590, "A5|classe unique|2": 620, "A5|classe unique|3": 660, "A5|classe unique|4": 760, "A5|classe unique|5": 860, "A6|1ère|2": 795, "A6|1ère|3": 855, "A6|2ème|1": 580, "A6|2ème|2": 630, "A6|2ème|3": 680, "A6|3ème|1": 470, "A6|3ème|3": 530, "A6|classe unique|1": 915, "A6|classe unique|2": 980, "A6|classe unique|3": 1065, "A6|classe unique|4": 1245, "A6|classe unique|5": 1465, "B3|1ère|1": 205, "B3|1ère|2": 220, "B3|1ère|3": 235, "B3|2ème|1": 160, "B3|2ème|2": 175, "B3|2ème|3": 190, "B3|3ème|1": 125, "B3|3ème|2": 135, "B3|3ème|3": 145, "B3|classe unique|1": 255, "B3|classe unique|2": 265, "B3|classe unique|3": 285, "B3|classe unique|4": 310, "B3|classe unique|5": 335, "B4|1ère|1": 305, "B4|1ère|2": 330, "B4|1ère|3": 355, "B4|2ème|1": 245, "B4|2ème|2": 265, "B4|2ème|3": 285, "B4|3ème|1": 195, "B4|3ème|2": 210, "B4|3ème|3": 225, "B4|classe unique|1": 380, "B4|classe unique|2": 405, "B4|classe unique|3": 410, "B4|classe unique|4": 465, "B4|classe unique|5": 520, "C1|1ère|1": 70, "C1|1ère|2": 75, "C1|1ère|3": 80, "C1|2ème|2": 60, "C1|2ème|3": 65, "C1|3ème|1": 40, "C1|3ème|2": 45, "C1|3ème|3": 50, "C1|classe unique|1": 85, "C1|classe unique|2": 90, "C1|classe unique|4": 105, "C1|classe unique|5": 110, "C2|1ère|1": 145, "C2|1ère|2": 125, "C2|1ère|3": 135, "C2|2ème|1": 95, "C2|2ème|2": 105, "C2|2ème|3": 115, "C2|3ème|1": 71, "C2|3ème|2": 75, "C2|3ème|3": 85, "C2|classe unique|1": 85, "C2|classe unique|2": 155, "C2|classe unique|3": 165, "C2|classe unique|4": 180, "C2|classe unique|5": 190};
 
   function rhApp() {
     return {
@@ -812,6 +1084,10 @@
       confirmBox: { show: false, message: '', onConfirm: null },
       motifBox: { show: false, agentId: null, value: '' },
 
+      now: new Date(),
+      locationName: '',
+      weather: { temp: null, description: '', code: null },
+
       agents: [],
       structures: [],
       usersList: [],
@@ -825,11 +1101,32 @@
       agentFormDirId: '',
       agentFormServiceId: '',
 
-      classeOptions: ['1ere', '2eme', '3eme', '4eme', '5eme', 'Classe unique'],
+      classeOptions: ['1ère', '2ème', '3ème', 'classe unique'],
       echelonOptions: ['1', '2', '3', '4', '5'],
 
-      newUser: { username: '', password: '', role: 'consultation' },
-      newAgent: { nom_prenom: '', matricule: '', direction: '', service: '', section: '', hierarchie: '', categorie: '', classe: '', echelon: '', statut: 'En service', salaire_base_actuel: 0, photo_url: '', motif_inactif: '' },
+      // Grille indiciaire officielle (Catégorie|Classe|Échelon -> Valeur Indiciaire)
+      // extraite du référentiel LISTEAGENTSCHAMPS.xlsx
+      indiciaryGrid: INDICIARY_GRID,
+
+      // Système de permissions granulaires (attribuées par l'admin général)
+      // admin_general a toujours tous les droits, quel que soit ce tableau
+      DEFAULT_PERMISSIONS: { add_agent: false, edit_agent: false, delete_agent: false, manage_structure: false, export_data: false },
+      currentPermissions: { add_agent: false, edit_agent: false, delete_agent: false, manage_structure: false, export_data: false },
+
+      newUser: { username: '', password: '', role: 'consultation', permissions: { add_agent: false, edit_agent: false, delete_agent: false, manage_structure: false, export_data: false } },
+      newAgent: {
+        nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
+        date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
+        direction: '', service: '', section: '', localisation: '', poste: '', poste_fonction: '', poste_embauche: '',
+        n_cnss: '', n_cnamgs: '', telephone: '', diplomes: '',
+        fin_contrat1: '', debut_contrat2: '', fin_contrat2: '',
+        hierarchie: '', categorie: '', classe: '', echelon: '', valeur_indiciaire: null,
+        statut: 'En service', imputation: '', salaire_entree: 0, salaire_base_actuel: 0,
+        prime_logement: 0, prime_transport: 0, indemnite_fonction: 0, indemnite_sujetion: 0,
+        prime_etat_civil: 0, solidarite_nationale: 0, prime_risque: 0, prime_salissure: 0,
+        prime_perception: 0, autres_primes: 0,
+        photo_url: '', motif_inactif: ''
+      },
 
       async initApp() {
         this.refreshIcons();
@@ -843,10 +1140,72 @@
         if (localStorage.getItem('m_user')) {
           this.currentUser = localStorage.getItem('m_user');
           this.userRole = localStorage.getItem('m_role') || 'consultation';
+          try { this.currentPermissions = JSON.parse(localStorage.getItem('m_perms')) || this.DEFAULT_PERMISSIONS; } catch (e) { this.currentPermissions = this.DEFAULT_PERMISSIONS; }
           this.isLoggedIn = true;
           await this.loadAllData();
         }
+        this.startClock();
+        this.loadLocationAndWeather();
         this.refreshIcons();
+      },
+
+      startClock() {
+        this.now = new Date();
+        setInterval(() => { this.now = new Date(); }, 1000);
+      },
+
+      formattedDate() {
+        return this.now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      },
+      formattedTime() {
+        return this.now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      },
+
+      // Codes météo OMM (Open-Meteo) -> description FR + icône lucide
+      weatherCodeInfo(code) {
+        const map = {
+          0: ['Ciel dégagé', 'sun'], 1: ['Plutôt dégagé', 'sun'], 2: ['Partiellement nuageux', 'cloud-sun'], 3: ['Couvert', 'cloud'],
+          45: ['Brouillard', 'cloud-fog'], 48: ['Brouillard givrant', 'cloud-fog'],
+          51: ['Bruine légère', 'cloud-drizzle'], 53: ['Bruine', 'cloud-drizzle'], 55: ['Bruine forte', 'cloud-drizzle'],
+          61: ['Pluie légère', 'cloud-rain'], 63: ['Pluie', 'cloud-rain'], 65: ['Pluie forte', 'cloud-rain'],
+          80: ['Averses légères', 'cloud-rain-wind'], 81: ['Averses', 'cloud-rain-wind'], 82: ['Averses violentes', 'cloud-rain-wind'],
+          95: ['Orage', 'cloud-lightning'], 96: ['Orage avec grêle', 'cloud-lightning'], 99: ['Orage violent', 'cloud-lightning']
+        };
+        return map[code] || ['—', 'cloud'];
+      },
+      weatherIcon() {
+        return this.weatherCodeInfo(this.weather.code)[1];
+      },
+
+      async loadLocationAndWeather() {
+        // Coordonnées par défaut : Port-Gentil, Gabon (siège de la Mairie)
+        const fallback = { lat: -0.7193, lon: 8.7815, name: 'Port-Gentil, Gabon' };
+        const applyCoords = async (lat, lon, name) => {
+          if (name) this.locationName = name;
+          try {
+            if (!name) {
+              const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=fr`);
+              const geo = await geoRes.json();
+              this.locationName = [geo.city || geo.locality, geo.countryName].filter(Boolean).join(', ') || fallback.name;
+            }
+          } catch (e) { this.locationName = this.locationName || fallback.name; }
+          try {
+            const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
+            const w = await wRes.json();
+            this.weather = { temp: w.current?.temperature_2m ?? null, code: w.current?.weather_code ?? null, description: this.weatherCodeInfo(w.current?.weather_code)[0] };
+          } catch (e) { /* météo indisponible */ }
+          this.refreshIcons();
+        };
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => applyCoords(pos.coords.latitude, pos.coords.longitude, null),
+            () => applyCoords(fallback.lat, fallback.lon, fallback.name),
+            { timeout: 6000 }
+          );
+        } else {
+          applyCoords(fallback.lat, fallback.lon, fallback.name);
+        }
       },
 
       refreshIcons() {
@@ -891,6 +1250,11 @@
         return labels[role] || role;
       },
 
+      hasPerm(key) {
+        if (this.userRole === 'admin_general') return true;
+        return !!(this.currentPermissions && this.currentPermissions[key]);
+      },
+
       async login() {
         this.isLoading = true;
         try {
@@ -904,10 +1268,13 @@
             this.showToast('error', 'Identifiants de la Mairie incorrects.');
           } else {
             const user = data[0];
+            const perms = user.permissions || this.DEFAULT_PERMISSIONS;
             localStorage.setItem('m_user', user.username);
             localStorage.setItem('m_role', user.role);
+            localStorage.setItem('m_perms', JSON.stringify(perms));
             this.currentUser = user.username;
             this.userRole = user.role;
+            this.currentPermissions = perms;
             this.isLoggedIn = true;
             await this.loadAllData();
             this.currentTab = 'dashboard';
@@ -935,9 +1302,9 @@
           this.structures = strs || [];
 
           if (this.userRole === 'admin_general') {
-            let { data: usrs, error: usrsErr } = await supabaseClient.from('utilisateurs').select('id, username, role');
+            let { data: usrs, error: usrsErr } = await supabaseClient.from('utilisateurs').select('id, username, role, permissions');
             if (usrsErr) { console.error('Erreur chargement utilisateurs:', usrsErr); }
-            this.usersList = usrs || [];
+            this.usersList = (usrs || []).map(u => ({ ...u, permissions: u.permissions || { ...this.DEFAULT_PERMISSIONS } }));
           }
         } catch (e) { console.error(e); this.showToast('error', 'Erreur réseau lors du chargement.'); }
         this.refreshIcons();
@@ -968,11 +1335,16 @@
 
       async createUser() {
         if (!this.newUser.username.trim() || !this.newUser.password.trim()) return;
-        const { error } = await supabaseClient.from('utilisateurs').insert([{ username: this.newUser.username, password_clair: this.newUser.password, role: this.newUser.role }]);
+        const { error } = await supabaseClient.from('utilisateurs').insert([{ username: this.newUser.username, password_clair: this.newUser.password, role: this.newUser.role, permissions: this.newUser.permissions }]);
         if (error) { this.showToast('error', 'Échec création utilisateur: ' + error.message); return; }
-        this.newUser = { username: '', password: '', role: 'consultation' };
+        this.newUser = { username: '', password: '', role: 'consultation', permissions: { ...this.DEFAULT_PERMISSIONS } };
         await this.loadAllData();
         this.showToast('success', 'Utilisateur créé avec succès.');
+      },
+      async updateUserPermissions(u) {
+        const { error } = await supabaseClient.from('utilisateurs').update({ role: u.role, permissions: u.permissions }).eq('id', u.id);
+        if (error) { this.showToast('error', 'Échec mise à jour des droits: ' + error.message); return; }
+        this.showToast('success', "Droits d'accès mis à jour pour " + u.username + '.');
       },
       deleteUser(id) {
         this.openConfirm("Révoquer cet utilisateur ?", async () => {
@@ -1074,11 +1446,36 @@
         return map[this.newAgent.hierarchie] || [];
       },
 
+      // --- RETRAITE AUTOMATIQUE (départ à 60 ans) ---
+      calcDateRetraite(dateNaissance) {
+        if (!dateNaissance) return '';
+        const d = new Date(dateNaissance);
+        if (isNaN(d.getTime())) return '';
+        d.setFullYear(d.getFullYear() + 60);
+        return d.toISOString().slice(0, 10);
+      },
+      updateRetraite() {
+        this.newAgent.date_retraite = this.calcDateRetraite(this.newAgent.date_naissance);
+      },
+
+      // --- VALEUR INDICIAIRE AUTOMATIQUE (grille officielle) ---
+      updateIndiciaire() {
+        const { categorie, classe, echelon } = this.newAgent;
+        if (categorie && classe && echelon) {
+          const key = categorie + '|' + classe + '|' + echelon;
+          this.newAgent.valeur_indiciaire = this.indiciaryGrid[key] ?? null;
+        } else {
+          this.newAgent.valeur_indiciaire = null;
+        }
+      },
+
       async saveAgent() {
         if (!this.newAgent.nom_prenom.trim()) {
           this.showToast('error', 'Le nom et prénom sont obligatoires.');
           return;
         }
+        this.updateRetraite();
+        this.updateIndiciaire();
         this.isLoading = true;
         const { data, error } = await supabaseClient.from('agents').insert([this.newAgent]).select();
         this.isLoading = false;
@@ -1087,7 +1484,19 @@
           this.showToast('error', "Échec de l'enregistrement: " + error.message + (error.hint ? ' (' + error.hint + ')' : ''));
           return;
         }
-        this.newAgent = { nom_prenom: '', matricule: '', direction: '', service: '', section: '', hierarchie: '', categorie: '', classe: '', echelon: '', statut: 'En service', salaire_base_actuel: 0, photo_url: '', motif_inactif: '' };
+        this.newAgent = {
+          nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
+          date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
+          direction: '', service: '', section: '', localisation: '', poste: '', poste_fonction: '', poste_embauche: '',
+          n_cnss: '', n_cnamgs: '', telephone: '', diplomes: '',
+          fin_contrat1: '', debut_contrat2: '', fin_contrat2: '',
+          hierarchie: '', categorie: '', classe: '', echelon: '', valeur_indiciaire: null,
+          statut: 'En service', imputation: '', salaire_entree: 0, salaire_base_actuel: 0,
+          prime_logement: 0, prime_transport: 0, indemnite_fonction: 0, indemnite_sujetion: 0,
+          prime_etat_civil: 0, solidarite_nationale: 0, prime_risque: 0, prime_salissure: 0,
+          prime_perception: 0, autres_primes: 0,
+          photo_url: '', motif_inactif: ''
+        };
         this.agentFormDirId = '';
         this.agentFormServiceId = '';
         await this.loadAllData();
@@ -1118,19 +1527,47 @@
         const rows = this.agents.map(a => ({
           'Matricule': a.matricule || '',
           'Nom & Prénom': a.nom_prenom || '',
+          'Nationalité': a.nationalite || '',
+          'Sexe': a.sexe || '',
+          'Situation Familiale': a.situation_familiale || '',
+          'Nbr Enfants': a.nbr_enfants || 0,
+          'Date de Naissance': a.date_naissance || '',
+          'Lieu de Naissance': a.lieu_naissance || '',
+          'Date Embauche': a.date_embauche || '',
+          'Date Retraite': a.date_retraite || '',
           'Direction': a.direction || '',
           'Service': a.service || '',
           'Section': a.section || '',
+          'Localisation': a.localisation || '',
+          'Poste': a.poste || '',
+          'Poste/Fonction': a.poste_fonction || '',
+          "Poste à l'embauche": a.poste_embauche || '',
+          'N° CNSS': a.n_cnss || '',
+          'N° CNAMGS': a.n_cnamgs || '',
+          'Téléphone': a.telephone || '',
+          'Diplômes': a.diplomes || '',
           'Hiérarchie': a.hierarchie || '',
           'Catégorie': a.categorie || '',
           'Classe': a.classe || '',
           'Échelon': a.echelon || '',
+          'Valeur Indiciaire': a.valeur_indiciaire || '',
           'Statut': a.statut || '',
           'Motif Inactif': a.motif_inactif || '',
-          'Salaire de Base (FCFA)': a.salaire_base_actuel || 0
+          'Imputation': a.imputation || '',
+          'Salaire Entrée (FCFA)': a.salaire_entree || 0,
+          'Salaire de Base Actuel (FCFA)': a.salaire_base_actuel || 0,
+          'Prime Logement': a.prime_logement || 0,
+          'Prime Transport': a.prime_transport || 0,
+          'Indemnité Fonction': a.indemnite_fonction || 0,
+          'Indemnité Sujétion': a.indemnite_sujetion || 0,
+          'Prime État Civil': a.prime_etat_civil || 0,
+          'Solidarité Nationale': a.solidarite_nationale || 0,
+          'Prime Risque': a.prime_risque || 0,
+          'Prime Salissure': a.prime_salissure || 0,
+          'Prime Perception': a.prime_perception || 0,
+          'Autres Primes': a.autres_primes || 0
         }));
         const ws = XLSX.utils.json_to_sheet(rows);
-        ws['!cols'] = [{ wch: 14 }, { wch: 28 }, { wch: 22 }, { wch: 18 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 18 }, { wch: 22 }, { wch: 20 }];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Agents');
         const dateStr = new Date().toISOString().slice(0, 10);
