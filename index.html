@@ -206,12 +206,12 @@
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition">
         <i data-lucide="layout-dashboard" class="w-4.5 h-4.5 w-[18px] h-[18px]"></i> <span>Tableau de bord</span>
       </button>
-      <button @click="currentTab = 'agents'; mobileMenuOpen = false"
+      <button x-show="hasPerm('lecture')" @click="currentTab = 'agents'; mobileMenuOpen = false"
               :class="currentTab === 'agents' ? 'active bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white'"
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition">
         <i data-lucide="users" class="w-[18px] h-[18px]"></i> <span>Annuaire des agents</span>
       </button>
-      <button x-show="userRole === 'admin_general'" @click="currentTab = 'outils'; mobileMenuOpen = false"
+      <button x-show="userRole === 'admin_general' || hasPerm('configuration_systeme')" @click="currentTab = 'outils'; mobileMenuOpen = false"
               :class="currentTab === 'outils' ? 'active bg-gold-500/20 text-gold-300' : 'text-gold-300/70 hover:bg-gold-500/10 hover:text-gold-200'"
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition mt-3 border-t border-white/10 pt-4">
         <i data-lucide="shield" class="w-[18px] h-[18px]"></i> <span>Outils administrateur</span>
@@ -262,6 +262,30 @@
             <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950">Tableau de bord RH</h2>
           </div>
           <p class="text-xs text-slate-500 mb-4" x-text="'Connecté en tant que ' + currentUser + ' · ' + roleLabel(userRole)"></p>
+
+          <!-- RÉSUMÉ DYNAMIQUE DES PERMISSIONS DE L'UTILISATEUR CONNECTÉ -->
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-4 mb-6">
+            <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2.5 flex items-center gap-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-navy-400"></i> Vos droits d'accès actuels
+            </p>
+            <template x-if="userRole === 'admin_general'">
+              <div class="inline-flex items-center gap-2 bg-gold-50 border border-gold-200 text-gold-800 rounded-xl px-3 py-2 text-xs font-semibold">
+                <i data-lucide="crown" class="w-3.5 h-3.5"></i> Administrateur général — accès complet, tous droits accordés automatiquement
+              </div>
+            </template>
+            <template x-if="userRole !== 'admin_general'">
+              <div class="flex flex-wrap gap-2">
+                <template x-for="perm in PERMISSIONS_META" :key="'dash-' + perm.key">
+                  <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-semibold transition-all"
+                        :class="hasPerm(perm.key) ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-50 border-slate-200 text-slate-400'"
+                        :title="perm.desc">
+                    <i :data-lucide="hasPerm(perm.key) ? 'check-circle-2' : 'circle-slash'" class="w-3.5 h-3.5 shrink-0"></i>
+                    <span x-text="perm.label"></span>
+                  </span>
+                </template>
+              </div>
+            </template>
+          </div>
 
           <!-- BANDEAU DATE / HEURE / METEO / LOCALISATION -->
           <div class="bg-gradient-to-r from-navy-900 to-navy-800 rounded-2xl p-4 sm:p-5 mb-6 shadow-card">
@@ -380,11 +404,11 @@
               <p class="text-xs text-slate-500 mt-0.5" x-text="filteredAgents().length + ' agent(s) trouvé(s) sur ' + agents.length"></p>
             </div>
             <div class="flex items-center gap-2">
-              <button x-show="hasPerm('add_agent')" @click="currentTab = 'ajouter'"
+              <button x-show="hasPerm('gestion_agents')" @click="currentTab = 'ajouter'"
                       class="inline-flex items-center gap-2 bg-navy-900 hover:bg-navy-800 transition text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm">
                 <i data-lucide="user-plus" class="w-4 h-4"></i> Nouvel agent
               </button>
-              <button x-show="hasPerm('export_data')" @click="exportExcel()"
+              <button x-show="hasPerm('lecture')" @click="exportExcel()"
                       class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 transition text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exporter Excel
               </button>
@@ -475,13 +499,13 @@
 
         <!-- SAISIE NOUVEL AGENT -->
         <div x-show="currentTab === 'ajouter'" x-cloak>
-          <template x-if="!hasPerm('add_agent')">
+          <template x-if="!hasPerm('gestion_agents')">
             <div class="bg-white p-8 rounded-2xl shadow-card border border-slate-100 text-center max-w-md mx-auto">
               <i data-lucide="lock" class="w-8 h-8 text-slate-300 mx-auto mb-3"></i>
-              <p class="text-sm text-slate-500">Vous n'avez pas l'autorisation d'ajouter un agent. Contactez l'administrateur général.</p>
+              <p class="text-sm text-slate-500">Vous n'avez pas l'autorisation « Gestion des Agents » nécessaire pour ajouter un agent. Contactez l'administrateur général.</p>
             </div>
           </template>
-          <template x-if="hasPerm('add_agent')">
+          <template x-if="hasPerm('gestion_agents')">
           <div>
           <div class="flex items-center gap-3 mb-4">
             <button type="button" @click="currentTab = 'agents'" class="text-slate-400 hover:text-navy-700 transition">
@@ -617,8 +641,13 @@
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste</label>
-                  <input type="text" x-model="newAgent.poste" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
-                  <p class="text-[10px] text-slate-400 mt-1">Sera aussi enregistré comme « poste à l'embauche », figé dans la fiche de l'agent.</p>
+                  <select x-model="newAgent.poste" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                    <option value="">— Sélectionner un poste —</option>
+                    <template x-for="p in postes()" :key="p.id">
+                      <option :value="p.nom" x-text="p.nom"></option>
+                    </template>
+                  </select>
+                  <p class="text-[10px] text-slate-400 mt-1">Sera aussi enregistré comme « poste à l'embauche », figé dans la fiche de l'agent. Gérez la liste des postes depuis Outils Admin.</p>
                 </div>
               </div>
             </div>
@@ -632,7 +661,12 @@
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Imputation</label>
-                  <input type="text" x-model="newAgent.imputation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <select x-model="newAgent.imputation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                    <option value="">— Sélectionner une imputation —</option>
+                    <template x-for="imp in imputations()" :key="imp.id">
+                      <option :value="imp.nom" x-text="imp.nom"></option>
+                    </template>
+                  </select>
                 </div>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
@@ -717,7 +751,8 @@
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Salaire de base actuel (FCFA)</label>
-                  <input type="number" min="0" x-model.number="newAgent.salaire_base_actuel" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <input type="text" :value="calcSalaireBase(newAgent.valeur_indiciaire).toLocaleString('fr-FR')" readonly class="w-full px-3 py-2 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm cursor-not-allowed">
+                  <p class="text-[10px] text-slate-400 mt-1">Calculé automatiquement : valeur indiciaire × 500 + 80 000 FCFA</p>
                 </div>
               </div>
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
@@ -779,7 +814,7 @@
         </div>
 
         <!-- OUTILS ADMIN -->
-        <div x-show="currentTab === 'outils' && userRole === 'admin_general'" x-cloak>
+        <div x-show="currentTab === 'outils' && (userRole === 'admin_general' || hasPerm('configuration_systeme'))" x-cloak>
           <header class="mb-6">
             <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950 flex items-center gap-2">
               <i data-lucide="shield" class="w-5 h-5 text-gold-600"></i> Panneau de contrôle — Administrateur général
@@ -791,7 +826,7 @@
                 <i data-lucide="building-2" class="w-4 h-4 text-navy-500"></i> Organigramme — Directions, Services & Sections
               </h3>
 
-              <form @submit.prevent="addDirection()" class="flex gap-2 mb-4">
+              <form x-show="hasPerm('ecriture')" @submit.prevent="addDirection()" class="flex gap-2 mb-4">
                 <input type="text" x-model="newDirectionName" placeholder="Nom de la nouvelle direction" required class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 <button type="submit" class="inline-flex items-center gap-1 bg-navy-900 hover:bg-navy-800 transition text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">
                   <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter une direction
@@ -809,14 +844,14 @@
                         <span class="font-bold text-navy-900 text-xs truncate" x-text="dir.nom"></span>
                         <span class="text-[10px] text-slate-400 shrink-0" x-text="'(' + servicesOf(dir.id).length + ' service(s))'"></span>
                       </button>
-                      <button type="button" @click="deleteStructure(dir.id, 'direction')" class="text-rose-500 hover:text-rose-700 shrink-0">
+                      <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(dir.id, 'direction')" class="text-rose-500 hover:text-rose-700 shrink-0">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                       </button>
                     </div>
 
                     <!-- NIVEAU 2 : SERVICES -->
                     <div x-show="expandedDirs.includes(dir.id)" x-cloak class="pl-6 pr-3 py-3 space-y-2 bg-white">
-                      <form @submit.prevent="addService(dir.id)" class="flex gap-2">
+                      <form x-show="hasPerm('ecriture')" @submit.prevent="addService(dir.id)" class="flex gap-2">
                         <input type="text" x-model="newServiceNameMap[dir.id]" placeholder="Nom du nouveau service" class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
                         <button type="submit" class="inline-flex items-center gap-1 bg-navy-700 hover:bg-navy-800 transition text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold shrink-0">
                           <i data-lucide="plus" class="w-3 h-3"></i> Service
@@ -834,14 +869,14 @@
                               <span class="font-semibold text-slate-700 text-xs truncate" x-text="svc.nom"></span>
                               <span class="text-[10px] text-slate-400 shrink-0" x-text="'(' + sectionsOf(svc.id).length + ' section(s))'"></span>
                             </button>
-                            <button type="button" @click="deleteStructure(svc.id, 'service')" class="text-rose-500 hover:text-rose-700 shrink-0">
+                            <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(svc.id, 'service')" class="text-rose-500 hover:text-rose-700 shrink-0">
                               <i data-lucide="trash-2" class="w-3 h-3"></i>
                             </button>
                           </div>
 
                           <!-- NIVEAU 3 : SECTIONS -->
                           <div x-show="expandedServices.includes(svc.id)" x-cloak class="pl-6 pr-2.5 py-2.5 space-y-2 bg-white">
-                            <form @submit.prevent="addSection(svc.id)" class="flex gap-2">
+                            <form x-show="hasPerm('ecriture')" @submit.prevent="addSection(svc.id)" class="flex gap-2">
                               <input type="text" x-model="newSectionNameMap[svc.id]" placeholder="Nom de la nouvelle section" class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:ring-2 focus:ring-navy-500 focus:outline-none">
                               <button type="submit" class="inline-flex items-center gap-1 bg-slate-600 hover:bg-slate-700 transition text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold shrink-0">
                                 <i data-lucide="plus" class="w-3 h-3"></i> Section
@@ -851,7 +886,7 @@
                             <template x-for="sec in sectionsOf(svc.id)" :key="sec.id">
                               <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 text-[11px]">
                                 <span class="flex items-center gap-1.5 text-slate-600"><i data-lucide="layers" class="w-3 h-3 text-slate-400"></i><span x-text="sec.nom"></span></span>
-                                <button type="button" @click="deleteStructure(sec.id, 'section')" class="text-rose-500 hover:text-rose-700">
+                                <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(sec.id, 'section')" class="text-rose-500 hover:text-rose-700">
                                   <i data-lucide="trash-2" class="w-3 h-3"></i>
                                 </button>
                               </div>
@@ -866,10 +901,86 @@
               </div>
             </div>
 
+            <!-- GESTION DES POSTES -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-card">
+              <h3 class="font-display font-bold text-sm text-navy-900 uppercase border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                <i data-lucide="briefcase" class="w-4 h-4 text-navy-500"></i> Liste des postes (utilisée dans la fiche agent)
+              </h3>
+
+              <div x-show="hasPerm('ecriture') && !postes().length" x-cloak class="mb-4 bg-navy-50/60 border border-navy-100 rounded-xl p-3 flex items-center justify-between gap-3">
+                <p class="text-xs text-navy-800">Aucun poste enregistré. Importer la liste initiale de la Mairie (<span x-text="DEFAULT_POSTES.length"></span> postes) ?</p>
+                <button type="button" @click="importDefaultPostes()" class="inline-flex items-center gap-1 bg-navy-900 hover:bg-navy-800 transition text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Importer
+                </button>
+              </div>
+
+              <form x-show="hasPerm('ecriture')" @submit.prevent="addPoste()" class="flex gap-2 mb-4">
+                <input type="text" x-model="newPosteName" placeholder="Nom du nouveau poste" required class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <button type="submit" class="inline-flex items-center gap-1 bg-navy-900 hover:bg-navy-800 transition text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter un poste
+                </button>
+              </form>
+
+              <div class="max-h-72 overflow-y-auto pr-1 flex flex-wrap gap-2 content-start">
+                <template x-for="p in postes()" :key="p.id">
+                  <span class="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-full pl-3 pr-1.5 py-1 text-xs text-slate-700">
+                    <span x-text="p.nom"></span>
+                    <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(p.id, 'poste')" class="text-rose-500 hover:text-rose-700">
+                      <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                  </span>
+                </template>
+              </div>
+              <p x-show="!postes().length" class="text-center text-slate-400 py-6 text-xs">Aucun poste configuré.</p>
+            </div>
+
+            <!-- GESTION DES IMPUTATIONS -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-card">
+              <h3 class="font-display font-bold text-sm text-navy-900 uppercase border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                <i data-lucide="hash" class="w-4 h-4 text-navy-500"></i> Liste des imputations (utilisée dans la fiche agent)
+              </h3>
+
+              <div x-show="hasPerm('ecriture') && !imputations().length" x-cloak class="mb-4 bg-navy-50/60 border border-navy-100 rounded-xl p-3 flex items-center justify-between gap-3">
+                <p class="text-xs text-navy-800">Aucune imputation enregistrée. Importer la liste initiale de la Mairie (<span x-text="DEFAULT_IMPUTATIONS.length"></span> imputations) ?</p>
+                <button type="button" @click="importDefaultImputations()" class="inline-flex items-center gap-1 bg-navy-900 hover:bg-navy-800 transition text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Importer
+                </button>
+              </div>
+
+              <form x-show="hasPerm('ecriture')" @submit.prevent="addImputation()" class="flex gap-2 mb-4">
+                <input type="text" x-model="newImputationName" placeholder="Nouvelle imputation, ex : 62.101" required class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <button type="submit" class="inline-flex items-center gap-1 bg-navy-900 hover:bg-navy-800 transition text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter
+                </button>
+              </form>
+
+              <div class="max-h-72 overflow-y-auto pr-1 flex flex-wrap gap-2 content-start">
+                <template x-for="imp in imputations()" :key="imp.id">
+                  <span class="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-full pl-3 pr-1.5 py-1 text-xs font-mono text-slate-700">
+                    <span x-text="imp.nom"></span>
+                    <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(imp.id, 'imputation')" class="text-rose-500 hover:text-rose-700">
+                      <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                  </span>
+                </template>
+              </div>
+              <p x-show="!imputations().length" class="text-center text-slate-400 py-6 text-xs">Aucune imputation configurée.</p>
+            </div>
+
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-card">
               <h3 class="font-display font-bold text-sm text-navy-900 uppercase border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
                 <i data-lucide="key-round" class="w-4 h-4 text-navy-500"></i> Comptes, niveaux d'accréditation & permissions
               </h3>
+
+              <template x-if="!hasPerm('gestion_agents')">
+                <div class="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center">
+                  <i data-lucide="lock" class="w-7 h-7 text-slate-300 mx-auto mb-2"></i>
+                  <p class="text-xs text-slate-500">La permission <strong>« Gestion des Agents »</strong> est requise pour créer ou inviter un nouvel utilisateur, et pour gérer les droits des comptes existants.</p>
+                </div>
+              </template>
+
+              <template x-if="hasPerm('gestion_agents')">
+              <div>
               <form @submit.prevent="createUser()" class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
                 <input type="text" x-model="newUser.username" placeholder="Identifiant" required class="px-2.5 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 <input type="text" x-model="newUser.password" placeholder="Mot de passe" required class="px-2.5 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
@@ -878,14 +989,23 @@
                   <option value="rh">Service RH</option>
                   <option value="admin_general">Admin général</option>
                 </select>
-                <div class="sm:col-span-3 flex flex-wrap gap-3 bg-slate-50 rounded-lg px-3 py-2 text-[11px] text-slate-600">
-                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.add_agent"> Ajouter agent</label>
-                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.edit_agent"> Modifier agent</label>
-                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.delete_agent"> Supprimer agent</label>
-                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.manage_structure"> Gérer structure</label>
-                  <label class="flex items-center gap-1.5"><input type="checkbox" x-model="newUser.permissions.export_data"> Exporter Excel</label>
+
+                <div class="sm:col-span-3">
+                  <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">Permissions accordées à ce compte</p>
+                  <div class="flex flex-wrap gap-2">
+                    <template x-for="perm in PERMISSIONS_META" :key="'new-' + perm.key">
+                      <label class="group flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all select-none text-[11px] font-semibold"
+                             :class="newUser.permissions[perm.key] ? 'bg-navy-900 border-navy-900 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-navy-300 hover:bg-navy-50/40'"
+                             :title="perm.desc">
+                        <input type="checkbox" x-model="newUser.permissions[perm.key]" class="sr-only">
+                        <i :data-lucide="perm.icon" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span x-text="perm.label"></span>
+                      </label>
+                    </template>
+                  </div>
                 </div>
-                <button type="submit" class="sm:col-span-3 inline-flex items-center justify-center gap-1.5 bg-gold-600 hover:bg-gold-700 transition text-white py-2 rounded-lg text-xs font-bold">
+
+                <button type="submit" class="sm:col-span-3 inline-flex items-center justify-center gap-1.5 bg-gold-600 hover:bg-gold-700 transition text-white py-2 rounded-lg text-xs font-bold mt-1">
                   <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Créer l'utilisateur
                 </button>
               </form>
@@ -901,16 +1021,20 @@
                           <option value="admin_general">Admin général</option>
                         </select>
                       </div>
-                      <button type="button" x-show="u.username !== 'admin'" @click="deleteUser(u.id)" class="text-rose-600 hover:text-rose-700 flex items-center gap-1 font-semibold">
+                      <button type="button" x-show="u.username !== 'admin' && hasPerm('suppression')" @click="deleteUser(u.id)" class="text-rose-600 hover:text-rose-700 flex items-center gap-1 font-semibold">
                         <i data-lucide="user-minus" class="w-3.5 h-3.5"></i> Révoquer
                       </button>
                     </div>
-                    <div x-show="u.role !== 'admin_general'" class="flex flex-wrap gap-3 bg-slate-50 rounded-lg px-3 py-2 text-[11px] text-slate-600">
-                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.add_agent"> Ajouter agent</label>
-                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.edit_agent"> Modifier agent</label>
-                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.delete_agent"> Supprimer agent</label>
-                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.manage_structure"> Gérer structure</label>
-                      <label class="flex items-center gap-1.5"><input type="checkbox" x-model="u.permissions.export_data"> Exporter Excel</label>
+                    <div x-show="u.role !== 'admin_general'" class="flex flex-wrap gap-2 bg-slate-50 rounded-xl px-3 py-2.5">
+                      <template x-for="perm in PERMISSIONS_META" :key="u.id + '-' + perm.key">
+                        <label class="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all select-none text-[11px] font-medium"
+                               :class="u.permissions[perm.key] ? 'bg-navy-800 border-navy-800 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-navy-300'"
+                               :title="perm.desc">
+                          <input type="checkbox" x-model="u.permissions[perm.key]" class="sr-only">
+                          <i :data-lucide="perm.icon" class="w-3 h-3 shrink-0"></i>
+                          <span x-text="perm.label"></span>
+                        </label>
+                      </template>
                     </div>
                     <p x-show="u.role === 'admin_general'" class="text-[11px] text-gold-700 bg-gold-50 rounded-lg px-3 py-2">Accès complet (admin général) — tous les droits sont accordés automatiquement.</p>
                     <div class="flex justify-end">
@@ -922,6 +1046,8 @@
                 </template>
                 <p x-show="!usersList.length" class="text-center text-slate-400 py-6">Aucun utilisateur.</p>
               </div>
+              </div>
+              </template>
             </div>
           </div>
         </div>
@@ -963,7 +1089,7 @@
             <strong class="text-rose-900 block font-bold flex items-center gap-1.5"><i data-lucide="ban" class="w-3.5 h-3.5"></i> Agent actuellement inactif</strong>
             <span class="text-slate-600" x-text="'Motif enregistré : ' + (selectedAgent?.motif_inactif || 'non précisé')"></span>
           </div>
-          <button x-show="hasPerm('edit_agent')" @click="reactivateAgent(selectedAgent.id)"
+          <button x-show="hasPerm('modification')" @click="reactivateAgent(selectedAgent.id)"
                   class="inline-flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3 py-2 rounded-lg transition shadow-sm">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Réactiver l'agent
           </button>
@@ -1041,17 +1167,337 @@
 
 
       <div class="mt-6 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
-        <button type="button" x-show="hasPerm('edit_agent') && selectedAgent?.statut !== 'Inactif'" @click="openMotif(selectedAgent.id)"
+        <button type="button" x-show="hasPerm('modification')" @click="openEditAgent(selectedAgent)"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-navy-50 hover:bg-navy-100 transition text-navy-700 rounded-lg text-xs font-bold">
+          <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Modifier la fiche
+        </button>
+        <button type="button" x-show="hasPerm('modification') && selectedAgent?.statut !== 'Inactif'" @click="openMotif(selectedAgent.id)"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 transition text-amber-700 rounded-lg text-xs font-medium">
           <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Mettre inactif
         </button>
-        <button type="button" x-show="hasPerm('delete_agent')" @click="deleteAgent(selectedAgent.id)"
+        <button type="button" x-show="hasPerm('suppression')" @click="deleteAgent(selectedAgent.id)"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 transition text-rose-600 rounded-lg text-xs font-bold">
           <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Supprimer définitivement
         </button>
         <button type="button" @click="selectedAgent = null" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 transition rounded-lg text-xs font-medium">Fermer</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- MODALE MODIFIER AGENT (accessible uniquement avec la permission modification) -->
+<div x-show="editingAgent" x-cloak class="fixed inset-0 bg-navy-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]" x-transition.opacity>
+  <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto" @click.outside="editingAgent = null">
+
+    <div class="bg-gradient-to-r from-navy-900 to-navy-800 rounded-t-2xl p-6 relative sticky top-0 z-10">
+      <button @click="editingAgent = null" class="absolute top-4 right-4 text-white/60 hover:text-white transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <h3 class="font-display font-bold text-lg text-white flex items-center gap-2">
+        <i data-lucide="pencil" class="w-5 h-5 text-gold-300"></i> Modifier la fiche de <span x-text="editingAgent?.nom_prenom"></span>
+      </h3>
+    </div>
+
+    <template x-if="editingAgent">
+      <form @submit.prevent="updateAgent()" class="p-6 space-y-5">
+
+        <div class="flex items-center gap-4">
+          <img x-show="editingAgent.photo_url" :src="editingAgent.photo_url" class="w-14 h-14 rounded-full object-cover border-2 border-navy-100 shrink-0">
+          <div x-show="!editingAgent.photo_url" class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 shrink-0">
+            <i data-lucide="user" class="w-6 h-6"></i>
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs font-bold uppercase text-slate-500 mb-1 tracking-wide">Photo de l'agent (lien URL)</label>
+            <input type="text" x-model="editingAgent.photo_url" placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-5">
+          <p class="text-xs font-bold uppercase text-navy-700 mb-3 tracking-wide flex items-center gap-1.5"><i data-lucide="id-card" class="w-3.5 h-3.5"></i> Identité</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Noms & prénoms</label>
+              <input type="text" x-model="editingAgent.nom_prenom" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Matricule</label>
+              <input type="text" x-model="editingAgent.matricule" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none" placeholder="ex : APM092">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Sexe</label>
+              <select x-model="editingAgent.sexe" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="">—</option><option value="M">M</option><option value="F">F</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nationalité</label>
+              <input type="text" x-model="editingAgent.nationalite" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none" placeholder="ex : Gabonaise">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Situation familiale</label>
+              <select x-model="editingAgent.situation_familiale" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="">—</option>
+                <option value="Célibataire">Célibataire</option>
+                <option value="Marié(e)">Marié(e)</option>
+                <option value="Veuve">Veuve</option>
+                <option value="Divorcé(e)">Divorcé(e)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nbr enfants</label>
+              <input type="number" min="0" x-model.number="editingAgent.nbr_enfants" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date de naissance</label>
+              <input type="date" x-model="editingAgent.date_naissance" @change="updateRetraiteEdit()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Lieu de naissance</label>
+              <input type="text" x-model="editingAgent.lieu_naissance" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date de départ en retraite</label>
+              <input type="date" :value="editingAgent.date_retraite || calcDateRetraite(editingAgent.date_naissance)" readonly class="w-full px-3 py-2 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm cursor-not-allowed">
+              <p class="text-[10px] text-slate-400 mt-1">Calculée automatiquement (naissance + 60 ans)</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Téléphone</label>
+              <input type="text" x-model="editingAgent.telephone" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Diplômes</label>
+              <input type="text" x-model="editingAgent.diplomes" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">N° CNSS</label>
+              <input type="text" x-model="editingAgent.n_cnss" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">N° CNAMGS</label>
+              <input type="text" x-model="editingAgent.n_cnamgs" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-5">
+          <p class="text-xs font-bold uppercase text-navy-700 mb-3 tracking-wide flex items-center gap-1.5"><i data-lucide="building-2" class="w-3.5 h-3.5"></i> Affectation</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Direction</label>
+              <select x-model="editFormDirId" @change="onEditFormDirectionChange()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="">Sélectionner</option>
+                <template x-for="d in directions()" :key="d.id">
+                  <option :value="d.id" x-text="d.nom"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Service</label>
+              <select x-model="editFormServiceId" @change="onEditFormServiceChange()" :disabled="!editFormDirId" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                <option value="">Sélectionner</option>
+                <template x-for="s in servicesForEditForm()" :key="s.id">
+                  <option :value="s.id" x-text="s.nom"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Section</label>
+              <select x-model="editingAgent.section" :disabled="!editFormServiceId" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                <option value="">Sélectionner</option>
+                <template x-for="s in sectionsForEditForm()" :key="s.id">
+                  <option :value="s.nom" x-text="s.nom"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Localisation</label>
+              <input type="text" x-model="editingAgent.localisation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste actuel</label>
+              <select x-model="editingAgent.poste" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="">— Sélectionner un poste —</option>
+                <template x-for="p in postes()" :key="p.id">
+                  <option :value="p.nom" x-text="p.nom"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+          <div class="mt-3">
+            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste à l'embauche <span class="text-[9px] normal-case text-slate-400">(figé, non modifiable)</span></label>
+            <input type="text" :value="editingAgent.poste_embauche" readonly class="w-full px-3 py-2 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm cursor-not-allowed">
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-5">
+          <p class="text-xs font-bold uppercase text-navy-700 mb-3 tracking-wide flex items-center gap-1.5"><i data-lucide="file-signature" class="w-3.5 h-3.5"></i> Emploi & contrat</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date d'embauche</label>
+              <input type="date" x-model="editingAgent.date_embauche" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Imputation</label>
+              <select x-model="editingAgent.imputation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="">— Sélectionner une imputation —</option>
+                <template x-for="imp in imputations()" :key="imp.id">
+                  <option :value="imp.nom" x-text="imp.nom"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Fin contrat 1 (CDD)</label>
+              <input type="date" x-model="editingAgent.fin_contrat1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Début contrat 2 (CDD)</label>
+              <input type="date" x-model="editingAgent.debut_contrat2" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Fin contrat 2 (CDD)</label>
+              <input type="date" x-model="editingAgent.fin_contrat2" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-5">
+          <p class="text-xs font-bold uppercase text-navy-700 mb-3 tracking-wide flex items-center gap-1.5"><i data-lucide="layers" class="w-3.5 h-3.5"></i> Position hiérarchique (grade)</p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Hiérarchie</label>
+              <select x-model="editingAgent.hierarchie" @change="editingAgent.categorie = ''; updateIndiciaireEdit()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="">—</option>
+                <template x-for="h in ['A','B','C']" :key="h">
+                  <option :value="h" x-text="h"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Catégorie</label>
+              <select x-model="editingAgent.categorie" @change="updateIndiciaireEdit()" :disabled="!editingAgent.hierarchie" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                <option value="">—</option>
+                <template x-for="c in categorieOptionsEdit()" :key="c">
+                  <option :value="c" x-text="c"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Classe</label>
+              <select x-model="editingAgent.classe" @change="updateIndiciaireEdit()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="">—</option>
+                <template x-for="c in classeOptions" :key="c">
+                  <option :value="c" x-text="c"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Échelon</label>
+              <select x-model="editingAgent.echelon" @change="updateIndiciaireEdit()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="">—</option>
+                <template x-for="e in echelonOptions" :key="e">
+                  <option :value="e" x-text="e"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+          <div class="mt-3 bg-gold-50 border border-gold-200 rounded-lg px-3 py-2 inline-flex items-center gap-2">
+            <i data-lucide="hash" class="w-3.5 h-3.5 text-gold-700"></i>
+            <span class="text-xs text-gold-900">Valeur indiciaire : <strong x-text="editingAgent.valeur_indiciaire ?? '— (sélectionner catégorie / classe / échelon)'"></strong></span>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-5">
+          <p class="text-xs font-bold uppercase text-navy-700 mb-3 tracking-wide flex items-center gap-1.5"><i data-lucide="badge-euro" class="w-3.5 h-3.5"></i> Statut & rémunération</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Statut *</label>
+              <select x-model="editingAgent.statut" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="En service">En service</option>
+                <option value="Malade">Malade</option>
+                <option value="En détachement">En détachement</option>
+                <option value="Mis en disponibilité">Mis en disponibilité</option>
+                <option value="CDD">CDD</option>
+                <option value="Inactif">Inactif</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Salaire d'entrée (FCFA) <span class="text-[9px] normal-case text-slate-400">(figé, non modifiable)</span></label>
+              <input type="text" :value="(editingAgent.salaire_entree || 0).toLocaleString('fr-FR')" readonly class="w-full px-3 py-2 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm cursor-not-allowed">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Salaire de base actuel (FCFA)</label>
+              <input type="text" :value="calcSalaireBase(editingAgent.valeur_indiciaire).toLocaleString('fr-FR')" readonly class="w-full px-3 py-2 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm cursor-not-allowed">
+              <p class="text-[10px] text-slate-400 mt-1">Calculé automatiquement : valeur indiciaire × 500 + 80 000 FCFA</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime logement</label>
+              <input type="number" min="0" x-model.number="editingAgent.prime_logement" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime transport</label>
+              <input type="number" min="0" x-model.number="editingAgent.prime_transport" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Indemnité fonction</label>
+              <input type="number" min="0" x-model.number="editingAgent.indemnite_fonction" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Indemnité sujétion</label>
+              <input type="number" min="0" x-model.number="editingAgent.indemnite_sujetion" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime état civil</label>
+              <input type="number" min="0" x-model.number="editingAgent.prime_etat_civil" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Solidarité nationale</label>
+              <input type="number" min="0" x-model.number="editingAgent.solidarite_nationale" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime de risque</label>
+              <input type="number" min="0" x-model.number="editingAgent.prime_risque" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime salissure</label>
+              <input type="number" min="0" x-model.number="editingAgent.prime_salissure" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Prime perception</label>
+              <input type="number" min="0" x-model.number="editingAgent.prime_perception" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Autres primes</label>
+              <input type="number" min="0" x-model.number="editingAgent.autres_primes" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+            </div>
+          </div>
+          <div x-show="editingAgent.statut === 'Inactif'" x-cloak class="bg-rose-50 p-3 rounded-lg border border-rose-100 mt-3">
+            <label class="block text-xs font-bold uppercase text-rose-900 mb-1">Motif de l'inactivité</label>
+            <input type="text" x-model="editingAgent.motif_inactif" placeholder="ex : Retraite, Décès..." class="w-full px-3 py-1.5 border border-rose-200 rounded text-sm bg-white focus:outline-none">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" @click="editingAgent = null" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 transition rounded-lg text-xs font-medium">Annuler</button>
+          <button type="submit" class="inline-flex items-center gap-2 bg-navy-900 hover:bg-navy-800 transition text-white font-bold text-sm px-5 py-2.5 rounded-lg shadow-sm">
+            <i data-lucide="save" class="w-4 h-4"></i> Enregistrer les modifications
+          </button>
+        </div>
+      </form>
+    </template>
   </div>
 </div>
 
@@ -1078,6 +1524,9 @@
       search: '',
       filterStatut: '',
       selectedAgent: null,
+      editingAgent: null,
+      editFormDirId: '',
+      editFormServiceId: '',
 
       toast: { show: false, type: 'success', message: '' },
       confirmBox: { show: false, message: '', onConfirm: null },
@@ -1096,6 +1545,8 @@
       newSectionNameMap: {},
       expandedDirs: [],
       expandedServices: [],
+      newPosteName: '',
+      newImputationName: '',
 
       agentFormDirId: '',
       agentFormServiceId: '',
@@ -1107,12 +1558,43 @@
       // extraite du référentiel LISTEAGENTSCHAMPS.xlsx
       indiciaryGrid: INDICIARY_GRID,
 
-      // Système de permissions granulaires (attribuées par l'admin général)
-      // admin_general a toujours tous les droits, quel que soit ce tableau
-      DEFAULT_PERMISSIONS: { add_agent: false, edit_agent: false, delete_agent: false, manage_structure: false, export_data: false },
-      currentPermissions: { add_agent: false, edit_agent: false, delete_agent: false, manage_structure: false, export_data: false },
+      // ============================================================
+      // FORMULE DE CALCUL AUTOMATIQUE DU SALAIRE DE BASE
+      // ============================================================
+      // Salaire de base = (valeur indiciaire × SALAIRE_BASE_COEFFICIENT) + SALAIRE_BASE_FIXE
+      // Ces deux paramètres peuvent être modifiés ici à l'avenir si le barème change,
+      // sans toucher au reste du code (utilisés par calcSalaireBase() ci-dessous).
+      SALAIRE_BASE_COEFFICIENT: 500,
+      SALAIRE_BASE_FIXE: 80000,
 
-      newUser: { username: '', password: '', role: 'consultation', permissions: { add_agent: false, edit_agent: false, delete_agent: false, manage_structure: false, export_data: false } },
+      // ============================================================
+      // SYSTÈME DE PERMISSIONS GRANULAIRES
+      // ============================================================
+      // Attribuées par l'admin général (ou par un utilisateur ayant
+      // la permission "configuration_systeme"). admin_general a
+      // toujours tous les droits, quel que soit ce tableau (cf. hasPerm()).
+      //
+      // PERMISSIONS_META pilote à la fois :
+      //  - le rendu des cases à cocher (formulaire de création + liste des comptes)
+      //  - la logique de masquage/affichage des boutons sensibles de l'interface
+      PERMISSIONS_META: [
+        { key: 'lecture',                label: 'Lecture',                 desc: 'Voir les données (annuaire, fiches, tableau de bord)',            icon: 'eye' },
+        { key: 'ecriture',                label: 'Écriture / Ajout',        desc: 'Créer du contenu général (organigramme : directions, services, sections)', icon: 'square-plus' },
+        { key: 'modification',           label: 'Modification',            desc: 'Éditer le contenu existant (fiches agents, statuts)',             icon: 'pencil' },
+        { key: 'suppression',            label: 'Suppression',             desc: 'Effacer des données définitivement',                              icon: 'trash-2' },
+        { key: 'gestion_agents',         label: 'Gestion des Agents',      desc: "Droit exclusif de créer/inviter un nouvel agent ou utilisateur",   icon: 'user-plus' },
+        { key: 'configuration_systeme',  label: 'Configuration Système',   desc: "Modifier les paramètres et l'organigramme de l'application",      icon: 'settings' }
+      ],
+      DEFAULT_PERMISSIONS: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false },
+
+      // --- LISTES INITIALES POSTES / IMPUTATIONS (issues du référentiel Excel de la Mairie) ---
+      // Utilisées uniquement pour le bouton "Importer la liste initiale" côté Outils Admin.
+      // Une fois importées, ces valeurs vivent en base (table 'structures') et sont gérées via addPoste/addImputation/deleteStructure.
+      DEFAULT_POSTES: ["AGENT ADMINISTRATIF","AGENT AU PROTOCOLE","AGENT COMPTABLE","AGENT DE LIAISON","AGENT DE RECOUVREMENT","AGENT DE SECURITE","AGENT ESPACE VERT","AGENT ESPACES FUNEBRE","AGENT ETAT CIVIL","AGENT HYGIENE","AGENT LOGISTIQUE","AGENT MIS A DISPOSITION","AGENT PERCEPTEUR","AGENT POINT A TEMPS","AGENT SOCIAL","AGENT TECHNIQUE","AGENT TECHNIQUE FONCIER","AIDE DE CAMP","AMBULANCIER","ARCHIVISTE","ASSISTANT TECHNIQUE","CHARGE DE MISSION","CHAUDRONNIER","CHAUFFEUR","CHAUFFEUR POIDS LOURD","CHEF DE QUARTIER","CHEF DE SECTION","CHEF DE SERVICE","CONSEILLER","CONSERVATEUR","CUISINIERE","DELEGUE SPECIAL","DIRECTEUR DE CABINET","DIRECTRICE JARDIN","EBOUEUR","EDUCATRICE PRESCOLAIRE","ELECTRICIEN","GESTIONNAIRE ETAT SPECIAL","GOUVERNANTE","HTM","INFIRMIERE","INFIRMIERE MAJOR","INSPECTEUR GENERAL","JARDINIER","JURISTE","Maçon","MAGASINIER","MECANICIEN","MEDECIN","MENUISIER","MONITRICE PRESCOLAIRE","PEINTRE","PLOMBIER","POLICIER","QHSE","RECEPTIONNISTE","SECRETAIRE","SECRETAIRE COMPTABLE","SOUDEUR","SURVEILLANTE DES PARCS ATTRACTIONS","SURVEILLANTE PRESCOLAIRE","TECHNICIEN FROID ET CLIMATISATION","TECHNICIENNE DE LABORATOIRE","TECHNICIENNE DE SURFACE","VULGANISATEUR","INFORMATICIEN","MAIRE DE LA COMMUNE","PREMIER ADJT AU MAIRE DE LA COMMUNE","DEUXIEME ADJT AU MAIRE DE LA COMMUNE","TROISIEME ADJT AU MAIRE DE LA COMMUNE","QUATRIEME ADJT AU MAIRE DE LA COMMUNE","MAIRE TITULAIRE PREMIER ARRD","MAIRE TITULAIRE DEUXIEME ARRD","MAIRE TITULAIRE TROISIEME ARRD","MAIRE TITULAIRE QUATRIEME ARRD","PREMIER ADJT AU MAIRE 1ER ARRD","DEUXIEME ADJT AU MAIRE 1ER ARRD","PREMIER ADJT AU MAIRE 2EME ARRD","DEUXIEME ADJT AU MAIRE 2EME ARRD","PREMIER ADJT AU MAIRE 3EME ARRD","DEUXIEME ADJT AU MAIRE 3EME ARRD","PREMIER ADJT AU MAIRE 4EME ARRD","DEUXIEME ADJT AU MAIRE 4EME ARRD","DIRECTEUR DE CABINET DU MAIRE DE LA COMMUNE","CHARGE DE MISSION DU MAIRE DE LA COMMUNE","ATTACHE DE CABINET DU MAIRE DE LA COMMUNE","CONSEILLER DU MAIRE DE LA COMMUNE","SECRETAIRE PARTICULIERE DU MAIRE DE LA COMMUNE","CHEF DE CABINET DU MAIRE DE LA COMMUNE","CUISINIER/CUISINIERE"],
+      DEFAULT_IMPUTATIONS: ["62.101","62.102","62.103","62.120","62.121","62.122","62.123","62.130","62.131","62.132","62.133","62.134","62.199","62.201","62.202","62.203","62.220","62.221","62.222","62.230","62.231","62.232","62.240","62.241","62.242","62.290","62.291","62.292","62.299","62.301","62.302","62.303","62.320","62.321","62.322","62.399","62.401","62.411","62.413","62.419","62.420","62.421","62.422","62.423","62.424","62.425","62.429","62.440","62.441","62.442","62.443","62.499","62.501","62.502","62.520","62.529","62.599","62.601","62.602","62.603","62.604","62.605","62.606","62.607","62.620","62.621","62.622","62.630","62.640","62.699","62.701","62.799","62.999"],
+      currentPermissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false },
+
+      newUser: { username: '', password: '', role: 'consultation', permissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false } },
       newAgent: {
         nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
         date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
@@ -1133,13 +1615,14 @@
         this.$watch('search', () => this.refreshIcons());
         this.$watch('filterStatut', () => this.refreshIcons());
         this.$watch('selectedAgent', () => this.refreshIcons());
+        this.$watch('editingAgent', () => this.refreshIcons());
         this.$watch('mobileMenuOpen', () => this.refreshIcons());
         this.$watch('agents', () => this.refreshIcons());
 
         if (localStorage.getItem('m_user')) {
           this.currentUser = localStorage.getItem('m_user');
           this.userRole = localStorage.getItem('m_role') || 'consultation';
-          try { this.currentPermissions = JSON.parse(localStorage.getItem('m_perms')) || this.DEFAULT_PERMISSIONS; } catch (e) { this.currentPermissions = this.DEFAULT_PERMISSIONS; }
+          this.currentPermissions = this.loadStoredPermissions();
           this.isLoggedIn = true;
           await this.loadAllData();
         }
@@ -1228,10 +1711,12 @@
       },
 
       openMotif(id) {
+        if (!this.hasPerm('modification')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier un agent."); return; }
         this.motifBox = { show: true, agentId: id, value: '' };
         this.refreshIcons();
       },
       async confirmMotif() {
+        if (!this.hasPerm('modification')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier un agent."); return; }
         if (!this.motifBox.value.trim()) {
           this.showToast('error', 'Veuillez indiquer un motif avant de valider.');
           return;
@@ -1249,9 +1734,45 @@
         return labels[role] || role;
       },
 
+      // --- MIGRATION / NORMALISATION DES PERMISSIONS ---
+      // Convertit un objet de permissions (éventuellement issu de l'ancien schéma
+      // add_agent/edit_agent/delete_agent/manage_structure/export_data, ou incomplet)
+      // vers le schéma actuel à 6 cases à cocher. Garantit qu'aucun compte existant
+      // ne perd ses droits lors de la migration.
+      normalizePermissions(p) {
+        p = p || {};
+        return {
+          lecture: p.lecture !== undefined ? !!p.lecture : true,
+          ecriture: p.ecriture !== undefined ? !!p.ecriture : !!p.manage_structure,
+          modification: p.modification !== undefined ? !!p.modification : !!p.edit_agent,
+          suppression: p.suppression !== undefined ? !!p.suppression : !!p.delete_agent,
+          gestion_agents: p.gestion_agents !== undefined ? !!p.gestion_agents : !!p.add_agent,
+          configuration_systeme: p.configuration_systeme !== undefined ? !!p.configuration_systeme : !!p.manage_structure
+        };
+      },
+
+      // --- RÉCUPÉRATION / SAUVEGARDE DE L'ÉTAT DES PERMISSIONS (session locale) ---
+      loadStoredPermissions() {
+        try {
+          return this.normalizePermissions(JSON.parse(localStorage.getItem('m_perms')));
+        } catch (e) {
+          return { ...this.DEFAULT_PERMISSIONS };
+        }
+      },
+      persistPermissions(perms) {
+        localStorage.setItem('m_perms', JSON.stringify(perms));
+      },
+
+      // --- FONCTION CENTRALE D'INSPECTION DES DROITS DE L'UTILISATEUR CONNECTÉ ---
+      // C'est cette fonction qui pilote le masquage/affichage dynamique de
+      // chaque bouton sensible de l'interface : x-show="hasPerm('gestion_agents')", etc.
       hasPerm(key) {
         if (this.userRole === 'admin_general') return true;
         return !!(this.currentPermissions && this.currentPermissions[key]);
+      },
+      // Alias explicite demandé pour la lisibilité métier des templates
+      canShowButton(key) {
+        return this.hasPerm(key);
       },
 
       async login() {
@@ -1267,10 +1788,10 @@
             this.showToast('error', 'Identifiants de la Mairie incorrects.');
           } else {
             const user = data[0];
-            const perms = user.permissions || this.DEFAULT_PERMISSIONS;
+            const perms = this.normalizePermissions(user.permissions);
             localStorage.setItem('m_user', user.username);
             localStorage.setItem('m_role', user.role);
-            localStorage.setItem('m_perms', JSON.stringify(perms));
+            this.persistPermissions(perms);
             this.currentUser = user.username;
             this.userRole = user.role;
             this.currentPermissions = perms;
@@ -1303,7 +1824,7 @@
           if (this.userRole === 'admin_general') {
             let { data: usrs, error: usrsErr } = await supabaseClient.from('utilisateurs').select('id, username, role, permissions');
             if (usrsErr) { console.error('Erreur chargement utilisateurs:', usrsErr); }
-            this.usersList = (usrs || []).map(u => ({ ...u, permissions: u.permissions || { ...this.DEFAULT_PERMISSIONS } }));
+            this.usersList = (usrs || []).map(u => ({ ...u, permissions: this.normalizePermissions(u.permissions) }));
           }
         } catch (e) { console.error(e); this.showToast('error', 'Erreur réseau lors du chargement.'); }
         this.refreshIcons();
@@ -1323,6 +1844,7 @@
       },
 
       reactivateAgent(id) {
+        if (!this.hasPerm('modification')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier un agent."); return; }
         this.openConfirm("Réactiver cet agent et le remettre 'En service' ?", async () => {
           const { error } = await supabaseClient.from('agents').update({ statut: 'En service', motif_inactif: null }).eq('id', id);
           if (error) { this.showToast('error', 'Échec: ' + error.message); return; }
@@ -1333,6 +1855,10 @@
       },
 
       async createUser() {
+        if (!this.hasPerm('gestion_agents')) {
+          this.showToast('error', "Vous n'avez pas l'autorisation de créer/inviter un utilisateur.");
+          return;
+        }
         if (!this.newUser.username.trim() || !this.newUser.password.trim()) return;
         const { error } = await supabaseClient.from('utilisateurs').insert([{ username: this.newUser.username, password_clair: this.newUser.password, role: this.newUser.role, permissions: this.newUser.permissions }]);
         if (error) { this.showToast('error', 'Échec création utilisateur: ' + error.message); return; }
@@ -1341,11 +1867,19 @@
         this.showToast('success', 'Utilisateur créé avec succès.');
       },
       async updateUserPermissions(u) {
+        if (!this.hasPerm('gestion_agents')) {
+          this.showToast('error', "Vous n'avez pas l'autorisation de gérer les comptes utilisateurs.");
+          return;
+        }
         const { error } = await supabaseClient.from('utilisateurs').update({ role: u.role, permissions: u.permissions }).eq('id', u.id);
         if (error) { this.showToast('error', 'Échec mise à jour des droits: ' + error.message); return; }
         this.showToast('success', "Droits d'accès mis à jour pour " + u.username + '.');
       },
       deleteUser(id) {
+        if (!this.hasPerm('suppression')) {
+          this.showToast('error', "Vous n'avez pas l'autorisation de supprimer.");
+          return;
+        }
         this.openConfirm("Révoquer cet utilisateur ?", async () => {
           const { error } = await supabaseClient.from('utilisateurs').delete().eq('id', id);
           if (error) { this.showToast('error', 'Échec: ' + error.message); return; }
@@ -1370,6 +1904,7 @@
         this.expandedServices = this.expandedServices.includes(id) ? this.expandedServices.filter(x => x !== id) : [...this.expandedServices, id];
       },
       async addDirection() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
         if (!this.newDirectionName.trim()) return;
         const { error } = await supabaseClient.from('structures').insert([{ type: 'direction', nom: this.newDirectionName.toUpperCase(), parent_id: null }]);
         if (error) { this.showToast('error', 'Échec ajout direction: ' + error.message); return; }
@@ -1378,6 +1913,7 @@
         this.showToast('success', 'Direction ajoutée.');
       },
       async addService(dirId) {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
         const name = (this.newServiceNameMap[dirId] || '').trim();
         if (!name) return;
         const { error } = await supabaseClient.from('structures').insert([{ type: 'service', nom: name, parent_id: dirId }]);
@@ -1388,6 +1924,7 @@
         this.showToast('success', 'Service ajouté.');
       },
       async addSection(serviceId) {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
         const name = (this.newSectionNameMap[serviceId] || '').trim();
         if (!name) return;
         const { error } = await supabaseClient.from('structures').insert([{ type: 'section', nom: name, parent_id: serviceId }]);
@@ -1398,7 +1935,8 @@
         this.showToast('success', 'Section ajoutée.');
       },
       deleteStructure(id, type) {
-        const labels = { direction: 'cette direction (et tous ses services/sections)', service: 'ce service (et toutes ses sections)', section: 'cette section' };
+        if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
+        const labels = { direction: 'cette direction (et tous ses services/sections)', service: 'ce service (et toutes ses sections)', section: 'cette section', poste: 'ce poste', imputation: 'cette imputation' };
         this.openConfirm(`Supprimer ${labels[type] || 'cet élément'} ?`, async () => {
           let lastError = null;
           if (type === 'direction') {
@@ -1419,6 +1957,59 @@
           await this.loadAllData();
           this.showToast('success', 'Suppression effectuée.');
         });
+      },
+
+      // --- POSTES & IMPUTATIONS (listes déroulantes de la fiche agent) ---
+      // Réutilise la table 'structures' (type = 'poste' / 'imputation', parent_id = null),
+      // exactement comme pour les directions/services/sections : gérable en ajout/suppression
+      // depuis Outils Admin, sans toucher au schéma de la base.
+      postes() {
+        return this.structures.filter(s => s.type === 'poste').sort((a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr'));
+      },
+      imputations() {
+        return this.structures.filter(s => s.type === 'imputation').sort((a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr'));
+      },
+      async addPoste() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
+        const name = this.newPosteName.trim();
+        if (!name) return;
+        if (this.postes().some(p => p.nom.toLowerCase() === name.toLowerCase())) { this.showToast('error', 'Ce poste existe déjà.'); return; }
+        const { error } = await supabaseClient.from('structures').insert([{ type: 'poste', nom: name, parent_id: null }]);
+        if (error) { this.showToast('error', 'Échec ajout poste: ' + error.message); return; }
+        this.newPosteName = '';
+        await this.loadAllData();
+        this.showToast('success', 'Poste ajouté.');
+      },
+      async addImputation() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
+        const name = this.newImputationName.trim();
+        if (!name) return;
+        if (this.imputations().some(i => i.nom.toLowerCase() === name.toLowerCase())) { this.showToast('error', 'Cette imputation existe déjà.'); return; }
+        const { error } = await supabaseClient.from('structures').insert([{ type: 'imputation', nom: name, parent_id: null }]);
+        if (error) { this.showToast('error', "Échec ajout imputation: " + error.message); return; }
+        this.newImputationName = '';
+        await this.loadAllData();
+        this.showToast('success', 'Imputation ajoutée.');
+      },
+      async importDefaultPostes() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
+        const existing = new Set(this.postes().map(p => p.nom.toLowerCase()));
+        const rows = this.DEFAULT_POSTES.filter(n => !existing.has(n.toLowerCase())).map(n => ({ type: 'poste', nom: n, parent_id: null }));
+        if (!rows.length) { this.showToast('success', 'Liste des postes déjà à jour.'); return; }
+        const { error } = await supabaseClient.from('structures').insert(rows);
+        if (error) { this.showToast('error', 'Échec import postes: ' + error.message); return; }
+        await this.loadAllData();
+        this.showToast('success', rows.length + ' poste(s) importé(s).');
+      },
+      async importDefaultImputations() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
+        const existing = new Set(this.imputations().map(i => i.nom.toLowerCase()));
+        const rows = this.DEFAULT_IMPUTATIONS.filter(n => !existing.has(n.toLowerCase())).map(n => ({ type: 'imputation', nom: n, parent_id: null }));
+        if (!rows.length) { this.showToast('success', 'Liste des imputations déjà à jour.'); return; }
+        const { error } = await supabaseClient.from('structures').insert(rows);
+        if (error) { this.showToast('error', 'Échec import imputations: ' + error.message); return; }
+        await this.loadAllData();
+        this.showToast('success', rows.length + ' imputation(s) importée(s).');
       },
 
       // --- CASCADE POUR LE FORMULAIRE DE SAISIE AGENT ---
@@ -1466,9 +2057,21 @@
         } else {
           this.newAgent.valeur_indiciaire = null;
         }
+        this.newAgent.salaire_base_actuel = this.calcSalaireBase(this.newAgent.valeur_indiciaire);
+      },
+
+      // Calcule le salaire de base à partir de la valeur indiciaire, selon la formule
+      // définie par SALAIRE_BASE_COEFFICIENT et SALAIRE_BASE_FIXE ci-dessus.
+      calcSalaireBase(valeurIndiciaire) {
+        if (valeurIndiciaire === null || valeurIndiciaire === undefined || valeurIndiciaire === '') return 0;
+        return (Number(valeurIndiciaire) * this.SALAIRE_BASE_COEFFICIENT) + this.SALAIRE_BASE_FIXE;
       },
 
       async saveAgent() {
+        if (!this.hasPerm('gestion_agents')) {
+          this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter un agent.");
+          return;
+        }
         if (!this.newAgent.nom_prenom.trim()) {
           this.showToast('error', 'Le nom et prénom sont obligatoires.');
           return;
@@ -1504,6 +2107,7 @@
         this.showToast('success', 'Fiche agent enregistrée avec succès.');
       },
       deleteAgent(id) {
+        if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
         this.openConfirm("Supprimer définitivement cet agent ? Cette action est irréversible.", async () => {
           const { error } = await supabaseClient.from('agents').delete().eq('id', id);
           if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
@@ -1523,6 +2127,7 @@
       },
 
       exportExcel() {
+        if (!this.hasPerm('lecture')) { this.showToast('error', "Vous n'avez pas l'autorisation de lire/exporter les données."); return; }
         if (!this.agents.length) { this.showToast('error', 'Aucun agent à exporter.'); return; }
         const rows = this.agents.map(a => ({
           'Matricule': a.matricule || '',
@@ -1580,7 +2185,87 @@
         if (s === 'Inactif') return 'bg-rose-100 text-rose-800';
         return 'bg-navy-100 text-navy-800';
       },
-      viewAgent(a) { this.selectedAgent = a; }
+      viewAgent(a) { this.selectedAgent = a; },
+
+      // --- MODIFICATION D'UN AGENT (réservé aux comptes avec la permission modification) ---
+      openEditAgent(agent) {
+        if (!this.hasPerm('modification')) {
+          this.showToast('error', "Vous n'avez pas l'autorisation de modifier un agent.");
+          return;
+        }
+        // Copie de travail : les modifications ne sont enregistrées qu'à la validation du formulaire
+        this.editingAgent = JSON.parse(JSON.stringify(agent));
+        const dir = this.directions().find(d => d.nom === agent.direction);
+        this.editFormDirId = dir ? dir.id : '';
+        const svc = dir ? this.servicesOf(dir.id).find(s => s.nom === agent.service) : null;
+        this.editFormServiceId = svc ? svc.id : '';
+        this.refreshIcons();
+      },
+
+      servicesForEditForm() {
+        return this.servicesOf(this.editFormDirId);
+      },
+      sectionsForEditForm() {
+        return this.sectionsOf(this.editFormServiceId);
+      },
+      onEditFormDirectionChange() {
+        const dir = this.directions().find(d => String(d.id) === String(this.editFormDirId));
+        this.editingAgent.direction = dir ? dir.nom : '';
+        this.editFormServiceId = '';
+        this.editingAgent.service = '';
+        this.editingAgent.section = '';
+      },
+      onEditFormServiceChange() {
+        const svc = this.servicesForEditForm().find(s => String(s.id) === String(this.editFormServiceId));
+        this.editingAgent.service = svc ? svc.nom : '';
+        this.editingAgent.section = '';
+      },
+      categorieOptionsEdit() {
+        const map = { A: ['A6', 'A5'], B: ['B4', 'B3'], C: ['C2', 'C1'] };
+        return map[this.editingAgent?.hierarchie] || [];
+      },
+      updateRetraiteEdit() {
+        this.editingAgent.date_retraite = this.calcDateRetraite(this.editingAgent.date_naissance);
+      },
+      updateIndiciaireEdit() {
+        const { categorie, classe, echelon } = this.editingAgent;
+        if (categorie && classe && echelon) {
+          const key = categorie + '|' + classe + '|' + echelon;
+          this.editingAgent.valeur_indiciaire = this.indiciaryGrid[key] ?? null;
+        } else {
+          this.editingAgent.valeur_indiciaire = null;
+        }
+        this.editingAgent.salaire_base_actuel = this.calcSalaireBase(this.editingAgent.valeur_indiciaire);
+      },
+      async updateAgent() {
+        if (!this.hasPerm('modification')) {
+          this.showToast('error', "Vous n'avez pas l'autorisation de modifier un agent.");
+          return;
+        }
+        if (!this.editingAgent.nom_prenom.trim()) {
+          this.showToast('error', 'Le nom et prénom sont obligatoires.');
+          return;
+        }
+        this.updateRetraiteEdit();
+        this.updateIndiciaireEdit();
+        this.isLoading = true;
+        // Le salaire d'entrée et le poste à l'embauche sont figés à la création de la fiche :
+        // ils sont exclus de la mise à jour quoi qu'il arrive côté formulaire.
+        const { id, salaire_entree, poste_embauche, ...updatableFields } = this.editingAgent;
+        const { error } = await supabaseClient.from('agents').update(updatableFields).eq('id', id);
+        this.isLoading = false;
+        if (error) {
+          console.error('Erreur mise à jour agent:', error);
+          this.showToast('error', "Échec de la mise à jour: " + error.message + (error.hint ? ' (' + error.hint + ')' : ''));
+          return;
+        }
+        this.editingAgent = null;
+        this.selectedAgent = null;
+        this.editFormDirId = '';
+        this.editFormServiceId = '';
+        await this.loadAllData();
+        this.showToast('success', 'Fiche agent mise à jour avec succès.');
+      }
     }
   }
 </script>
