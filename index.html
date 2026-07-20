@@ -421,6 +421,64 @@
             </div>
           </div>
 
+          <!-- DERNIER AGENT EMBAUCHÉ -->
+          <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100 mb-6" x-show="dernierAgentEmbauche()">
+            <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
+              <i data-lucide="user-plus" class="w-4 h-4 text-navy-500"></i> Dernier agent embauché
+            </h3>
+            <template x-if="dernierAgentEmbauche()">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div class="w-14 h-14 bg-navy-50 text-navy-700 rounded-full flex items-center justify-center text-lg font-bold border-2 border-gold-300 shrink-0"
+                     x-text="(dernierAgentEmbauche().nom_prenom || '?').charAt(0).toUpperCase()"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 flex-1 text-sm">
+                  <div>
+                    <span class="text-slate-400 block text-xs">Nom et prénom</span>
+                    <strong class="text-navy-900" x-text="dernierAgentEmbauche().nom_prenom || '—'"></strong>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block text-xs">Matricule</span>
+                    <strong class="text-navy-900" x-text="dernierAgentEmbauche().matricule || 'non assigné'"></strong>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block text-xs">Date d'embauche</span>
+                    <strong class="text-navy-900" x-text="dernierAgentEmbauche().date_embauche || '—'"></strong>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block text-xs">Date de naissance</span>
+                    <strong class="text-navy-900" x-text="dernierAgentEmbauche().date_naissance || '—'"></strong>
+                  </div>
+                </div>
+                <button type="button" @click="viewAgent(dernierAgentEmbauche())" class="text-xs font-bold text-navy-700 bg-navy-50 hover:bg-navy-100 transition px-3 py-1.5 rounded-lg shrink-0">
+                  Voir la fiche
+                </button>
+              </div>
+            </template>
+          </div>
+
+          <!-- RÉPARTITION HOMMES / FEMMES (totaux) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Effectif Hommes</p>
+                <h3 class="text-3xl font-display font-extrabold text-navy-900 mt-1" x-text="countBySexe('M')">0</h3>
+                <p class="text-[11px] text-slate-400 mt-1">Agents actifs</p>
+              </div>
+              <span class="w-12 h-12 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+                <i data-lucide="mars" class="w-6 h-6"></i>
+              </span>
+            </div>
+            <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Effectif Femmes</p>
+                <h3 class="text-3xl font-display font-extrabold text-navy-900 mt-1" x-text="countBySexe('F')">0</h3>
+                <p class="text-[11px] text-slate-400 mt-1">Agents actifs</p>
+              </div>
+              <span class="w-12 h-12 rounded-xl bg-pink-50 text-pink-700 flex items-center justify-center shrink-0">
+                <i data-lucide="venus" class="w-6 h-6"></i>
+              </span>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
             <div class="lg:col-span-3 bg-white p-5 rounded-2xl shadow-card border border-slate-100">
               <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
@@ -454,6 +512,74 @@
                   </div>
                 </template>
               </div>
+            </div>
+          </div>
+
+          <!-- RÉPARTITION PAR EFFECTIF -->
+          <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100 mt-4">
+            <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
+              <i data-lucide="layout-grid" class="w-4 h-4 text-navy-500"></i> Répartition par effectif
+            </h3>
+            <div class="space-y-3" x-show="repartitionEffectifs().length">
+              <template x-for="[nom, total] in repartitionEffectifs()" :key="nom">
+                <div>
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="font-medium text-slate-600" x-text="nom"></span>
+                    <span class="font-bold text-navy-900" x-text="total"></span>
+                  </div>
+                  <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-gold-500 to-gold-300 rounded-full" :style="'width:' + (total / Math.max(...repartitionEffectifs().map(d => d[1])) * 100) + '%'"></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <p x-show="!repartitionEffectifs().length" class="text-xs text-slate-400 text-center py-8">Aucune donnée à afficher pour le moment.</p>
+          </div>
+
+          <!-- RÉPARTITION HOMMES / FEMMES PAR EFFECTIF ET PAR DIRECTION -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+            <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100">
+              <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
+                <i data-lucide="users-round" class="w-4 h-4 text-navy-500"></i> Hommes / Femmes par effectif
+              </h3>
+              <div class="space-y-2" x-show="repartitionSexeParEffectif().length">
+                <div class="flex items-center justify-between text-[10px] font-bold uppercase text-slate-400 px-3">
+                  <span>Effectif</span>
+                  <span class="flex items-center gap-3"><span class="text-sky-600">Hommes</span><span class="text-pink-600">Femmes</span></span>
+                </div>
+                <template x-for="[nom, h, f] in repartitionSexeParEffectif()" :key="'eff-sexe-' + nom">
+                  <div class="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-slate-50">
+                    <span class="font-medium text-slate-600" x-text="nom"></span>
+                    <span class="flex items-center gap-4">
+                      <span class="font-bold text-sky-700" x-text="h"></span>
+                      <span class="font-bold text-pink-700" x-text="f"></span>
+                    </span>
+                  </div>
+                </template>
+              </div>
+              <p x-show="!repartitionSexeParEffectif().length" class="text-xs text-slate-400 text-center py-8">Aucune donnée à afficher pour le moment.</p>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100">
+              <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
+                <i data-lucide="users-round" class="w-4 h-4 text-navy-500"></i> Hommes / Femmes par direction
+              </h3>
+              <div class="space-y-2" x-show="repartitionSexeParDirection().length">
+                <div class="flex items-center justify-between text-[10px] font-bold uppercase text-slate-400 px-3">
+                  <span>Direction</span>
+                  <span class="flex items-center gap-3"><span class="text-sky-600">Hommes</span><span class="text-pink-600">Femmes</span></span>
+                </div>
+                <template x-for="[nom, h, f] in repartitionSexeParDirection()" :key="'dir-sexe-' + nom">
+                  <div class="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-slate-50">
+                    <span class="font-medium text-slate-600" x-text="nom"></span>
+                    <span class="flex items-center gap-4">
+                      <span class="font-bold text-sky-700" x-text="h"></span>
+                      <span class="font-bold text-pink-700" x-text="f"></span>
+                    </span>
+                  </div>
+                </template>
+              </div>
+              <p x-show="!repartitionSexeParDirection().length" class="text-xs text-slate-400 text-center py-8">Aucune donnée à afficher pour le moment.</p>
             </div>
           </div>
         </div>
@@ -1178,8 +1304,8 @@
         <div class="min-w-0">
           <h3 class="font-display font-bold text-lg text-white truncate" x-text="selectedAgent?.nom_prenom"></h3>
           <div class="flex flex-wrap items-center gap-2 mt-1.5">
-            <span class="text-xs font-mono bg-white/10 text-gold-200 px-2 py-0.5 rounded font-bold" x-text="'Matricule : ' + (selectedAgent?.matricule || 'non assigné')"></span>
-            <span :class="getBadgeClass(selectedAgent?.statut)" class="text-xs px-2 py-0.5 rounded-full font-medium" x-text="selectedAgent?.statut"></span>
+            <span class="text-sm font-mono bg-white/10 text-gold-200 px-2 py-0.5 rounded font-bold" x-text="'Matricule : ' + (selectedAgent?.matricule || 'non assigné')"></span>
+            <span :class="getBadgeClass(selectedAgent?.statut)" class="text-sm px-2 py-0.5 rounded-full font-medium" x-text="selectedAgent?.statut"></span>
           </div>
         </div>
       </div>
@@ -1187,7 +1313,7 @@
 
     <div class="p-6">
       <template x-if="selectedAgent?.statut === 'Inactif'">
-        <div class="mb-5 bg-rose-50 border border-rose-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div class="mb-5 bg-rose-50 border border-rose-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
           <div>
             <strong class="text-rose-900 block font-bold flex items-center gap-1.5"><i data-lucide="ban" class="w-3.5 h-3.5"></i> Agent actuellement inactif</strong>
             <span class="text-slate-600" x-text="'Motif enregistré : ' + (selectedAgent?.motif_inactif || 'non précisé')"></span>
@@ -1199,9 +1325,9 @@
         </div>
       </template>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm">
         <div class="flex items-start gap-2">
-          <i data-lucide="cake" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="cake" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div>
             <span class="text-slate-400 block">Date de naissance</span>
             <strong x-text="selectedAgent?.date_naissance || '—'"></strong>
@@ -1211,15 +1337,15 @@
           </div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="calendar-clock" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="calendar-clock" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Date de départ en retraite</span><strong class="capitalize" x-text="selectedAgent?.date_retraite ? formatMoisAnnee(selectedAgent.date_retraite) : '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="phone" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="phone" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Téléphone</span><strong x-text="selectedAgent?.telephone || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="calendar-check" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="calendar-check" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div>
             <span class="text-slate-400 block">Date d'embauche</span>
             <strong x-text="selectedAgent?.date_embauche || '—'"></strong>
@@ -1229,57 +1355,57 @@
           </div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="map-pin" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="map-pin" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Lieu de naissance</span><strong x-text="selectedAgent?.lieu_naissance || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="baby" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="baby" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Nombre d'enfants</span><strong x-text="selectedAgent?.nbr_enfants ?? '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="graduation-cap" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="graduation-cap" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Diplômes</span><strong x-text="selectedAgent?.diplomes || '—'"></strong></div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs mt-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm mt-3">
         <div class="flex items-start gap-2">
-          <i data-lucide="building-2" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="building-2" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Direction affectée</span><strong x-text="selectedAgent?.direction || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="briefcase" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="briefcase" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Service</span><strong x-text="selectedAgent?.service || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="layers" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="layers" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Section</span><strong x-text="selectedAgent?.section || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="badge-check" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="badge-check" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Poste actuel</span><strong x-text="selectedAgent?.poste || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="users" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="users" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Effectif</span><strong x-text="selectedAgent?.effectif || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="lock" class="w-4 h-4 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Poste à l'embauche <span class="text-[9px] normal-case text-slate-300">(non modifiable)</span></span><strong x-text="selectedAgent?.poste_embauche || '—'"></strong></div>
+          <i data-lucide="lock" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Poste à l'embauche <span class="text-[11px] normal-case text-slate-300">(non modifiable)</span></span><strong x-text="selectedAgent?.poste_embauche || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="map" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <i data-lucide="map" class="w-5 h-5 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Localisation</span><strong x-text="selectedAgent?.localisation || '—'"></strong></div>
         </div>
         <template x-if="hasPerm('voir_salaire')">
           <div class="flex items-start gap-2">
-            <i data-lucide="wallet" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+            <i data-lucide="wallet" class="w-5 h-5 text-navy-400 mt-0.5"></i>
             <div><span class="text-slate-400 block">Rémunération de base</span><strong x-text="(selectedAgent?.salaire_base_actuel || 0).toLocaleString('fr-FR') + ' FCFA'"></strong></div>
           </div>
         </template>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs mt-3">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm mt-3">
         <div>
           <span class="text-slate-400 block mb-1">Hiérarchie</span>
           <strong class="text-navy-900" x-text="selectedAgent?.hierarchie || '—'"></strong>
@@ -2014,6 +2140,53 @@
           map[d] = (map[d] || 0) + 1;
         });
         return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      },
+
+      // --- STATISTIQUES SUPPLÉMENTAIRES DU TABLEAU DE BORD ---
+      // Agent le plus récemment embauché (toutes dates d'embauche renseignées confondues).
+      dernierAgentEmbauche() {
+        const avecDate = this.agents.filter(a => a.date_embauche);
+        if (!avecDate.length) return null;
+        return [...avecDate].sort((a, b) => new Date(b.date_embauche) - new Date(a.date_embauche))[0];
+      },
+
+      // Répartition des effectifs actifs par type d'effectif (APM, CDD, MONP, ...).
+      repartitionEffectifs() {
+        const map = {};
+        this.agents.filter(a => a.statut !== 'Inactif').forEach(a => {
+          const e = a.effectif || 'Non renseigné';
+          map[e] = (map[e] || 0) + 1;
+        });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]);
+      },
+
+      // Nombre d'agents actifs pour un sexe donné ('M' ou 'F').
+      countBySexe(sexe) {
+        return this.agents.filter(a => a.statut !== 'Inactif' && a.sexe === sexe).length;
+      },
+
+      // Répartition Hommes / Femmes par type d'effectif : [[nomEffectif, nbHommes, nbFemmes], ...]
+      repartitionSexeParEffectif() {
+        const map = {};
+        this.agents.filter(a => a.statut !== 'Inactif').forEach(a => {
+          const e = a.effectif || 'Non renseigné';
+          if (!map[e]) map[e] = { M: 0, F: 0 };
+          if (a.sexe === 'M') map[e].M++;
+          else if (a.sexe === 'F') map[e].F++;
+        });
+        return Object.entries(map).map(([nom, c]) => [nom, c.M, c.F]).sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
+      },
+
+      // Répartition Hommes / Femmes par direction : [[nomDirection, nbHommes, nbFemmes], ...]
+      repartitionSexeParDirection() {
+        const map = {};
+        this.agents.filter(a => a.statut !== 'Inactif').forEach(a => {
+          const d = a.direction || 'Non affecté';
+          if (!map[d]) map[d] = { M: 0, F: 0 };
+          if (a.sexe === 'M') map[d].M++;
+          else if (a.sexe === 'F') map[d].F++;
+        });
+        return Object.entries(map).map(([nom, c]) => [nom, c.M, c.F]).sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
       },
 
       reactivateAgent(id) {
