@@ -829,10 +829,6 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Salaire d'entrée (FCFA)</label>
-                  <input type="number" min="0" x-model.number="newAgent.salaire_entree" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
-                </div>
-                <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Salaire de base actuel (FCFA)</label>
                   <input type="text" :value="calcSalaireBase(newAgent.valeur_indiciaire).toLocaleString('fr-FR')" readonly class="w-full px-3 py-2 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm cursor-not-allowed">
                   <p class="text-[10px] text-slate-400 mt-1">Calculé automatiquement : valeur indiciaire × 500 + 80 000 FCFA</p>
@@ -2222,6 +2218,112 @@
         return (Number(valeurIndiciaire) * this.SALAIRE_BASE_COEFFICIENT) + this.SALAIRE_BASE_FIXE;
       },
 
+      // --- GESTION DES ERREURS DE CHAMP (mise en évidence rouge + message explicite) ---
+      // Correspondance nom technique de colonne -> libellé lisible affiché à l'utilisateur.
+      FIELD_LABELS: {
+        nom_prenom: 'Nom et Prénom', matricule: 'Matricule', nationalite: 'Nationalité',
+        sexe: 'Sexe', situation_familiale: 'Situation familiale', nbr_enfants: "Nombre d'enfants",
+        date_naissance: 'Date de naissance', lieu_naissance: 'Lieu de naissance',
+        date_embauche: "Date d'embauche", date_retraite: 'Date de retraite',
+        direction: 'Direction', service: 'Service', section: 'Section', localisation: 'Localisation',
+        poste: 'Poste', poste_embauche: "Poste à l'embauche", effectif: 'Effectif',
+        n_cnss: 'N° CNSS', n_cnamgs: 'N° CNAMGS', telephone: 'Téléphone', diplomes: 'Diplômes',
+        fin_contrat1: 'Fin de contrat 1', debut_contrat2: 'Début de contrat 2', fin_contrat2: 'Fin de contrat 2',
+        hierarchie: 'Hiérarchie', categorie: 'Catégorie', classe: 'Classe', echelon: 'Échelon',
+        valeur_indiciaire: 'Valeur indiciaire', statut: 'Statut', imputation: 'Imputation',
+        salaire_entree: "Salaire d'entrée", salaire_base_actuel: 'Salaire de base actuel',
+        prime_logement: 'Prime logement', prime_transport: 'Prime transport',
+        indemnite_fonction: 'Indemnité de fonction', indemnite_sujetion: 'Indemnité de sujétion',
+        prime_etat_civil: 'Prime état civil', solidarite_nationale: 'Solidarité nationale',
+        prime_risque: 'Prime risque', prime_salissure: 'Prime salissure', prime_perception: 'Prime perception',
+        autres_primes: 'Autres primes', motif_inactif: 'Motif inactif'
+      },
+
+      // Trouve dans le DOM le champ de saisie lié à "prefix.field" (ex: "newAgent.date_naissance"),
+      // quel que soit le modificateur Alpine utilisé (x-model, x-model.number, x-model.trim...).
+      findFormField(prefix, field) {
+        if (!field) return null;
+        const target = prefix + '.' + field;
+        const candidats = document.querySelectorAll('input, select, textarea');
+        for (const el of candidats) {
+          for (const attr of el.attributes) {
+            if (attr.name.startsWith('x-model') && attr.value.trim() === target) return el;
+          }
+        }
+        return null;
+      },
+
+      // Essaie de déduire le nom de la colonne en cause à partir du message d'erreur Postgres/Supabase.
+      parseDbErrorField(error) {
+        const texte = [error.message, error.details, error.hint].filter(Boolean).join(' ');
+        let m = texte.match(/column "([a-zA-Z0-9_]+)"/);
+        if (m) return m[1];
+        m = texte.match(/constraint "agents_([a-zA-Z0-9_]+?)_(key|check|fkey)"/);
+        if (m) return m[1];
+        return null;
+      },
+
+      // Construit un message d'erreur clair et compréhensible pour l'utilisateur.
+      friendlyDbErrorMessage(error, field) {
+        const label = this.FIELD_LABELS[field] || field || 'un champ';
+        switch (error.code) {
+          case '23502': return `Le champ "${label}" est obligatoire et ne peut pas être vide.`;
+          case '23505': return `Cette valeur du champ "${label}" est déjà utilisée par un autre agent.`;
+          case '22007':
+          case '22008': return `Le format saisi pour "${label}" n'est pas valide.`;
+          case '22P02': return `La valeur saisie pour "${label}" n'est pas du bon type.`;
+          case '23514': return `La valeur saisie pour "${label}" n'est pas autorisée.`;
+          case '23503': return `La valeur choisie pour "${label}" n'existe pas ou n'est plus valide.`;
+          default: return field ? `Erreur sur le champ "${label}" : ${error.message}` : error.message;
+        }
+      },
+
+      // Supprime toute mise en évidence d'erreur précédente sur le formulaire "prefix" (newAgent / editingAgent).
+      clearFieldErrors(prefix) {
+        document.querySelectorAll('.field-error-msg[data-form="' + prefix + '"]').forEach(p => p.remove());
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+          for (const attr of el.attributes) {
+            if (attr.name.startsWith('x-model') && attr.value.trim().startsWith(prefix + '.')) {
+              el.classList.remove('border-red-500', 'ring-2', 'ring-red-300');
+            }
+          }
+        });
+      },
+
+      // Met le champ en rouge et affiche un message d'explication juste en dessous.
+      // Le style est retiré automatiquement dès que l'utilisateur modifie le champ.
+      highlightFieldError(prefix, field, message) {
+        const el = this.findFormField(prefix, field);
+        if (!el) return false;
+        el.classList.add('border-red-500', 'ring-2', 'ring-red-300');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+        const p = document.createElement('p');
+        p.className = 'field-error-msg text-red-600 text-xs mt-1';
+        p.setAttribute('data-form', prefix);
+        p.textContent = message;
+        el.insertAdjacentElement('afterend', p);
+        const nettoyer = () => {
+          el.classList.remove('border-red-500', 'ring-2', 'ring-red-300');
+          p.remove();
+          el.removeEventListener('input', nettoyer);
+          el.removeEventListener('change', nettoyer);
+        };
+        el.addEventListener('input', nettoyer);
+        el.addEventListener('change', nettoyer);
+        return true;
+      },
+
+      // Point d'entrée unique appelé quand Supabase renvoie une erreur d'enregistrement : identifie
+      // le champ fautif si possible, le met en évidence, et affiche un toast avec un message clair.
+      handleSaveError(error, prefix) {
+        console.error('Erreur Supabase (' + prefix + '):', error);
+        const field = this.parseDbErrorField(error);
+        const message = this.friendlyDbErrorMessage(error, field);
+        const highlighted = field ? this.highlightFieldError(prefix, field, message) : false;
+        this.showToast('error', highlighted ? message : ("Échec de l'enregistrement : " + error.message + (error.hint ? ' (' + error.hint + ')' : '')));
+      },
+
       async saveAgent() {
         if (!this.hasPerm('gestion_agents')) {
           this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter un agent.");
@@ -2245,15 +2347,23 @@
         this.updateRetraite();
         this.updateIndiciaire();
         this.newAgent.poste_embauche = this.newAgent.poste;
+        // Le salaire d'entrée n'est plus saisi manuellement : il est figé, à la création,
+        // sur la valeur du salaire de base actuel (calculé depuis la valeur indiciaire).
+        this.newAgent.salaire_entree = this.newAgent.salaire_base_actuel;
+        this.clearFieldErrors('newAgent');
         this.isLoading = true;
         // date_retraite est une colonne calculée automatiquement côté base (à partir de
         // date_naissance) : on ne l'envoie pas à l'insertion, sous peine d'erreur Postgres.
         const { date_retraite, ...agentToInsert } = this.newAgent;
+        // Les champs de date laissés vides valent "" côté formulaire, mais Postgres exige
+        // null (et non "") pour une colonne de type date : on convertit donc "" -> null.
+        ['date_naissance', 'date_embauche', 'fin_contrat1', 'debut_contrat2', 'fin_contrat2'].forEach(champ => {
+          if (agentToInsert[champ] === '') agentToInsert[champ] = null;
+        });
         const { data, error } = await supabaseClient.from('agents').insert([agentToInsert]).select();
         this.isLoading = false;
         if (error) {
-          console.error('Erreur insertion agent:', error);
-          this.showToast('error', "Échec de l'enregistrement: " + error.message + (error.hint ? ' (' + error.hint + ')' : ''));
+          this.handleSaveError(error, 'newAgent');
           return;
         }
         this.newAgent = {
@@ -2589,17 +2699,22 @@
         }
         this.updateRetraiteEdit();
         this.updateIndiciaireEdit();
+        this.clearFieldErrors('editingAgent');
         this.isLoading = true;
         // Le salaire d'entrée et le poste à l'embauche sont figés à la création de la fiche :
         // ils sont exclus de la mise à jour quoi qu'il arrive côté formulaire.
         // date_retraite est une colonne calculée automatiquement côté base (à partir de
         // date_naissance) : on ne l'envoie jamais non plus, sous peine d'erreur Postgres.
         const { id, salaire_entree, poste_embauche, date_retraite, ...updatableFields } = this.editingAgent;
+        // Les champs de date laissés vides valent "" côté formulaire, mais Postgres exige
+        // null (et non "") pour une colonne de type date : on convertit donc "" -> null.
+        ['date_naissance', 'date_embauche', 'fin_contrat1', 'debut_contrat2', 'fin_contrat2'].forEach(champ => {
+          if (updatableFields[champ] === '') updatableFields[champ] = null;
+        });
         const { error } = await supabaseClient.from('agents').update(updatableFields).eq('id', id);
         this.isLoading = false;
         if (error) {
-          console.error('Erreur mise à jour agent:', error);
-          this.showToast('error', "Échec de la mise à jour: " + error.message + (error.hint ? ' (' + error.hint + ')' : ''));
+          this.handleSaveError(error, 'editingAgent');
           return;
         }
         this.editingAgent = null;
