@@ -531,6 +531,7 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Noms & prénoms</label>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nom et Prénom <span class="text-rose-500">*</span></label>
                   <input type="text" x-model="newAgent.nom_prenom" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 </div>
                 <div>
@@ -540,8 +541,8 @@
               </div>
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                 <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Sexe</label>
-                  <select x-model="newAgent.sexe" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Sexe <span class="text-rose-500">*</span></label>
+                  <select x-model="newAgent.sexe" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">—</option><option value="M">M</option><option value="F">F</option>
                   </select>
                 </div>
@@ -566,8 +567,8 @@
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
                 <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date de naissance</label>
-                  <input type="date" x-model="newAgent.date_naissance" @change="updateRetraite()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date de naissance <span class="text-rose-500">*</span></label>
+                  <input type="date" x-model="newAgent.date_naissance" @change="updateRetraite()" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Lieu de naissance</label>
@@ -605,8 +606,8 @@
               <p class="text-xs font-bold uppercase text-navy-700 mb-3 tracking-wide flex items-center gap-1.5"><i data-lucide="building-2" class="w-3.5 h-3.5"></i> Affectation</p>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Direction</label>
-                  <select x-model="agentFormDirId" @change="onFormDirectionChange()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Direction <span class="text-rose-500">*</span></label>
+                  <select x-model="agentFormDirId" @change="onFormDirectionChange()" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">Sélectionner</option>
                     <template x-for="d in directions()" :key="d.id">
                       <option :value="d.id" x-text="d.nom"></option>
@@ -614,8 +615,8 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Service</label>
-                  <select x-model="agentFormServiceId" @change="onFormServiceChange()" :disabled="!agentFormDirId" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Service <span class="text-rose-500">*</span></label>
+                  <select x-model="agentFormServiceId" @change="onFormServiceChange()" :disabled="!agentFormDirId" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
                     <option value="">Sélectionner</option>
                     <template x-for="s in servicesForForm()" :key="s.id">
                       <option :value="s.id" x-text="s.nom"></option>
@@ -634,20 +635,29 @@
                   <p x-show="agentFormServiceId && !sectionsForForm().length" class="text-[10px] text-slate-400 mt-1">Aucune section configurée pour ce service.</p>
                 </div>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Localisation</label>
                   <input type="text" x-model="newAgent.localisation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 </div>
                 <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste</label>
-                  <select x-model="newAgent.poste" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste <span class="text-rose-500">*</span></label>
+                  <select x-model="newAgent.poste" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">— Sélectionner un poste —</option>
                     <template x-for="p in postes()" :key="p.id">
                       <option :value="p.nom" x-text="p.nom"></option>
                     </template>
                   </select>
                   <p class="text-[10px] text-slate-400 mt-1">Sera aussi enregistré comme « poste à l'embauche », figé dans la fiche de l'agent. Gérez la liste des postes depuis Outils Admin.</p>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Effectif <span class="text-rose-500">*</span></label>
+                  <select x-model="newAgent.effectif" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                    <option value="">— Sélectionner un effectif —</option>
+                    <template x-for="ef in EFFECTIF_TYPES" :key="ef.code">
+                      <option :value="ef.nom" x-text="ef.code + ' — ' + ef.nom"></option>
+                    </template>
+                  </select>
                 </div>
               </div>
             </div>
@@ -656,12 +666,12 @@
               <p class="text-xs font-bold uppercase text-navy-700 mb-3 tracking-wide flex items-center gap-1.5"><i data-lucide="file-signature" class="w-3.5 h-3.5"></i> Emploi & contrat</p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date d'embauche</label>
-                  <input type="date" x-model="newAgent.date_embauche" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date d'embauche <span class="text-rose-500">*</span></label>
+                  <input type="date" x-model="newAgent.date_embauche" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 </div>
                 <div>
-                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Imputation</label>
-                  <select x-model="newAgent.imputation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Imputation <span class="text-rose-500">*</span></label>
+                  <select x-model="newAgent.imputation" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">— Sélectionner une imputation —</option>
                     <template x-for="imp in imputations()" :key="imp.id">
                       <option :value="imp.nom" x-text="imp.nom"></option>
@@ -1133,6 +1143,10 @@
           <div><span class="text-slate-400 block">Poste actuel</span><strong x-text="selectedAgent?.poste || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
+          <i data-lucide="users" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Effectif</span><strong x-text="selectedAgent?.effectif || '—'"></strong></div>
+        </div>
+        <div class="flex items-start gap-2">
           <i data-lucide="lock" class="w-4 h-4 text-navy-400 mt-0.5"></i>
           <div><span class="text-slate-400 block">Poste à l'embauche <span class="text-[9px] normal-case text-slate-300">(non modifiable)</span></span><strong x-text="selectedAgent?.poste_embauche || '—'"></strong></div>
         </div>
@@ -1318,7 +1332,7 @@
               </select>
             </div>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
             <div>
               <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Localisation</label>
               <input type="text" x-model="editingAgent.localisation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
@@ -1329,6 +1343,15 @@
                 <option value="">— Sélectionner un poste —</option>
                 <template x-for="p in postes()" :key="p.id">
                   <option :value="p.nom" x-text="p.nom"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Effectif <span class="text-rose-500">*</span></label>
+              <select x-model="editingAgent.effectif" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <option value="">— Sélectionner un effectif —</option>
+                <template x-for="ef in EFFECTIF_TYPES" :key="ef.code">
+                  <option :value="ef.nom" x-text="ef.code + ' — ' + ef.nom"></option>
                 </template>
               </select>
             </div>
@@ -1592,13 +1615,29 @@
       // Une fois importées, ces valeurs vivent en base (table 'structures') et sont gérées via addPoste/addImputation/deleteStructure.
       DEFAULT_POSTES: ["AGENT ADMINISTRATIF","AGENT AU PROTOCOLE","AGENT COMPTABLE","AGENT DE LIAISON","AGENT DE RECOUVREMENT","AGENT DE SECURITE","AGENT ESPACE VERT","AGENT ESPACES FUNEBRE","AGENT ETAT CIVIL","AGENT HYGIENE","AGENT LOGISTIQUE","AGENT MIS A DISPOSITION","AGENT PERCEPTEUR","AGENT POINT A TEMPS","AGENT SOCIAL","AGENT TECHNIQUE","AGENT TECHNIQUE FONCIER","AIDE DE CAMP","AMBULANCIER","ARCHIVISTE","ASSISTANT TECHNIQUE","CHARGE DE MISSION","CHAUDRONNIER","CHAUFFEUR","CHAUFFEUR POIDS LOURD","CHEF DE QUARTIER","CHEF DE SECTION","CHEF DE SERVICE","CONSEILLER","CONSERVATEUR","CUISINIERE","DELEGUE SPECIAL","DIRECTEUR DE CABINET","DIRECTRICE JARDIN","EBOUEUR","EDUCATRICE PRESCOLAIRE","ELECTRICIEN","GESTIONNAIRE ETAT SPECIAL","GOUVERNANTE","HTM","INFIRMIERE","INFIRMIERE MAJOR","INSPECTEUR GENERAL","JARDINIER","JURISTE","Maçon","MAGASINIER","MECANICIEN","MEDECIN","MENUISIER","MONITRICE PRESCOLAIRE","PEINTRE","PLOMBIER","POLICIER","QHSE","RECEPTIONNISTE","SECRETAIRE","SECRETAIRE COMPTABLE","SOUDEUR","SURVEILLANTE DES PARCS ATTRACTIONS","SURVEILLANTE PRESCOLAIRE","TECHNICIEN FROID ET CLIMATISATION","TECHNICIENNE DE LABORATOIRE","TECHNICIENNE DE SURFACE","VULGANISATEUR","INFORMATICIEN","MAIRE DE LA COMMUNE","PREMIER ADJT AU MAIRE DE LA COMMUNE","DEUXIEME ADJT AU MAIRE DE LA COMMUNE","TROISIEME ADJT AU MAIRE DE LA COMMUNE","QUATRIEME ADJT AU MAIRE DE LA COMMUNE","MAIRE TITULAIRE PREMIER ARRD","MAIRE TITULAIRE DEUXIEME ARRD","MAIRE TITULAIRE TROISIEME ARRD","MAIRE TITULAIRE QUATRIEME ARRD","PREMIER ADJT AU MAIRE 1ER ARRD","DEUXIEME ADJT AU MAIRE 1ER ARRD","PREMIER ADJT AU MAIRE 2EME ARRD","DEUXIEME ADJT AU MAIRE 2EME ARRD","PREMIER ADJT AU MAIRE 3EME ARRD","DEUXIEME ADJT AU MAIRE 3EME ARRD","PREMIER ADJT AU MAIRE 4EME ARRD","DEUXIEME ADJT AU MAIRE 4EME ARRD","DIRECTEUR DE CABINET DU MAIRE DE LA COMMUNE","CHARGE DE MISSION DU MAIRE DE LA COMMUNE","ATTACHE DE CABINET DU MAIRE DE LA COMMUNE","CONSEILLER DU MAIRE DE LA COMMUNE","SECRETAIRE PARTICULIERE DU MAIRE DE LA COMMUNE","CHEF DE CABINET DU MAIRE DE LA COMMUNE","CUISINIER/CUISINIERE"],
       DEFAULT_IMPUTATIONS: ["62.101","62.102","62.103","62.120","62.121","62.122","62.123","62.130","62.131","62.132","62.133","62.134","62.199","62.201","62.202","62.203","62.220","62.221","62.222","62.230","62.231","62.232","62.240","62.241","62.242","62.290","62.291","62.292","62.299","62.301","62.302","62.303","62.320","62.321","62.322","62.399","62.401","62.411","62.413","62.419","62.420","62.421","62.422","62.423","62.424","62.425","62.429","62.440","62.441","62.442","62.443","62.499","62.501","62.502","62.520","62.529","62.599","62.601","62.602","62.603","62.604","62.605","62.606","62.607","62.620","62.621","62.622","62.630","62.640","62.699","62.701","62.799","62.999"],
+
+      // --- TYPES D'EFFECTIF (catégorie administrative de l'agent) ---
+      // Liste fermée fournie par la Mairie (numérotation officielle 1 à 12, le 7 n'existe pas).
+      EFFECTIF_TYPES: [
+        { code: 1,  nom: 'APM' },
+        { code: 2,  nom: 'CDD' },
+        { code: 3,  nom: 'PERSONNEL DES CABINETS' },
+        { code: 4,  nom: 'POLICE MUNICIPALE' },
+        { code: 5,  nom: 'EN ATTENTE' },
+        { code: 6,  nom: 'ELUS LOCAUX' },
+        { code: 8,  nom: 'MONP' },
+        { code: 9,  nom: 'CHEFS DE QUARTIERS' },
+        { code: 10, nom: 'RENTE VIAGIAIRE' },
+        { code: 11, nom: 'DELEGATION SPECIALE' },
+        { code: 12, nom: 'FONCTIONNAIRE' }
+      ],
       currentPermissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false },
 
       newUser: { username: '', password: '', role: 'consultation', permissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false } },
       newAgent: {
         nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
         date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
-        direction: '', service: '', section: '', localisation: '', poste: '', poste_embauche: '',
+        direction: '', service: '', section: '', localisation: '', poste: '', poste_embauche: '', effectif: '',
         n_cnss: '', n_cnamgs: '', telephone: '', diplomes: '',
         fin_contrat1: '', debut_contrat2: '', fin_contrat2: '',
         hierarchie: '', categorie: '', classe: '', echelon: '', valeur_indiciaire: null,
@@ -2072,15 +2111,29 @@
           this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter un agent.");
           return;
         }
-        if (!this.newAgent.nom_prenom.trim()) {
-          this.showToast('error', 'Le nom et prénom sont obligatoires.');
+        const manquants = [];
+        if (!this.newAgent.nom_prenom.trim()) manquants.push('Nom et Prénom');
+        if (!this.newAgent.sexe) manquants.push('Sexe');
+        if (!this.newAgent.date_naissance) manquants.push('Date de naissance');
+        if (!this.agentFormDirId) manquants.push('Direction');
+        if (!this.agentFormServiceId) manquants.push('Service');
+        if (!this.newAgent.date_embauche) manquants.push("Date d'embauche");
+        if (!this.newAgent.imputation) manquants.push('Imputation');
+        if (!this.newAgent.poste) manquants.push('Poste');
+        if (!this.newAgent.effectif) manquants.push('Effectif');
+        if (!this.newAgent.statut) manquants.push('Statut initial');
+        if (manquants.length) {
+          this.showToast('error', 'Champs obligatoires manquants : ' + manquants.join(', '));
           return;
         }
         this.updateRetraite();
         this.updateIndiciaire();
         this.newAgent.poste_embauche = this.newAgent.poste;
         this.isLoading = true;
-        const { data, error } = await supabaseClient.from('agents').insert([this.newAgent]).select();
+        // date_retraite est une colonne calculée automatiquement côté base (à partir de
+        // date_naissance) : on ne l'envoie pas à l'insertion, sous peine d'erreur Postgres.
+        const { date_retraite, ...agentToInsert } = this.newAgent;
+        const { data, error } = await supabaseClient.from('agents').insert([agentToInsert]).select();
         this.isLoading = false;
         if (error) {
           console.error('Erreur insertion agent:', error);
@@ -2090,7 +2143,7 @@
         this.newAgent = {
           nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
           date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
-          direction: '', service: '', section: '', localisation: '', poste: '', poste_embauche: '',
+          direction: '', service: '', section: '', localisation: '', poste: '', poste_embauche: '', effectif: '',
           n_cnss: '', n_cnamgs: '', telephone: '', diplomes: '',
           fin_contrat1: '', debut_contrat2: '', fin_contrat2: '',
           hierarchie: '', categorie: '', classe: '', echelon: '', valeur_indiciaire: null,
@@ -2246,12 +2299,18 @@
           this.showToast('error', 'Le nom et prénom sont obligatoires.');
           return;
         }
+        if (!this.editingAgent.effectif) {
+          this.showToast('error', "L'effectif de l'agent est obligatoire.");
+          return;
+        }
         this.updateRetraiteEdit();
         this.updateIndiciaireEdit();
         this.isLoading = true;
         // Le salaire d'entrée et le poste à l'embauche sont figés à la création de la fiche :
         // ils sont exclus de la mise à jour quoi qu'il arrive côté formulaire.
-        const { id, salaire_entree, poste_embauche, ...updatableFields } = this.editingAgent;
+        // date_retraite est une colonne calculée automatiquement côté base (à partir de
+        // date_naissance) : on ne l'envoie jamais non plus, sous peine d'erreur Postgres.
+        const { id, salaire_entree, poste_embauche, date_retraite, ...updatableFields } = this.editingAgent;
         const { error } = await supabaseClient.from('agents').update(updatableFields).eq('id', id);
         this.isLoading = false;
         if (error) {
