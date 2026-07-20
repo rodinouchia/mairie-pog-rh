@@ -1202,11 +1202,17 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
         <div class="flex items-start gap-2">
           <i data-lucide="cake" class="w-4 h-4 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Date de naissance</span><strong x-text="selectedAgent?.date_naissance || '—'"></strong></div>
+          <div>
+            <span class="text-slate-400 block">Date de naissance</span>
+            <strong x-text="selectedAgent?.date_naissance || '—'"></strong>
+            <template x-if="selectedAgent?.date_naissance && calcAge(selectedAgent.date_naissance) !== null">
+              <span class="text-slate-400" x-text="' (' + calcAge(selectedAgent.date_naissance) + ' ans)'"></span>
+            </template>
+          </div>
         </div>
         <div class="flex items-start gap-2">
           <i data-lucide="calendar-clock" class="w-4 h-4 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Date de départ en retraite</span><strong x-text="selectedAgent?.date_retraite || '—'"></strong></div>
+          <div><span class="text-slate-400 block">Date de départ en retraite</span><strong class="capitalize" x-text="selectedAgent?.date_retraite ? formatMoisAnnee(selectedAgent.date_retraite) : '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
           <i data-lucide="phone" class="w-4 h-4 text-navy-400 mt-0.5"></i>
@@ -1214,7 +1220,25 @@
         </div>
         <div class="flex items-start gap-2">
           <i data-lucide="calendar-check" class="w-4 h-4 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Date d'embauche</span><strong x-text="selectedAgent?.date_embauche || '—'"></strong></div>
+          <div>
+            <span class="text-slate-400 block">Date d'embauche</span>
+            <strong x-text="selectedAgent?.date_embauche || '—'"></strong>
+            <template x-if="selectedAgent?.date_embauche && calcAnciennete(selectedAgent.date_embauche) !== null">
+              <span class="text-slate-400" x-text="' (' + calcAnciennete(selectedAgent.date_embauche) + ')'"></span>
+            </template>
+          </div>
+        </div>
+        <div class="flex items-start gap-2">
+          <i data-lucide="map-pin" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Lieu de naissance</span><strong x-text="selectedAgent?.lieu_naissance || '—'"></strong></div>
+        </div>
+        <div class="flex items-start gap-2">
+          <i data-lucide="baby" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Nombre d'enfants</span><strong x-text="selectedAgent?.nbr_enfants ?? '—'"></strong></div>
+        </div>
+        <div class="flex items-start gap-2">
+          <i data-lucide="graduation-cap" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Diplômes</span><strong x-text="selectedAgent?.diplomes || '—'"></strong></div>
         </div>
       </div>
 
@@ -1244,9 +1268,15 @@
           <div><span class="text-slate-400 block">Poste à l'embauche <span class="text-[9px] normal-case text-slate-300">(non modifiable)</span></span><strong x-text="selectedAgent?.poste_embauche || '—'"></strong></div>
         </div>
         <div class="flex items-start gap-2">
-          <i data-lucide="wallet" class="w-4 h-4 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Rémunération de base</span><strong x-text="(selectedAgent?.salaire_base_actuel || 0).toLocaleString('fr-FR') + ' FCFA'"></strong></div>
+          <i data-lucide="map" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+          <div><span class="text-slate-400 block">Localisation</span><strong x-text="selectedAgent?.localisation || '—'"></strong></div>
         </div>
+        <template x-if="hasPerm('voir_salaire')">
+          <div class="flex items-start gap-2">
+            <i data-lucide="wallet" class="w-4 h-4 text-navy-400 mt-0.5"></i>
+            <div><span class="text-slate-400 block">Rémunération de base</span><strong x-text="(selectedAgent?.salaire_base_actuel || 0).toLocaleString('fr-FR') + ' FCFA'"></strong></div>
+          </div>
+        </template>
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs mt-3">
@@ -1708,9 +1738,10 @@
         { key: 'modification',           label: 'Modification',            desc: 'Éditer le contenu existant (fiches agents, statuts)',             icon: 'pencil' },
         { key: 'suppression',            label: 'Suppression',             desc: 'Effacer des données définitivement',                              icon: 'trash-2' },
         { key: 'gestion_agents',         label: 'Gestion des Agents',      desc: "Droit exclusif de créer/inviter un nouvel agent ou utilisateur",   icon: 'user-plus' },
-        { key: 'configuration_systeme',  label: 'Configuration Système',   desc: "Modifier les paramètres et l'organigramme de l'application",      icon: 'settings' }
+        { key: 'configuration_systeme',  label: 'Configuration Système',   desc: "Modifier les paramètres et l'organigramme de l'application",      icon: 'settings' },
+        { key: 'voir_salaire',           label: 'Voir le Salaire',         desc: "Voir la rémunération de base d'un agent sur sa fiche détail",     icon: 'wallet' }
       ],
-      DEFAULT_PERMISSIONS: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false },
+      DEFAULT_PERMISSIONS: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false },
 
       // --- LISTES INITIALES POSTES / IMPUTATIONS (issues du référentiel Excel de la Mairie) ---
       // Utilisées uniquement pour le bouton "Importer la liste initiale" côté Outils Admin.
@@ -1733,9 +1764,9 @@
         { code: 11, nom: 'DELEGATION SPECIALE' },
         { code: 12, nom: 'FONCTIONNAIRE' }
       ],
-      currentPermissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false },
+      currentPermissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false },
 
-      newUser: { username: '', password: '', role: 'consultation', permissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false } },
+      newUser: { username: '', password: '', role: 'consultation', permissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false } },
       newAgent: {
         nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
         date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
@@ -1888,7 +1919,8 @@
           modification: p.modification !== undefined ? !!p.modification : !!p.edit_agent,
           suppression: p.suppression !== undefined ? !!p.suppression : !!p.delete_agent,
           gestion_agents: p.gestion_agents !== undefined ? !!p.gestion_agents : !!p.add_agent,
-          configuration_systeme: p.configuration_systeme !== undefined ? !!p.configuration_systeme : !!p.manage_structure
+          configuration_systeme: p.configuration_systeme !== undefined ? !!p.configuration_systeme : !!p.manage_structure,
+          voir_salaire: p.voir_salaire !== undefined ? !!p.voir_salaire : false
         };
       },
 
@@ -2197,6 +2229,47 @@
       },
       updateRetraite() {
         this.newAgent.date_retraite = this.calcDateRetraite(this.newAgent.date_naissance);
+      },
+
+      // --- CHAMPS CALCULÉS POUR L'AFFICHAGE (fiche détail de l'agent) ---
+      // Âge en années révolues, calculé à partir de la date de naissance.
+      calcAge(dateNaissance) {
+        if (!dateNaissance) return null;
+        const naissance = new Date(dateNaissance);
+        if (isNaN(naissance.getTime())) return null;
+        const aujourdhui = new Date();
+        let age = aujourdhui.getFullYear() - naissance.getFullYear();
+        const pasEncoreAnniversaire =
+          aujourdhui.getMonth() < naissance.getMonth() ||
+          (aujourdhui.getMonth() === naissance.getMonth() && aujourdhui.getDate() < naissance.getDate());
+        if (pasEncoreAnniversaire) age--;
+        return age >= 0 ? age : null;
+      },
+      // Ancienneté (durée depuis la date d'embauche), affichée sous forme "X ans, Y mois".
+      calcAnciennete(dateEmbauche) {
+        if (!dateEmbauche) return null;
+        const debut = new Date(dateEmbauche);
+        if (isNaN(debut.getTime())) return null;
+        const aujourdhui = new Date();
+        if (debut > aujourdhui) return null;
+        let annees = aujourdhui.getFullYear() - debut.getFullYear();
+        let mois = aujourdhui.getMonth() - debut.getMonth();
+        if (aujourdhui.getDate() < debut.getDate()) mois--;
+        if (mois < 0) { annees--; mois += 12; }
+        const partAnnees = annees > 0 ? annees + (annees > 1 ? ' ans' : ' an') : '';
+        const partMois = mois > 0 ? mois + (mois > 1 ? ' mois' : ' mois') : '';
+        if (partAnnees && partMois) return partAnnees + ', ' + partMois;
+        if (partAnnees) return partAnnees;
+        if (partMois) return partMois;
+        return "Moins d'un mois";
+      },
+      // Formate une date "YYYY-MM-DD" en "mois année" en français (ex: "mars 2027").
+      formatMoisAnnee(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        const moisNoms = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+        return moisNoms[d.getMonth()] + ' ' + d.getFullYear();
       },
 
       // --- VALEUR INDICIAIRE AUTOMATIQUE (grille officielle) ---
