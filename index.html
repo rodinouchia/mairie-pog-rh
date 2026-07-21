@@ -1052,13 +1052,13 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div class="relative md:col-span-2">
                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <input type="text" x-model="journalSearch" placeholder="Rechercher par utilisateur, agent, matricule, champ..."
+                <input type="text" x-model.debounce.400ms="journalSearch" @input="journalGoToPage(1)" placeholder="Rechercher par utilisateur, agent, matricule, champ..."
                        class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
               </div>
               <div class="flex items-center gap-2">
                 <div class="relative flex-1">
                   <i data-lucide="filter" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                  <select x-model="journalFilterAction" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <select x-model="journalFilterAction" @change="journalGoToPage(1)" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">Toutes les actions</option>
                     <option value="creation">Création</option>
                     <option value="modification">Modification</option>
@@ -1066,7 +1066,7 @@
                     <option value="suppression">Suppression</option>
                   </select>
                 </div>
-                <button type="button" @click="loadJournal()" title="Rafraîchir" class="shrink-0 p-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                <button type="button" @click="loadJournal(journalPage)" title="Rafraîchir" class="shrink-0 p-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
                   <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-500"></i>
                 </button>
               </div>
@@ -1092,7 +1092,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <template x-for="e in filteredJournal()" :key="e.id">
+                  <template x-for="e in journalEntries" :key="e.id">
                     <tr class="border-t border-slate-100 hover:bg-slate-50/60 align-top">
                       <td class="p-3 whitespace-nowrap text-slate-500" x-text="new Date(e.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })"></td>
                       <td class="p-3 font-medium text-navy-900 whitespace-nowrap" x-text="e.utilisateur || '—'"></td>
@@ -1111,7 +1111,36 @@
                   </template>
                 </tbody>
               </table>
-              <p x-show="!filteredJournal().length" class="text-xs text-slate-400 text-center py-10">Aucune entrée à afficher pour le moment.</p>
+              <p x-show="!journalEntries.length" class="text-xs text-slate-400 text-center py-10">Aucune entrée à afficher pour le moment.</p>
+            </div>
+
+            <!-- PAGINATION -->
+            <div x-show="!journalLoading && journalTotalCount > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+              <p class="text-[11px] text-slate-400">
+                <span x-text="((journalPage - 1) * journalPageSize) + 1"></span>–<span x-text="Math.min(journalPage * journalPageSize, journalTotalCount)"></span>
+                sur <span x-text="journalTotalCount"></span> entrée(s)
+              </p>
+              <div class="flex items-center gap-1.5">
+                <button type="button" @click="journalGoToPage(1)" :disabled="journalPage === 1"
+                        class="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed">
+                  <i data-lucide="chevrons-left" class="w-4 h-4"></i>
+                </button>
+                <button type="button" @click="journalGoToPage(journalPage - 1)" :disabled="journalPage === 1"
+                        class="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed">
+                  <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+                <span class="text-xs font-semibold text-navy-900 px-2">
+                  Page <span x-text="journalPage"></span> / <span x-text="journalTotalPages()"></span>
+                </span>
+                <button type="button" @click="journalGoToPage(journalPage + 1)" :disabled="journalPage >= journalTotalPages()"
+                        class="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed">
+                  <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+                <button type="button" @click="journalGoToPage(journalTotalPages())" :disabled="journalPage >= journalTotalPages()"
+                        class="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed">
+                  <i data-lucide="chevrons-right" class="w-4 h-4"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1914,6 +1943,9 @@
       journalLoading: false,
       journalSearch: '',
       journalFilterAction: '',
+      journalPage: 1,
+      journalPageSize: 50,
+      journalTotalCount: 0,
       usersList: [],
 
       newDirectionName: '',
@@ -2749,22 +2781,44 @@
         if (taches.length) await Promise.all(taches);
       },
 
-      // Charge les dernières entrées du journal (nécessite la permission "voir_journal").
-      async loadJournal() {
+      // Charge une page du journal (nécessite la permission "voir_journal").
+      // La recherche et le filtre par action sont appliqués côté base de données,
+      // afin que la pagination reste cohérente même avec des milliers d'entrées.
+      async loadJournal(page = this.journalPage) {
         if (!this.hasPerm('voir_journal')) return;
         this.journalLoading = true;
-        const { data, error } = await supabaseClient
-          .from('journal_activite')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(500);
+        this.journalPage = Math.max(1, page);
+        const from = (this.journalPage - 1) * this.journalPageSize;
+        const to = from + this.journalPageSize - 1;
+
+        let query = supabaseClient.from('journal_activite').select('*', { count: 'exact' });
+        if (this.journalFilterAction) query = query.eq('action', this.journalFilterAction);
+        const q = this.journalSearch.trim();
+        if (q) {
+          const motif = '%' + q.replace(/[%_]/g, '') + '%';
+          query = query.or(`utilisateur.ilike.${motif},agent_nom_prenom.ilike.${motif},agent_matricule.ilike.${motif},champ.ilike.${motif}`);
+        }
+        query = query.order('created_at', { ascending: false }).range(from, to);
+
+        const { data, error, count } = await query;
         this.journalLoading = false;
         if (error) {
           console.error('Erreur chargement journal:', error);
           this.journalEntries = [];
+          this.journalTotalCount = 0;
           return;
         }
         this.journalEntries = data || [];
+        this.journalTotalCount = count || 0;
+        this.refreshIcons();
+      },
+
+      journalTotalPages() {
+        return Math.max(1, Math.ceil(this.journalTotalCount / this.journalPageSize));
+      },
+      journalGoToPage(page) {
+        const p = Math.min(Math.max(1, page), this.journalTotalPages());
+        if (p !== this.journalPage) this.loadJournal(p);
       },
 
       // Libellé lisible pour le type d'action journalisée.
@@ -2783,18 +2837,6 @@
       },
 
       // Applique la recherche et le filtre par type d'action sur le journal chargé.
-      filteredJournal() {
-        const q = this.journalSearch.toLowerCase();
-        return this.journalEntries.filter(e => {
-          const matchSearch = !q ||
-            (e.utilisateur || '').toLowerCase().includes(q) ||
-            (e.agent_nom_prenom || '').toLowerCase().includes(q) ||
-            (e.agent_matricule || '').toLowerCase().includes(q) ||
-            (e.champ || '').toLowerCase().includes(q);
-          const matchAction = this.journalFilterAction ? e.action === this.journalFilterAction : true;
-          return matchSearch && matchAction;
-        });
-      },
 
       async saveAgent() {
         if (!this.hasPerm('gestion_agents')) {
