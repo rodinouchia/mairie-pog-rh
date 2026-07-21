@@ -273,6 +273,11 @@
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition">
         <i data-lucide="users" class="w-[18px] h-[18px]"></i> <span>Annuaire des agents</span>
       </button>
+      <button x-show="hasPerm('voir_journal')" @click="currentTab = 'journal'; mobileMenuOpen = false; loadJournal()"
+              :class="currentTab === 'journal' ? 'active bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white'"
+              class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition">
+        <i data-lucide="history" class="w-[18px] h-[18px]"></i> <span>Journal d'Activité</span>
+      </button>
       <button x-show="userRole === 'admin_general' || hasPerm('configuration_systeme')" @click="currentTab = 'outils'; mobileMenuOpen = false"
               :class="currentTab === 'outils' ? 'active bg-gold-500/20 text-gold-300' : 'text-gold-300/70 hover:bg-gold-500/10 hover:text-gold-200'"
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition mt-3 border-t border-white/10 pt-4">
@@ -615,10 +620,10 @@
           </div>
 
           <div class="bg-white p-4 rounded-2xl shadow-card border border-slate-100 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <div class="relative">
                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <input type="text" x-model="search" placeholder="Rechercher par nom, prénom, matricule..."
+                <input type="text" x-model="search" placeholder="Rechercher par nom, prénom, matricule, poste..."
                        class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
               </div>
               <div class="relative">
@@ -630,6 +635,24 @@
                   <option value="En détachement">En détachement</option>
                   <option value="Mis en disponibilité">Mis en disponibilité</option>
                   <option value="Inactif">Inactif (archives / sorties)</option>
+                </select>
+              </div>
+              <div class="relative">
+                <i data-lucide="layout-grid" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <select x-model="filterEffectif" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <option value="">Tous les effectifs</option>
+                  <template x-for="ef in EFFECTIF_TYPES" :key="'filtre-eff-' + ef.code">
+                    <option :value="ef.nom" x-text="ef.code + ' — ' + ef.nom"></option>
+                  </template>
+                </select>
+              </div>
+              <div class="relative">
+                <i data-lucide="building-2" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <select x-model="filterDirection" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <option value="">Toutes les directions</option>
+                  <template x-for="d in directions()" :key="'filtre-dir-' + d.id">
+                    <option :value="d.nom" x-text="d.nom"></option>
+                  </template>
                 </select>
               </div>
             </div>
@@ -1016,6 +1039,81 @@
           </form>
           </div>
           </template>
+        </div>
+
+        <!-- JOURNAL D'ACTIVITÉ -->
+        <div x-show="currentTab === 'journal' && hasPerm('voir_journal')" x-cloak>
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950">Journal d'Activité</h2>
+          </div>
+          <p class="text-xs text-slate-500 mb-4">Historique des créations, modifications, changements de statut et suppressions de fiches agents (500 dernières entrées).</p>
+
+          <div class="bg-white p-4 rounded-2xl shadow-card border border-slate-100 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div class="relative md:col-span-2">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" x-model="journalSearch" placeholder="Rechercher par utilisateur, agent, matricule, champ..."
+                       class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="relative flex-1">
+                  <i data-lucide="filter" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  <select x-model="journalFilterAction" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                    <option value="">Toutes les actions</option>
+                    <option value="creation">Création</option>
+                    <option value="modification">Modification</option>
+                    <option value="statut">Changement de statut</option>
+                    <option value="suppression">Suppression</option>
+                  </select>
+                </div>
+                <button type="button" @click="loadJournal()" title="Rafraîchir" class="shrink-0 p-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                  <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-500"></i>
+                </button>
+              </div>
+            </div>
+
+            <div x-show="journalLoading" class="flex flex-col items-center justify-center py-12">
+              <i data-lucide="loader-2" class="w-6 h-6 text-navy-800 animate-spin mb-2"></i>
+              <p class="text-slate-500 text-xs">Chargement du journal...</p>
+            </div>
+
+            <div x-show="!journalLoading" class="overflow-x-auto rounded-xl border border-slate-100">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 font-semibold uppercase text-slate-500">
+                  <tr>
+                    <th class="p-3">Date / Heure</th>
+                    <th class="p-3">Utilisateur</th>
+                    <th class="p-3">Agent concerné</th>
+                    <th class="p-3">Action</th>
+                    <th class="p-3">Champ modifié</th>
+                    <th class="p-3">Ancienne valeur</th>
+                    <th class="p-3">Nouvelle valeur</th>
+                    <th class="p-3">Détails</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="e in filteredJournal()" :key="e.id">
+                    <tr class="border-t border-slate-100 hover:bg-slate-50/60 align-top">
+                      <td class="p-3 whitespace-nowrap text-slate-500" x-text="new Date(e.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })"></td>
+                      <td class="p-3 font-medium text-navy-900 whitespace-nowrap" x-text="e.utilisateur || '—'"></td>
+                      <td class="p-3 whitespace-nowrap">
+                        <span x-text="e.agent_nom_prenom || '—'"></span>
+                        <span class="text-slate-400" x-show="e.agent_matricule" x-text="' (' + e.agent_matricule + ')'"></span>
+                      </td>
+                      <td class="p-3 whitespace-nowrap">
+                        <span :class="journalActionClass(e.action)" class="px-2 py-0.5 rounded-full font-medium" x-text="journalActionLabel(e.action)"></span>
+                      </td>
+                      <td class="p-3 text-slate-600" x-text="e.champ || '—'"></td>
+                      <td class="p-3 text-rose-600 max-w-[160px] truncate" :title="e.ancienne_valeur" x-text="e.ancienne_valeur || '—'"></td>
+                      <td class="p-3 text-emerald-700 font-medium max-w-[160px] truncate" :title="e.nouvelle_valeur" x-text="e.nouvelle_valeur || '—'"></td>
+                      <td class="p-3 text-slate-500 max-w-[200px] truncate" :title="e.details" x-text="e.details || '—'"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+              <p x-show="!filteredJournal().length" class="text-xs text-slate-400 text-center py-10">Aucune entrée à afficher pour le moment.</p>
+            </div>
+          </div>
         </div>
 
         <!-- OUTILS ADMIN -->
@@ -1795,6 +1893,8 @@
       mobileMenuOpen: false,
       search: '',
       filterStatut: '',
+      filterEffectif: '',
+      filterDirection: '',
       selectedAgent: null,
       editingAgent: null,
       editFormDirId: '',
@@ -1810,6 +1910,10 @@
 
       agents: [],
       structures: [],
+      journalEntries: [],
+      journalLoading: false,
+      journalSearch: '',
+      journalFilterAction: '',
       usersList: [],
 
       newDirectionName: '',
@@ -1865,9 +1969,10 @@
         { key: 'suppression',            label: 'Suppression',             desc: 'Effacer des données définitivement',                              icon: 'trash-2' },
         { key: 'gestion_agents',         label: 'Gestion des Agents',      desc: "Droit exclusif de créer/inviter un nouvel agent ou utilisateur",   icon: 'user-plus' },
         { key: 'configuration_systeme',  label: 'Configuration Système',   desc: "Modifier les paramètres et l'organigramme de l'application",      icon: 'settings' },
-        { key: 'voir_salaire',           label: 'Voir le Salaire',         desc: "Voir la rémunération de base d'un agent sur sa fiche détail",     icon: 'wallet' }
+        { key: 'voir_salaire',           label: 'Voir le Salaire',         desc: "Voir la rémunération de base d'un agent sur sa fiche détail",     icon: 'wallet' },
+        { key: 'voir_journal',           label: "Journal d'Activité",      desc: "Consulter l'historique des créations/modifications/suppressions apportées aux fiches agents", icon: 'history' }
       ],
-      DEFAULT_PERMISSIONS: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false },
+      DEFAULT_PERMISSIONS: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false, voir_journal: false },
 
       // --- LISTES INITIALES POSTES / IMPUTATIONS (issues du référentiel Excel de la Mairie) ---
       // Utilisées uniquement pour le bouton "Importer la liste initiale" côté Outils Admin.
@@ -1890,9 +1995,9 @@
         { code: 11, nom: 'DELEGATION SPECIALE' },
         { code: 12, nom: 'FONCTIONNAIRE' }
       ],
-      currentPermissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false },
+      currentPermissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false, voir_journal: false },
 
-      newUser: { username: '', password: '', role: 'consultation', permissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false } },
+      newUser: { username: '', password: '', role: 'consultation', permissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false, voir_journal: false } },
       newAgent: {
         nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
         date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
@@ -1912,6 +2017,8 @@
         this.$watch('currentTab', () => this.refreshIcons());
         this.$watch('search', () => this.refreshIcons());
         this.$watch('filterStatut', () => this.refreshIcons());
+        this.$watch('filterEffectif', () => this.refreshIcons());
+        this.$watch('filterDirection', () => this.refreshIcons());
         this.$watch('selectedAgent', () => this.refreshIcons());
         this.$watch('editingAgent', () => this.refreshIcons());
         this.$watch('mobileMenuOpen', () => this.refreshIcons());
@@ -2019,8 +2126,20 @@
           this.showToast('error', 'Veuillez indiquer un motif avant de valider.');
           return;
         }
+        const agentConcerne = this.agents.find(a => a.id === this.motifBox.agentId) || this.selectedAgent;
+        const ancienStatut = agentConcerne?.statut || '';
         const { error } = await supabaseClient.from('agents').update({ statut: 'Inactif', motif_inactif: this.motifBox.value.trim() }).eq('id', this.motifBox.agentId);
         if (error) { this.showToast('error', 'Échec: ' + error.message); return; }
+        this.logJournal({
+          action: 'statut',
+          agentId: this.motifBox.agentId,
+          agentNom: agentConcerne?.nom_prenom,
+          agentMatricule: agentConcerne?.matricule,
+          champ: 'Statut',
+          ancienne: ancienStatut,
+          nouvelle: 'Inactif',
+          details: 'Motif : ' + this.motifBox.value.trim()
+        });
         this.motifBox.show = false;
         this.selectedAgent = null;
         await this.loadAllData();
@@ -2046,7 +2165,8 @@
           suppression: p.suppression !== undefined ? !!p.suppression : !!p.delete_agent,
           gestion_agents: p.gestion_agents !== undefined ? !!p.gestion_agents : !!p.add_agent,
           configuration_systeme: p.configuration_systeme !== undefined ? !!p.configuration_systeme : !!p.manage_structure,
-          voir_salaire: p.voir_salaire !== undefined ? !!p.voir_salaire : false
+          voir_salaire: p.voir_salaire !== undefined ? !!p.voir_salaire : false,
+          voir_journal: p.voir_journal !== undefined ? !!p.voir_journal : false
         };
       },
 
@@ -2191,9 +2311,21 @@
 
       reactivateAgent(id) {
         if (!this.hasPerm('modification')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier un agent."); return; }
+        const agentConcerne = this.agents.find(a => a.id === id) || this.selectedAgent;
+        const ancienStatut = agentConcerne?.statut || '';
         this.openConfirm("Réactiver cet agent et le remettre 'En service' ?", async () => {
           const { error } = await supabaseClient.from('agents').update({ statut: 'En service', motif_inactif: null }).eq('id', id);
           if (error) { this.showToast('error', 'Échec: ' + error.message); return; }
+          this.logJournal({
+            action: 'statut',
+            agentId: id,
+            agentNom: agentConcerne?.nom_prenom,
+            agentMatricule: agentConcerne?.matricule,
+            champ: 'Statut',
+            ancienne: ancienStatut,
+            nouvelle: 'En service',
+            details: 'Réactivation de l\'agent'
+          });
           this.selectedAgent = null;
           await this.loadAllData();
           this.showToast('success', 'Agent réactivé avec succès.');
@@ -2570,6 +2702,100 @@
         this.showToast('error', highlighted ? message : ("Échec de l'enregistrement : " + error.message + (error.hint ? ' (' + error.hint + ')' : '')));
       },
 
+      // ============================================================
+      // JOURNAL D'ACTIVITÉ (traçabilité des mouvements sur les fiches agents)
+      // ============================================================
+      // Enregistre une entrée dans le journal. N'interrompt jamais l'action principale
+      // en cas d'échec (ex: table pas encore créée côté Supabase) : erreur juste loguée en console.
+      async logJournal({ action, agentId = null, agentNom = null, agentMatricule = null, champ = null, ancienne = null, nouvelle = null, details = null }) {
+        try {
+          await supabaseClient.from('journal_activite').insert([{
+            utilisateur: this.currentUser,
+            action,
+            agent_id: agentId !== null && agentId !== undefined ? String(agentId) : null,
+            agent_nom_prenom: agentNom || null,
+            agent_matricule: agentMatricule || null,
+            champ,
+            ancienne_valeur: (ancienne === null || ancienne === undefined || ancienne === '') ? null : String(ancienne),
+            nouvelle_valeur: (nouvelle === null || nouvelle === undefined || nouvelle === '') ? null : String(nouvelle),
+            details
+          }]);
+        } catch (e) {
+          console.error("Erreur lors de l'enregistrement dans le journal d'activité :", e);
+        }
+      },
+
+      // Compare la fiche originale (avant modification) et les champs soumis, et journalise
+      // une entrée distincte pour chaque champ réellement modifié.
+      async logModificationsAgent(original, updated) {
+        const taches = [];
+        Object.keys(updated).forEach(champ => {
+          const avant = original ? original[champ] : undefined;
+          const apres = updated[champ];
+          const avantN = (avant === undefined || avant === null) ? '' : String(avant);
+          const apresN = (apres === undefined || apres === null) ? '' : String(apres);
+          if (avantN !== apresN) {
+            taches.push(this.logJournal({
+              action: 'modification',
+              agentId: updated.id || (original && original.id),
+              agentNom: updated.nom_prenom || (original && original.nom_prenom),
+              agentMatricule: updated.matricule || (original && original.matricule),
+              champ: this.FIELD_LABELS[champ] || champ,
+              ancienne: avant,
+              nouvelle: apres
+            }));
+          }
+        });
+        if (taches.length) await Promise.all(taches);
+      },
+
+      // Charge les dernières entrées du journal (nécessite la permission "voir_journal").
+      async loadJournal() {
+        if (!this.hasPerm('voir_journal')) return;
+        this.journalLoading = true;
+        const { data, error } = await supabaseClient
+          .from('journal_activite')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(500);
+        this.journalLoading = false;
+        if (error) {
+          console.error('Erreur chargement journal:', error);
+          this.journalEntries = [];
+          return;
+        }
+        this.journalEntries = data || [];
+      },
+
+      // Libellé lisible pour le type d'action journalisée.
+      journalActionLabel(action) {
+        const labels = { creation: 'Création', modification: 'Modification', suppression: 'Suppression', statut: 'Changement de statut' };
+        return labels[action] || action;
+      },
+      journalActionClass(action) {
+        const classes = {
+          creation: 'bg-emerald-100 text-emerald-800',
+          modification: 'bg-sky-100 text-sky-800',
+          suppression: 'bg-rose-100 text-rose-800',
+          statut: 'bg-amber-100 text-amber-800'
+        };
+        return classes[action] || 'bg-slate-100 text-slate-700';
+      },
+
+      // Applique la recherche et le filtre par type d'action sur le journal chargé.
+      filteredJournal() {
+        const q = this.journalSearch.toLowerCase();
+        return this.journalEntries.filter(e => {
+          const matchSearch = !q ||
+            (e.utilisateur || '').toLowerCase().includes(q) ||
+            (e.agent_nom_prenom || '').toLowerCase().includes(q) ||
+            (e.agent_matricule || '').toLowerCase().includes(q) ||
+            (e.champ || '').toLowerCase().includes(q);
+          const matchAction = this.journalFilterAction ? e.action === this.journalFilterAction : true;
+          return matchSearch && matchAction;
+        });
+      },
+
       async saveAgent() {
         if (!this.hasPerm('gestion_agents')) {
           this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter un agent.");
@@ -2612,6 +2838,14 @@
           this.handleSaveError(error, 'newAgent');
           return;
         }
+        const agentCree = data && data[0] ? data[0] : agentToInsert;
+        this.logJournal({
+          action: 'creation',
+          agentId: agentCree.id,
+          agentNom: agentCree.nom_prenom,
+          agentMatricule: agentCree.matricule,
+          details: 'Création de la fiche agent'
+        });
         this.newAgent = {
           nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
           date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
@@ -2633,9 +2867,17 @@
       },
       deleteAgent(id) {
         if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
+        const agentAvantSuppression = this.agents.find(a => a.id === id) || this.selectedAgent;
         this.openConfirm("Supprimer définitivement cet agent ? Cette action est irréversible.", async () => {
           const { error } = await supabaseClient.from('agents').delete().eq('id', id);
           if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          this.logJournal({
+            action: 'suppression',
+            agentId: id,
+            agentNom: agentAvantSuppression?.nom_prenom,
+            agentMatricule: agentAvantSuppression?.matricule,
+            details: 'Suppression définitive de la fiche agent'
+          });
           this.selectedAgent = null;
           await this.loadAllData();
           this.showToast('success', 'Agent supprimé.');
@@ -2645,9 +2887,13 @@
       filteredAgents() {
         const q = this.search.toLowerCase();
         return this.agents.filter(a => {
-          const matchSearch = (a.nom_prenom || '').toLowerCase().includes(q) || (a.matricule || '').toLowerCase().includes(q);
+          const matchSearch = (a.nom_prenom || '').toLowerCase().includes(q)
+            || (a.matricule || '').toLowerCase().includes(q)
+            || (a.poste || '').toLowerCase().includes(q);
           const matchStatut = this.filterStatut ? a.statut === this.filterStatut : true;
-          return matchSearch && matchStatut;
+          const matchEffectif = this.filterEffectif ? a.effectif === this.filterEffectif : true;
+          const matchDirection = this.filterDirection ? a.direction === this.filterDirection : true;
+          return matchSearch && matchStatut && matchEffectif && matchDirection;
         });
       },
 
@@ -2664,7 +2910,6 @@
           'Date de Naissance': a.date_naissance || '',
           'Lieu de Naissance': a.lieu_naissance || '',
           'Date Embauche': a.date_embauche || '',
-          'Date Retraite': a.date_retraite || '',
           'Direction': a.direction || '',
           'Service': a.service || '',
           'Section': a.section || '',
@@ -2675,6 +2920,9 @@
           'N° CNAMGS': a.n_cnamgs || '',
           'Téléphone': a.telephone || '',
           'Diplômes': a.diplomes || '',
+          'Fin Contrat 1': a.fin_contrat1 || '',
+          'Début Contrat 2': a.debut_contrat2 || '',
+          'Fin Contrat 2': a.fin_contrat2 || '',
           'Hiérarchie': a.hierarchie || '',
           'Catégorie': a.categorie || '',
           'Classe': a.classe || '',
@@ -2683,6 +2931,7 @@
           'Statut': a.statut || '',
           'Motif Inactif': a.motif_inactif || '',
           'Imputation': a.imputation || '',
+          'Effectif': a.effectif || '',
           'Salaire Entrée (FCFA)': a.salaire_entree || 0,
           'Salaire de Base Actuel (FCFA)': a.salaire_base_actuel || 0,
           'Prime Logement': a.prime_logement || 0,
@@ -2722,10 +2971,14 @@
         { header: 'Section', field: 'section', type: 'text' },
         { header: 'Localisation', field: 'localisation', type: 'text' },
         { header: 'Poste', field: 'poste', type: 'text', required: true },
+        { header: "Poste à l'embauche", field: 'poste_embauche', type: 'text' },
         { header: 'N° CNSS', field: 'n_cnss', type: 'text' },
         { header: 'N° CNAMGS', field: 'n_cnamgs', type: 'text' },
         { header: 'Téléphone', field: 'telephone', type: 'text' },
         { header: 'Diplômes', field: 'diplomes', type: 'text' },
+        { header: 'Fin Contrat 1', field: 'fin_contrat1', type: 'date' },
+        { header: 'Début Contrat 2', field: 'debut_contrat2', type: 'date' },
+        { header: 'Fin Contrat 2', field: 'fin_contrat2', type: 'date' },
         { header: 'Hiérarchie', field: 'hierarchie', type: 'text' },
         { header: 'Catégorie', field: 'categorie', type: 'text' },
         { header: 'Classe', field: 'classe', type: 'text' },
@@ -2853,6 +3106,11 @@
         this.agentImporting = true;
         const payload = validRows.map(r => {
           const { _error, _rowNum, ...agent } = r;
+          // Les champs de date laissés vides valent "" après lecture du fichier Excel/CSV,
+          // mais Postgres exige null (et non "") pour une colonne de type date.
+          ['date_naissance', 'date_embauche', 'fin_contrat1', 'debut_contrat2', 'fin_contrat2'].forEach(champ => {
+            if (agent[champ] === '') agent[champ] = null;
+          });
           return agent;
         });
         const chunkSize = 200;
@@ -2888,6 +3146,9 @@
         }
         // Copie de travail : les modifications ne sont enregistrées qu'à la validation du formulaire
         this.editingAgent = JSON.parse(JSON.stringify(agent));
+        // Instantané figé de la fiche AVANT modification, conservé pour le journal d'activité
+        // (permet de savoir précisément quels champs ont changé lors de l'enregistrement).
+        this._editingAgentOriginal = JSON.parse(JSON.stringify(agent));
         const dir = this.directions().find(d => d.nom === agent.direction);
         this.editFormDirId = dir ? dir.id : '';
         const svc = dir ? this.servicesOf(dir.id).find(s => s.nom === agent.service) : null;
@@ -2963,6 +3224,8 @@
           this.handleSaveError(error, 'editingAgent');
           return;
         }
+        await this.logModificationsAgent(this._editingAgentOriginal, { id, ...updatableFields });
+        this._editingAgentOriginal = null;
         this.editingAgent = null;
         this.selectedAgent = null;
         this.editFormDirId = '';
