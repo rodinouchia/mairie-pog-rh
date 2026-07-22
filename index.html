@@ -755,8 +755,8 @@
               <table class="w-full text-left text-sm">
                 <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
                   <tr>
-                    <th class="p-3">Matricule</th><th class="p-3">Agent</th><th class="p-3">Direction</th><th class="p-3">Poste</th>
-                    <th class="p-3">Statut d'activité</th><th class="p-3 text-right">Action</th>
+                    <th class="p-3">Matricule</th><th class="p-3">Agent</th><th class="p-3">Direction</th><th class="p-3">Effectif</th><th class="p-3">Poste</th>
+                    <th class="p-3">Statut d'activité</th><th class="p-3">Date d'embauche</th><th class="p-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -770,7 +770,8 @@
                           <span class="font-semibold" x-text="agent.nom_prenom"></span>
                         </div>
                       </td>
-                      <td class="p-3 text-xs" x-text="directionLabel(agent.direction)"></td>
+                      <td class="p-3 text-xs" x-text="directionAcronym(agent.direction) || '—'"></td>
+                      <td class="p-3 text-xs text-slate-500" x-text="agent.effectif || '—'"></td>
                       <td class="p-3 text-xs text-slate-500" x-text="agent.poste || '—'"></td>
                       <td class="p-3">
                         <span :class="getBadgeClass(agent.statut)" class="text-xs px-2 py-0.5 rounded-full font-medium" x-text="agent.statut"></span>
@@ -778,6 +779,7 @@
                           <span class="text-[10px] text-rose-700 block mt-0.5" x-text="'Motif : ' + agent.motif_inactif"></span>
                         </template>
                       </td>
+                      <td class="p-3 text-xs text-slate-500" x-text="agent.date_embauche || '—'"></td>
                       <td class="p-3 text-right">
                         <button @click="viewAgent(agent)" class="inline-flex items-center gap-1 text-navy-700 bg-navy-50 hover:bg-navy-100 transition px-2.5 py-1.5 rounded-lg text-xs font-semibold">
                           <i data-lucide="eye" class="w-3.5 h-3.5"></i> Consulter
