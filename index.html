@@ -3078,8 +3078,12 @@
       deleteJournalEntry(id) {
         if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
         this.openConfirm("Supprimer cette entrée du journal ? Cette action est irréversible.", async () => {
-          const { error } = await supabaseClient.from('journal_activite').delete().eq('id', id);
+          const { data, error } = await supabaseClient.from('journal_activite').delete().eq('id', id).select();
           if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          if (!data || !data.length) {
+            this.showToast('error', "Aucune ligne supprimée : la base de données a refusé la suppression (policy RLS manquante sur journal_activite). Voir migration_journal_delete_policy.sql.");
+            return;
+          }
           this.showToast('success', 'Entrée supprimée.');
           await this.loadJournal(this.journalPage);
         });
@@ -3091,9 +3095,13 @@
         if (!this.journalFilterYear) { this.showToast('error', "Sélectionnez d'abord une année dans le filtre."); return; }
         const annee = this.journalFilterYear;
         this.openConfirm(`Effacer définitivement toutes les entrées du journal pour l'année ${annee} ? Cette action est irréversible.`, async () => {
-          const { error } = await supabaseClient.from('journal_activite').delete()
-            .gte('created_at', `${annee}-01-01`).lt('created_at', `${Number(annee) + 1}-01-01`);
+          const { data, error } = await supabaseClient.from('journal_activite').delete()
+            .gte('created_at', `${annee}-01-01`).lt('created_at', `${Number(annee) + 1}-01-01`).select();
           if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          if (!data || !data.length) {
+            this.showToast('error', "Aucune ligne supprimée : la base de données a refusé la suppression (policy RLS manquante sur journal_activite). Voir migration_journal_delete_policy.sql.");
+            return;
+          }
           this.showToast('success', `Entrées de l'année ${annee} supprimées.`);
           await this.loadJournal(1);
         });
@@ -3103,8 +3111,12 @@
       clearJournalAll() {
         if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
         this.openConfirm("Vider entièrement le journal d'activité ? Toutes les entrées, sans exception, seront supprimées définitivement. Cette action est irréversible.", async () => {
-          const { error } = await supabaseClient.from('journal_activite').delete().gte('created_at', '1900-01-01');
+          const { data, error } = await supabaseClient.from('journal_activite').delete().gte('created_at', '1900-01-01').select();
           if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          if (!data || !data.length) {
+            this.showToast('error', "Aucune ligne supprimée : la base de données a refusé la suppression (policy RLS manquante sur journal_activite). Voir migration_journal_delete_policy.sql.");
+            return;
+          }
           this.journalFilterYear = '';
           this.showToast('success', 'Journal entièrement vidé.');
           await this.loadJournal(1);
