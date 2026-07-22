@@ -583,7 +583,32 @@
               <div style="height:220px;">
                 <canvas id="chartEvolutionEffectifs"></canvas>
               </div>
-              <p class="text-[10px] text-slate-400 mt-2">Cumul des agents actifs par année de recrutement (10 dernières années).</p>
+              <p class="text-[10px] text-slate-400 mt-2 mb-3">Effectif en fin d'année, reconstitué à partir des embauches et des sorties (10 dernières années).</p>
+
+              <div class="grid grid-cols-2 gap-2 mb-3">
+                <div class="bg-rose-50 rounded-lg p-2.5 text-center">
+                  <p class="text-lg font-display font-extrabold text-rose-700" x-text="totalDepartsPeriode()">0</p>
+                  <p class="text-[10px] font-semibold text-rose-500 uppercase tracking-wide">Départs (période)</p>
+                </div>
+                <div class="bg-slate-100 rounded-lg p-2.5 text-center">
+                  <p class="text-lg font-display font-extrabold text-slate-700" x-text="totalDecesPeriode()">0</p>
+                  <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Décès (période)</p>
+                </div>
+              </div>
+
+              <div class="space-y-1 max-h-32 overflow-y-auto pr-1">
+                <template x-for="y in [...evolutionEffectifsAnnuelle()].reverse()" :key="'evo-annee-' + y.annee">
+                  <div class="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded-lg bg-slate-50">
+                    <span class="font-bold text-navy-900" x-text="y.annee"></span>
+                    <span class="text-slate-500">
+                      <span x-text="y.effectif + ' agent(s)'"></span>
+                      <span class="text-emerald-600" x-text="'· +' + y.embauches"></span>
+                      <span class="text-rose-600" x-text="'· -' + y.departs + ' départ(s)'"></span>
+                      <span class="text-slate-500" x-text="'· -' + y.deces + ' décès'"></span>
+                    </span>
+                  </div>
+                </template>
+              </div>
             </div>
 
             <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100">
@@ -663,7 +688,8 @@
                           'bg-emerald-100 text-emerald-700': item.color === 'emerald',
                           'bg-amber-100 text-amber-700': item.color === 'amber',
                           'bg-rose-100 text-rose-700': item.color === 'rose',
-                          'bg-navy-100 text-navy-700': item.color === 'navy'
+                          'bg-navy-100 text-navy-700': item.color === 'navy',
+                          'bg-slate-200 text-slate-700': item.color === 'slate'
                         }">
                     <i :data-lucide="item.icon" class="w-3.5 h-3.5"></i>
                   </span>
@@ -2168,6 +2194,7 @@
       agents: [],
       structures: [],
       journalEntries: [],
+      historiqueSorties: [],
       journalLoading: false,
       journalSearch: '',
       journalFilterAction: '',
@@ -2512,6 +2539,17 @@
             if (usrsErr) { console.error('Erreur chargement utilisateurs:', usrsErr); }
             this.usersList = (usrs || []).map(u => ({ ...u, permissions: this.normalizePermissions(u.permissions) }));
           }
+
+          // Historique des sorties d'effectif (agents passés en "Inactif"), utilisé pour reconstituer
+          // l'évolution des effectifs année par année (départs / décès), indépendamment de la pagination du journal.
+          let { data: sorties, error: sortiesErr } = await supabaseClient
+            .from('journal_activite')
+            .select('created_at, details, nouvelle_valeur, champ, agent_id, agent_nom_prenom, agent_matricule')
+            .eq('champ', 'Statut')
+            .eq('nouvelle_valeur', 'Inactif')
+            .order('created_at', { ascending: true });
+          if (sortiesErr) { console.error('Erreur chargement historique des sorties:', sortiesErr); }
+          this.historiqueSorties = sorties || [];
         } catch (e) { console.error(e); this.showToast('error', 'Erreur réseau lors du chargement.'); }
         this.refreshIcons();
         this.renderDashboardCharts();
@@ -2655,24 +2693,92 @@
         });
       },
 
-      // Cumul du nombre d'agents actifs recrutés jusqu'à chaque année (10 dernières années au maximum).
-      evolutionEffectifsCumulee() {
-        const agentsActifs = this.kpiAgents().filter(a => a.date_embauche);
-        if (!agentsActifs.length) return [];
-        const anneeActuelle = new Date().getFullYear();
-        const anneesEmbauche = agentsActifs
-          .map(a => new Date(a.date_embauche).getFullYear())
-          .filter(y => !isNaN(y));
-        let anneeDebut = anneesEmbauche.length ? Math.min(...anneesEmbauche) : anneeActuelle;
-        // On limite l'affichage aux 10 dernières années pour garder un graphique lisible.
-        anneeDebut = Math.max(anneeDebut, anneeActuelle - 9);
-        const annees = [];
-        for (let an = anneeDebut; an <= anneeActuelle; an++) annees.push(an);
-        return annees.map(an => {
-          const fin = new Date(an, 11, 31);
-          const total = agentsActifs.filter(a => new Date(a.date_embauche) <= fin).length;
-          return { label: String(an), total };
+      // Normalise une chaîne (minuscule, sans accents) pour une comparaison de mots-clés fiable.
+      _normalizeStr(s) {
+        return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      },
+
+      // Un événement de sortie (journal_activite, passage en "Inactif") est-il un décès ?
+      // Détecté à partir du motif saisi ("Motif : Décès", "Motif : décès brutal", ...).
+      estSortieDeces(entry) {
+        return this._normalizeStr(entry.details).includes('deces');
+      },
+
+      // Regroupe les embauches (toutes fiches, actives ou non, hors directions en veille) par année.
+      _embauchesParAnnee() {
+        const map = {};
+        this.excludeVeille(this.agents).forEach(a => {
+          if (!a.date_embauche) return;
+          const y = new Date(a.date_embauche).getFullYear();
+          if (isNaN(y)) return;
+          map[y] = (map[y] || 0) + 1;
         });
+        return map;
+      },
+
+      // Regroupe les sorties (passages en "Inactif" journalisés) par année, en distinguant décès / autres départs.
+      _sortiesParAnnee() {
+        const map = {};
+        this.historiqueSorties.forEach(entry => {
+          if (!entry.created_at) return;
+          const y = new Date(entry.created_at).getFullYear();
+          if (isNaN(y)) return;
+          if (!map[y]) map[y] = { departs: 0, deces: 0 };
+          if (this.estSortieDeces(entry)) map[y].deces++;
+          else map[y].departs++;
+        });
+        return map;
+      },
+
+      // Reconstitution de l'effectif année par année (10 dernières années au maximum) :
+      // on part de l'effectif actuel réel (countActiveAgents) et on "remonte" le temps en défaisant,
+      // année après année, les embauches et les sorties (départs/décès) réellement enregistrées.
+      // Cela garantit un historique cohérent, y compris pour les agents aujourd'hui inactifs qui
+      // faisaient bien partie de l'effectif les années où ils étaient encore en poste.
+      evolutionEffectifsAnnuelle() {
+        const anneeActuelle = new Date().getFullYear();
+        const embauchesParAnnee = this._embauchesParAnnee();
+        const sortiesParAnnee = this._sortiesParAnnee();
+
+        const anneesEmbauche = Object.keys(embauchesParAnnee).map(Number);
+        let anneeDebut = anneesEmbauche.length ? Math.min(...anneesEmbauche) : anneeActuelle;
+        // On limite la fenêtre affichée aux 10 dernières années pour garder un graphique lisible.
+        anneeDebut = Math.max(anneeDebut, anneeActuelle - 9);
+
+        const parAnnee = {};
+        parAnnee[anneeActuelle] = {
+          annee: anneeActuelle,
+          effectif: this.countActiveAgents(),
+          embauches: embauchesParAnnee[anneeActuelle] || 0,
+          departs: (sortiesParAnnee[anneeActuelle] || {}).departs || 0,
+          deces: (sortiesParAnnee[anneeActuelle] || {}).deces || 0
+        };
+
+        for (let an = anneeActuelle - 1; an >= anneeDebut; an--) {
+          const suivante = parAnnee[an + 1];
+          const embauchesSuivantes = embauchesParAnnee[an + 1] || 0;
+          const sortiesSuivantes = ((sortiesParAnnee[an + 1] || {}).departs || 0) + ((sortiesParAnnee[an + 1] || {}).deces || 0);
+          const effectif = Math.max(0, suivante.effectif - embauchesSuivantes + sortiesSuivantes);
+          parAnnee[an] = {
+            annee: an,
+            effectif,
+            embauches: embauchesParAnnee[an] || 0,
+            departs: (sortiesParAnnee[an] || {}).departs || 0,
+            deces: (sortiesParAnnee[an] || {}).deces || 0
+          };
+        }
+
+        const annees = [];
+        for (let an = anneeDebut; an <= anneeActuelle; an++) annees.push(parAnnee[an]);
+        return annees;
+      },
+
+      // Totaux (départs et décès) sur la période affichée par le graphique d'évolution des effectifs.
+      totalDepartsPeriode() {
+        return this.evolutionEffectifsAnnuelle().reduce((s, y) => s + y.departs, 0);
+      },
+      totalDecesPeriode() {
+        return this.evolutionEffectifsAnnuelle().reduce((s, y) => s + y.deces, 0);
       },
 
       // Couleur associée à l'index d'une série (légende + graphique donut), palette cohérente.
@@ -2694,6 +2800,10 @@
         }
         if (indisponibles) {
           list.push({ icon: 'activity', color: 'rose', text: indisponibles + ' agent(s) actuellement indisponible(s) : ' + this.countMalade() + ' malade(s), ' + this.countDetachement() + ' en détachement, ' + this.countDisponibilite() + ' mis en disponibilité.' });
+        }
+        const anneeCourante = this.evolutionEffectifsAnnuelle().slice(-1)[0];
+        if (anneeCourante && (anneeCourante.departs || anneeCourante.deces)) {
+          list.push({ icon: 'user-round-x', color: 'slate', text: 'En ' + anneeCourante.annee + ' : ' + anneeCourante.departs + ' départ(s) et ' + anneeCourante.deces + ' décès enregistré(s).' });
         }
         if (total) {
           list.push({ icon: 'users', color: 'emerald', text: total + ' agents actifs au total, dont ' + h + ' hommes et ' + f + ' femmes.' });
@@ -2731,15 +2841,29 @@
       renderEvolutionChart() {
         const el = document.getElementById('chartEvolutionEffectifs');
         if (!el) return;
-        const data = this.evolutionEffectifsCumulee();
+        const data = this.evolutionEffectifsAnnuelle();
         if (this._chartEvolution) this._chartEvolution.destroy();
         this._chartEvolution = new Chart(el.getContext('2d'), {
           type: 'line',
           data: {
-            labels: data.map(d => d.label),
-            datasets: [{ label: 'Effectif cumulé', data: data.map(d => d.total), borderColor: '#193754', backgroundColor: 'rgba(25,55,84,0.08)', fill: true, tension: 0.35, pointRadius: 2 }]
+            labels: data.map(d => String(d.annee)),
+            datasets: [{ label: 'Effectif', data: data.map(d => d.effectif), borderColor: '#193754', backgroundColor: 'rgba(25,55,84,0.08)', fill: true, tension: 0.35, pointRadius: 2 }]
           },
-          options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, ticks: { precision: 0 } } } }
+          options: {
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  afterLabel: (ctx) => {
+                    const d = data[ctx.dataIndex];
+                    return ['+' + d.embauches + ' embauche(s)', '-' + d.departs + ' départ(s)', '-' + d.deces + ' décès'];
+                  }
+                }
+              }
+            },
+            scales: { y: { beginAtZero: false, ticks: { precision: 0 } } }
+          }
         });
       },
       renderPyramideChart() {
