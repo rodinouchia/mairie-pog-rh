@@ -42,6 +42,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 
@@ -443,35 +444,66 @@
             </template>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <!-- CARTES KPI -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
             <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
               <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Effectif global actif</p>
-                <h3 class="text-3xl font-display font-extrabold text-navy-900 mt-1" x-text="countActiveAgents()">0</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Exclut les agents inactifs</p>
+                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Effectif total</p>
+                <h3 class="text-2xl font-display font-extrabold text-navy-900 mt-1" x-text="countActiveAgents()">0</h3>
+                <p class="text-[11px] text-slate-400 mt-1">agents actifs</p>
               </div>
-              <span class="w-12 h-12 rounded-xl bg-navy-50 text-navy-700 flex items-center justify-center shrink-0">
-                <i data-lucide="users" class="w-6 h-6"></i>
+              <span class="w-11 h-11 rounded-xl bg-navy-50 text-navy-700 flex items-center justify-center shrink-0">
+                <i data-lucide="users" class="w-5 h-5"></i>
               </span>
             </div>
             <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
               <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Agents en maladie</p>
-                <h3 class="text-3xl font-display font-extrabold text-amber-600 mt-1" x-text="countMalade()">0</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Actuellement en arrêt</p>
+                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Prévisions départ retraite</p>
+                <h3 class="text-2xl font-display font-extrabold text-purple-700 mt-1" x-text="totalPrevisionsRetraite3Ans()">0</h3>
+                <p class="text-[11px] text-slate-400 mt-1" x-text="moyennePrevisionsRetraite3Ans() + ' par an en moyenne'"></p>
               </div>
-              <span class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                <i data-lucide="stethoscope" class="w-6 h-6"></i>
+              <span class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                <i data-lucide="user-round-x" class="w-5 h-5"></i>
               </span>
             </div>
             <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
               <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Agents inactifs (en base)</p>
-                <h3 class="text-3xl font-display font-extrabold text-slate-500 mt-1" x-text="countInactifsKPI()">0</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Décès, retraites, radiations...</p>
+                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Taux d'absentéisme</p>
+                <h3 class="text-2xl font-display font-extrabold text-amber-600 mt-1" x-text="tauxAbsenteismePct() + '%'">0%</h3>
+                <p class="text-[11px] text-slate-400 mt-1" x-text="countMalade() + ' agent(s) en arrêt'"></p>
               </div>
-              <span class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-                <i data-lucide="user-x" class="w-6 h-6"></i>
+              <span class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <i data-lucide="stethoscope" class="w-5 h-5"></i>
+              </span>
+            </div>
+            <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
+              <div>
+                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Effectif Hommes</p>
+                <h3 class="text-2xl font-display font-extrabold text-navy-900 mt-1" x-text="countBySexe('M')">0</h3>
+                <p class="text-[11px] text-slate-400 mt-1">agents actifs</p>
+              </div>
+              <span class="w-11 h-11 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+                <i data-lucide="mars" class="w-5 h-5"></i>
+              </span>
+            </div>
+            <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
+              <div>
+                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Effectif Femmes</p>
+                <h3 class="text-2xl font-display font-extrabold text-navy-900 mt-1" x-text="countBySexe('F')">0</h3>
+                <p class="text-[11px] text-slate-400 mt-1">agents actifs</p>
+              </div>
+              <span class="w-11 h-11 rounded-xl bg-pink-50 text-pink-700 flex items-center justify-center shrink-0">
+                <i data-lucide="venus" class="w-5 h-5"></i>
+              </span>
+            </div>
+            <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
+              <div>
+                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Agents inactifs</p>
+                <h3 class="text-2xl font-display font-extrabold text-slate-500 mt-1" x-text="countInactifsKPI()">0</h3>
+                <p class="text-[11px] text-slate-400 mt-1">décès, retraites, radiations…</p>
+              </div>
+              <span class="w-11 h-11 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                <i data-lucide="user-x" class="w-5 h-5"></i>
               </span>
             </div>
           </div>
@@ -510,54 +542,81 @@
             </template>
           </div>
 
-          <!-- RÉPARTITION HOMMES / FEMMES (totaux) -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
-              <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Effectif Hommes</p>
-                <h3 class="text-3xl font-display font-extrabold text-navy-900 mt-1" x-text="countBySexe('M')">0</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Agents actifs</p>
-              </div>
-              <span class="w-12 h-12 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
-                <i data-lucide="mars" class="w-6 h-6"></i>
-              </span>
+          <!-- LIGNE DE GRAPHIQUES : RÉPARTITION PAR EFFECTIF / ÉVOLUTION / PYRAMIDE DES ÂGES -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+            <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100">
+              <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-4 h-4 text-navy-500"></i> Répartition des effectifs par catégorie
+              </h3>
+              <template x-if="repartitionEffectifs().length">
+                <div>
+                  <div class="relative mx-auto" style="width:180px;height:180px;">
+                    <canvas id="chartEffectifsCategorie"></canvas>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span class="text-2xl font-display font-extrabold text-navy-900" x-text="countActiveAgents()"></span>
+                      <span class="text-[10px] text-slate-400 uppercase tracking-wide">Total</span>
+                    </div>
+                  </div>
+                  <div class="mt-4 space-y-1.5">
+                    <template x-for="([nom, total], i) in repartitionEffectifs()" :key="'legende-eff-' + nom">
+                      <div class="flex items-center justify-between text-xs">
+                        <span class="flex items-center gap-2 text-slate-600">
+                          <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="'background:' + donutColor(i)"></span>
+                          <span x-text="nom"></span>
+                        </span>
+                        <span class="flex items-center gap-2">
+                          <strong class="text-navy-900" x-text="total"></strong>
+                          <span class="text-slate-400 w-10 text-right" x-text="Math.round(total / countActiveAgents() * 100) + '%'"></span>
+                        </span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <p x-show="!repartitionEffectifs().length" class="text-xs text-slate-400 text-center py-8">Aucune donnée à afficher pour le moment.</p>
             </div>
-            <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
-              <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Effectif Femmes</p>
-                <h3 class="text-3xl font-display font-extrabold text-navy-900 mt-1" x-text="countBySexe('F')">0</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Agents actifs</p>
+
+            <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100">
+              <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-navy-500"></i> Évolution des effectifs
+              </h3>
+              <div style="height:220px;">
+                <canvas id="chartEvolutionEffectifs"></canvas>
               </div>
-              <span class="w-12 h-12 rounded-xl bg-pink-50 text-pink-700 flex items-center justify-center shrink-0">
-                <i data-lucide="venus" class="w-6 h-6"></i>
-              </span>
+              <p class="text-[10px] text-slate-400 mt-2">Cumul des agents actifs par mois de recrutement (12 derniers mois).</p>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100">
+              <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
+                <i data-lucide="bar-chart-horizontal" class="w-4 h-4 text-navy-500"></i> Pyramide des âges
+              </h3>
+              <div style="height:220px;">
+                <canvas id="chartPyramideAges"></canvas>
+              </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div class="lg:col-span-3 bg-white p-5 rounded-2xl shadow-card border border-slate-100">
-              <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
-                <i data-lucide="building-2" class="w-4 h-4 text-navy-500"></i> Répartition des effectifs par direction
-              </h3>
-              <div class="space-y-3" x-show="repartitionDirections().length">
-                <template x-for="[nom, total] in repartitionDirections()" :key="nom">
-                  <div>
-                    <div class="flex items-center justify-between text-xs mb-1">
-                      <span class="font-medium text-slate-600" x-text="directionLabel(nom)"></span>
-                      <span class="font-bold text-navy-900" x-text="total"></span>
-                    </div>
-                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-navy-700 to-navy-500 rounded-full" :style="'width:' + (total / Math.max(...repartitionDirections().map(d => d[1])) * 100) + '%'"></div>
-                    </div>
-                  </div>
-                </template>
-              </div>
-              <p x-show="!repartitionDirections().length" class="text-xs text-slate-400 text-center py-8">Aucune donnée à afficher pour le moment.</p>
-            </div>
-
+          <!-- LIGNE : PRÉVISIONS DE RETRAITE / RÉPARTITION PAR STATUT -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-card border border-slate-100">
               <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
-                <i data-lucide="pie-chart" class="w-4 h-4 text-navy-500"></i> Répartition par statut
+                <i data-lucide="calendar-clock" class="w-4 h-4 text-navy-500"></i> Prévisions de départ à la retraite (3 ans)
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                <div class="sm:col-span-2" style="height:180px;">
+                  <canvas id="chartRetraite3Ans"></canvas>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4 text-center">
+                  <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Total 3 ans</p>
+                  <p class="text-3xl font-display font-extrabold text-navy-900 mt-1" x-text="totalPrevisionsRetraite3Ans()">0</p>
+                  <p class="text-[11px] text-slate-400 mt-2" x-text="moyennePrevisionsRetraite3Ans() + ' par an en moyenne'"></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100">
+              <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
+                <i data-lucide="list-checks" class="w-4 h-4 text-navy-500"></i> Répartition par statut
               </h3>
               <div class="space-y-2.5">
                 <template x-for="s in ['En service','Malade','En détachement','Mis en disponibilité','Inactif']" :key="s">
@@ -570,25 +629,48 @@
             </div>
           </div>
 
-          <!-- RÉPARTITION PAR EFFECTIF -->
-          <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100 mt-4">
+          <!-- RÉPARTITION PAR DIRECTION -->
+          <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100 mb-4">
             <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
-              <i data-lucide="layout-grid" class="w-4 h-4 text-navy-500"></i> Répartition par effectif
+              <i data-lucide="building-2" class="w-4 h-4 text-navy-500"></i> Répartition des effectifs par direction
             </h3>
-            <div class="space-y-3" x-show="repartitionEffectifs().length">
-              <template x-for="[nom, total] in repartitionEffectifs()" :key="nom">
+            <div class="space-y-3" x-show="repartitionDirections().length">
+              <template x-for="[nom, total] in repartitionDirections()" :key="nom">
                 <div>
                   <div class="flex items-center justify-between text-xs mb-1">
-                    <span class="font-medium text-slate-600" x-text="nom"></span>
+                    <span class="font-medium text-slate-600" x-text="directionLabel(nom)"></span>
                     <span class="font-bold text-navy-900" x-text="total"></span>
                   </div>
                   <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-gold-500 to-gold-300 rounded-full" :style="'width:' + (total / Math.max(...repartitionEffectifs().map(d => d[1])) * 100) + '%'"></div>
+                    <div class="h-full bg-gradient-to-r from-navy-700 to-navy-500 rounded-full" :style="'width:' + (total / Math.max(...repartitionDirections().map(d => d[1])) * 100) + '%'"></div>
                   </div>
                 </div>
               </template>
             </div>
-            <p x-show="!repartitionEffectifs().length" class="text-xs text-slate-400 text-center py-8">Aucune donnée à afficher pour le moment.</p>
+            <p x-show="!repartitionDirections().length" class="text-xs text-slate-400 text-center py-8">Aucune donnée à afficher pour le moment.</p>
+          </div>
+
+          <!-- ALERTES & INSIGHTS -->
+          <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100 mb-4" x-show="insightsRH().length">
+            <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
+              <i data-lucide="lightbulb" class="w-4 h-4 text-gold-500"></i> Alertes &amp; Insights
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <template x-for="(item, i) in insightsRH()" :key="'insight-' + i">
+                <div class="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                        :class="{
+                          'bg-emerald-100 text-emerald-700': item.color === 'emerald',
+                          'bg-amber-100 text-amber-700': item.color === 'amber',
+                          'bg-rose-100 text-rose-700': item.color === 'rose',
+                          'bg-navy-100 text-navy-700': item.color === 'navy'
+                        }">
+                    <i :data-lucide="item.icon" class="w-3.5 h-3.5"></i>
+                  </span>
+                  <p class="text-xs text-slate-600 leading-snug" x-text="item.text"></p>
+                </div>
+              </template>
+            </div>
           </div>
 
           <!-- RÉPARTITION HOMMES / FEMMES PAR EFFECTIF ET PAR DIRECTION -->
@@ -2432,6 +2514,7 @@
           }
         } catch (e) { console.error(e); this.showToast('error', 'Erreur réseau lors du chargement.'); }
         this.refreshIcons();
+        this.renderDashboardCharts();
       },
 
       countActiveAgents() {
@@ -2500,6 +2583,189 @@
           else if (a.sexe === 'F') map[d].F++;
         });
         return Object.entries(map).map(([nom, c]) => [nom, c.M, c.F]).sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
+      },
+
+      // --- KPIs ET GRAPHIQUES SUPPLÉMENTAIRES DU TABLEAU DE BORD (données réelles uniquement) ---
+
+      // Taux d'absentéisme approximé par la part d'agents actuellement en statut "Malade".
+      tauxAbsenteismePct() {
+        const total = this.countActiveAgents();
+        if (!total) return 0;
+        return Math.round((this.countMalade() / total) * 1000) / 10;
+      },
+
+      // Année de départ à la retraite d'un agent (60 ans), à partir de date_retraite si renseignée, sinon calculée.
+      agentRetraiteYear(a) {
+        const dr = a.date_retraite || this.calcDateRetraite(a.date_naissance);
+        if (!dr) return null;
+        const d = new Date(dr);
+        if (isNaN(d.getTime())) return null;
+        return d.getFullYear();
+      },
+
+      // Nombre de départs à la retraite prévus pour l'année en cours et les deux suivantes.
+      previsionsRetraite3Ans() {
+        const anneeActuelle = new Date().getFullYear();
+        const agentsActifs = this.kpiAgents();
+        return [anneeActuelle, anneeActuelle + 1, anneeActuelle + 2].map(an => ({
+          annee: an,
+          total: agentsActifs.filter(a => this.agentRetraiteYear(a) === an).length
+        }));
+      },
+      totalPrevisionsRetraite3Ans() {
+        return this.previsionsRetraite3Ans().reduce((s, y) => s + y.total, 0);
+      },
+      moyennePrevisionsRetraite3Ans() {
+        return Math.round(this.totalPrevisionsRetraite3Ans() / 3);
+      },
+
+      // Pyramide des âges (par tranche de 5 ans) ventilée par sexe, à partir de date_naissance.
+      pyramideAges() {
+        const tranches = [
+          { label: '- de 30', min: 0, max: 29 },
+          { label: '30 – 34', min: 30, max: 34 },
+          { label: '35 – 39', min: 35, max: 39 },
+          { label: '40 – 44', min: 40, max: 44 },
+          { label: '45 – 49', min: 45, max: 49 },
+          { label: '50 – 54', min: 50, max: 54 },
+          { label: '55 – 59', min: 55, max: 59 },
+          { label: '60 et +', min: 60, max: 200 },
+        ];
+        const agentsActifs = this.kpiAgents();
+        return tranches.map(t => {
+          let h = 0, f = 0;
+          agentsActifs.forEach(a => {
+            const age = this.calcAge(a.date_naissance);
+            if (age === null || age < t.min || age > t.max) return;
+            if (a.sexe === 'M') h++; else if (a.sexe === 'F') f++;
+          });
+          return { label: t.label, hommes: h, femmes: f };
+        });
+      },
+
+      // Cumul du nombre d'agents actifs recrutés jusqu'à chaque mois, sur les 12 derniers mois.
+      evolutionEffectifsCumulee() {
+        const agentsActifs = this.kpiAgents().filter(a => a.date_embauche);
+        const moisListe = [];
+        const dNow = new Date();
+        for (let i = 11; i >= 0; i--) {
+          moisListe.push(new Date(dNow.getFullYear(), dNow.getMonth() - i, 1));
+        }
+        return moisListe.map(d => {
+          const fin = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+          const total = agentsActifs.filter(a => new Date(a.date_embauche) <= fin).length;
+          return { label: fin.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }), total };
+        });
+      },
+
+      // Couleur associée à l'index d'une série (légende + graphique donut), palette cohérente.
+      donutColor(i) {
+        const palette = ['#193754', '#059669', '#7c3aed', '#d97706', '#0891b2', '#dc2626', '#64748b', '#db2777'];
+        return palette[i % palette.length];
+      },
+
+      // Insights textuels générés dynamiquement à partir des vraies données du tableau de bord.
+      insightsRH() {
+        const list = [];
+        const total = this.countActiveAgents();
+        const retraite3 = this.totalPrevisionsRetraite3Ans();
+        const tauxAbs = this.tauxAbsenteismePct();
+        const h = this.countBySexe('M'), f = this.countBySexe('F');
+        const dirs = this.repartitionDirections();
+        if (retraite3) {
+          list.push({ icon: 'user-round-x', color: 'amber', text: retraite3 + ' départ' + (retraite3 > 1 ? 's' : '') + ' à la retraite prévu' + (retraite3 > 1 ? 's' : '') + ' sur les 3 prochaines années.' });
+        }
+        if (total) {
+          list.push({ icon: 'activity', color: 'rose', text: "Taux d'absentéisme actuel : " + tauxAbs + '% (' + this.countMalade() + ' agent(s) en arrêt).' });
+        }
+        if (total) {
+          list.push({ icon: 'users', color: 'emerald', text: total + ' agents actifs au total, dont ' + h + ' hommes et ' + f + ' femmes.' });
+        }
+        if (dirs.length) {
+          list.push({ icon: 'building-2', color: 'navy', text: this.directionLabel(dirs[0][0]) + ' regroupe l\'effectif le plus important (' + dirs[0][1] + ' agents).' });
+        }
+        return list;
+      },
+
+      // --- RENDU DES GRAPHIQUES DU TABLEAU DE BORD (Chart.js) ---
+      renderDashboardCharts() {
+        if (typeof Chart === 'undefined') return;
+        this.$nextTick(() => {
+          this.renderEffectifsChart();
+          this.renderEvolutionChart();
+          this.renderPyramideChart();
+          this.renderRetraiteChart();
+        });
+      },
+      renderEffectifsChart() {
+        const el = document.getElementById('chartEffectifsCategorie');
+        if (!el) return;
+        const data = this.repartitionEffectifs();
+        if (this._chartEffectifs) this._chartEffectifs.destroy();
+        this._chartEffectifs = new Chart(el.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: data.map(d => d[0]),
+            datasets: [{ data: data.map(d => d[1]), backgroundColor: data.map((_, i) => this.donutColor(i)), borderWidth: 3, borderColor: '#fff' }]
+          },
+          options: { cutout: '70%', maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+      },
+      renderEvolutionChart() {
+        const el = document.getElementById('chartEvolutionEffectifs');
+        if (!el) return;
+        const data = this.evolutionEffectifsCumulee();
+        if (this._chartEvolution) this._chartEvolution.destroy();
+        this._chartEvolution = new Chart(el.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: data.map(d => d.label),
+            datasets: [{ label: 'Effectif cumulé', data: data.map(d => d.total), borderColor: '#193754', backgroundColor: 'rgba(25,55,84,0.08)', fill: true, tension: 0.35, pointRadius: 2 }]
+          },
+          options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, ticks: { precision: 0 } } } }
+        });
+      },
+      renderPyramideChart() {
+        const el = document.getElementById('chartPyramideAges');
+        if (!el) return;
+        const data = this.pyramideAges();
+        if (this._chartPyramide) this._chartPyramide.destroy();
+        this._chartPyramide = new Chart(el.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: data.map(d => d.label),
+            datasets: [
+              { label: 'Hommes', data: data.map(d => -d.hommes), backgroundColor: '#0284c7' },
+              { label: 'Femmes', data: data.map(d => d.femmes), backgroundColor: '#db2777' }
+            ]
+          },
+          options: {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            scales: {
+              x: { stacked: true, ticks: { callback: v => Math.abs(v), precision: 0 } },
+              y: { stacked: true }
+            },
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+              tooltip: { callbacks: { label: ctx => ctx.dataset.label + ' : ' + Math.abs(ctx.raw) } }
+            }
+          }
+        });
+      },
+      renderRetraiteChart() {
+        const el = document.getElementById('chartRetraite3Ans');
+        if (!el) return;
+        const data = this.previsionsRetraite3Ans();
+        if (this._chartRetraite) this._chartRetraite.destroy();
+        this._chartRetraite = new Chart(el.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: data.map(d => String(d.annee)),
+            datasets: [{ label: 'Départs prévus', data: data.map(d => d.total), backgroundColor: ['#193754', '#059669', '#7c3aed'] }]
+          },
+          options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
+        });
       },
 
       reactivateAgent(id) {
