@@ -468,9 +468,9 @@
             </div>
             <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
               <div>
-                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Taux d'absentéisme</p>
-                <h3 class="text-2xl font-display font-extrabold text-amber-600 mt-1" x-text="tauxAbsenteismePct() + '%'">0%</h3>
-                <p class="text-[11px] text-slate-400 mt-1" x-text="countMalade() + ' agent(s) en arrêt'"></p>
+                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Agents indisponibles</p>
+                <h3 class="text-2xl font-display font-extrabold text-amber-600 mt-1" x-text="countIndisponibles()">0</h3>
+                <p class="text-[11px] text-slate-400 mt-1" x-text="countMalade() + ' malade(s) · ' + countDetachement() + ' détach. · ' + countDisponibilite() + ' dispo.'"></p>
               </div>
               <span class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                 <i data-lucide="stethoscope" class="w-5 h-5"></i>
@@ -583,7 +583,7 @@
               <div style="height:220px;">
                 <canvas id="chartEvolutionEffectifs"></canvas>
               </div>
-              <p class="text-[10px] text-slate-400 mt-2">Cumul des agents actifs par mois de recrutement (12 derniers mois).</p>
+              <p class="text-[10px] text-slate-400 mt-2">Cumul des agents actifs par année de recrutement (10 dernières années).</p>
             </div>
 
             <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100">
@@ -2525,6 +2525,18 @@
       countMalade() {
         return this.excludeVeille(this.agents.filter(a => a.statut === 'Malade')).length;
       },
+      // Nombre d'agents en détachement, hors directions en veille.
+      countDetachement() {
+        return this.excludeVeille(this.agents.filter(a => a.statut === 'En détachement')).length;
+      },
+      // Nombre d'agents mis en disponibilité, hors directions en veille.
+      countDisponibilite() {
+        return this.excludeVeille(this.agents.filter(a => a.statut === 'Mis en disponibilité')).length;
+      },
+      // Total des agents indisponibles (malade + détachement + disponibilité), hors directions en veille.
+      countIndisponibles() {
+        return this.countMalade() + this.countDetachement() + this.countDisponibilite();
+      },
       countInactifsKPI() {
         return this.excludeVeille(this.agents.filter(a => a.statut === 'Inactif')).length;
       },
@@ -2643,18 +2655,23 @@
         });
       },
 
-      // Cumul du nombre d'agents actifs recrutés jusqu'à chaque mois, sur les 12 derniers mois.
+      // Cumul du nombre d'agents actifs recrutés jusqu'à chaque année (10 dernières années au maximum).
       evolutionEffectifsCumulee() {
         const agentsActifs = this.kpiAgents().filter(a => a.date_embauche);
-        const moisListe = [];
-        const dNow = new Date();
-        for (let i = 11; i >= 0; i--) {
-          moisListe.push(new Date(dNow.getFullYear(), dNow.getMonth() - i, 1));
-        }
-        return moisListe.map(d => {
-          const fin = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        if (!agentsActifs.length) return [];
+        const anneeActuelle = new Date().getFullYear();
+        const anneesEmbauche = agentsActifs
+          .map(a => new Date(a.date_embauche).getFullYear())
+          .filter(y => !isNaN(y));
+        let anneeDebut = anneesEmbauche.length ? Math.min(...anneesEmbauche) : anneeActuelle;
+        // On limite l'affichage aux 10 dernières années pour garder un graphique lisible.
+        anneeDebut = Math.max(anneeDebut, anneeActuelle - 9);
+        const annees = [];
+        for (let an = anneeDebut; an <= anneeActuelle; an++) annees.push(an);
+        return annees.map(an => {
+          const fin = new Date(an, 11, 31);
           const total = agentsActifs.filter(a => new Date(a.date_embauche) <= fin).length;
-          return { label: fin.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }), total };
+          return { label: String(an), total };
         });
       },
 
@@ -2669,14 +2686,14 @@
         const list = [];
         const total = this.countActiveAgents();
         const retraite3 = this.totalPrevisionsRetraite3Ans();
-        const tauxAbs = this.tauxAbsenteismePct();
+        const indisponibles = this.countIndisponibles();
         const h = this.countBySexe('M'), f = this.countBySexe('F');
         const dirs = this.repartitionDirections();
         if (retraite3) {
           list.push({ icon: 'user-round-x', color: 'amber', text: retraite3 + ' départ' + (retraite3 > 1 ? 's' : '') + ' à la retraite prévu' + (retraite3 > 1 ? 's' : '') + ' sur les 3 prochaines années.' });
         }
-        if (total) {
-          list.push({ icon: 'activity', color: 'rose', text: "Taux d'absentéisme actuel : " + tauxAbs + '% (' + this.countMalade() + ' agent(s) en arrêt).' });
+        if (indisponibles) {
+          list.push({ icon: 'activity', color: 'rose', text: indisponibles + ' agent(s) actuellement indisponible(s) : ' + this.countMalade() + ' malade(s), ' + this.countDetachement() + ' en détachement, ' + this.countDisponibilite() + ' mis en disponibilité.' });
         }
         if (total) {
           list.push({ icon: 'users', color: 'emerald', text: total + ' agents actifs au total, dont ' + h + ' hommes et ' + f + ' femmes.' });
