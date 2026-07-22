@@ -393,8 +393,29 @@
 
         <!-- ONGLET DASHBOARD -->
         <div x-show="currentTab === 'dashboard'" x-cloak>
-          <div class="flex items-center justify-between mb-1">
-            <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950">Tableau de bord RH</h2>
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-1">
+            <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950 shrink-0">Tableau de bord RH</h2>
+
+            <!-- DATE / HEURE / MÉTÉO / LOCALISATION -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-2 bg-navy-900 text-white rounded-xl px-3 py-2 text-xs font-semibold">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-gold-300 shrink-0"></i>
+                <span class="capitalize truncate max-w-[160px]" x-text="formattedDate()"></span>
+              </span>
+              <span class="inline-flex items-center gap-2 bg-navy-900 text-white rounded-xl px-3 py-2 text-xs font-semibold">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-gold-300 shrink-0"></i>
+                <span x-text="formattedTime()"></span>
+              </span>
+              <span class="inline-flex items-center gap-2 bg-navy-900 text-white rounded-xl px-3 py-2 text-xs font-semibold">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-gold-300 shrink-0"></i>
+                <span class="truncate max-w-[140px]" x-text="locationName || 'Localisation…'"></span>
+              </span>
+              <span class="inline-flex items-center gap-2 bg-navy-900 text-white rounded-xl px-3 py-2 text-xs font-semibold">
+                <i :data-lucide="weatherIcon()" class="w-3.5 h-3.5 text-gold-300 shrink-0"></i>
+                <span x-show="weather.temp !== null" x-text="Math.round(weather.temp) + '°C · ' + weather.description"></span>
+                <span x-show="weather.temp === null">Chargement…</span>
+              </span>
+            </div>
           </div>
           <p class="text-xs text-slate-500 mb-4" x-text="'Connecté en tant que ' + currentUser + ' · ' + roleLabel(userRole)"></p>
 
@@ -422,45 +443,6 @@
             </template>
           </div>
 
-          <!-- BANDEAU DATE / HEURE / METEO / LOCALISATION -->
-          <div class="bg-gradient-to-r from-navy-900 to-navy-800 rounded-2xl p-4 sm:p-5 mb-6 shadow-card">
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-white">
-              <div class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="calendar" class="w-5 h-5 text-gold-300"></i></span>
-                <div class="min-w-0">
-                  <p class="text-[10px] uppercase tracking-wide text-navy-200">Date</p>
-                  <p class="text-sm font-semibold capitalize truncate" x-text="formattedDate()"></p>
-                </div>
-              </div>
-              <div class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="clock" class="w-5 h-5 text-gold-300"></i></span>
-                <div class="min-w-0">
-                  <p class="text-[10px] uppercase tracking-wide text-navy-200">Heure locale</p>
-                  <p class="text-sm font-semibold truncate" x-text="formattedTime()"></p>
-                </div>
-              </div>
-              <div class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="map-pin" class="w-5 h-5 text-gold-300"></i></span>
-                <div class="min-w-0">
-                  <p class="text-[10px] uppercase tracking-wide text-navy-200">Localisation</p>
-                  <p class="text-sm font-semibold truncate" x-text="locationName || 'Localisation…'"></p>
-                </div>
-              </div>
-              <div class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                  <i :data-lucide="weatherIcon()" class="w-5 h-5 text-gold-300"></i>
-                </span>
-                <div class="min-w-0">
-                  <p class="text-[10px] uppercase tracking-wide text-navy-200">Météo</p>
-                  <p class="text-sm font-semibold truncate">
-                    <span x-show="weather.temp !== null" x-text="Math.round(weather.temp) + '°C · ' + weather.description"></span>
-                    <span x-show="weather.temp === null">Chargement…</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
               <div>
@@ -475,7 +457,7 @@
             <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
               <div>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Agents en maladie</p>
-                <h3 class="text-3xl font-display font-extrabold text-amber-600 mt-1" x-text="agents.filter(a => a.statut === 'Malade').length">0</h3>
+                <h3 class="text-3xl font-display font-extrabold text-amber-600 mt-1" x-text="countMalade()">0</h3>
                 <p class="text-[11px] text-slate-400 mt-1">Actuellement en arrêt</p>
               </div>
               <span class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
@@ -485,7 +467,7 @@
             <div class="card-hover bg-white p-5 rounded-2xl shadow-card border border-slate-100 flex items-center justify-between">
               <div>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Agents inactifs (en base)</p>
-                <h3 class="text-3xl font-display font-extrabold text-slate-500 mt-1" x-text="agents.filter(a => a.statut === 'Inactif').length">0</h3>
+                <h3 class="text-3xl font-display font-extrabold text-slate-500 mt-1" x-text="countInactifsKPI()">0</h3>
                 <p class="text-[11px] text-slate-400 mt-1">Décès, retraites, radiations...</p>
               </div>
               <span class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
@@ -561,7 +543,7 @@
                 <template x-for="[nom, total] in repartitionDirections()" :key="nom">
                   <div>
                     <div class="flex items-center justify-between text-xs mb-1">
-                      <span class="font-medium text-slate-600" x-text="nom"></span>
+                      <span class="font-medium text-slate-600" x-text="directionLabel(nom)"></span>
                       <span class="font-bold text-navy-900" x-text="total"></span>
                     </div>
                     <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -644,7 +626,7 @@
                 </div>
                 <template x-for="[nom, h, f] in repartitionSexeParDirection()" :key="'dir-sexe-' + nom">
                   <div class="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-slate-50">
-                    <span class="font-medium text-slate-600" x-text="nom"></span>
+                    <span class="font-medium text-slate-600" x-text="directionLabel(nom)"></span>
                     <span class="flex items-center gap-4">
                       <span class="font-bold text-sky-700" x-text="h"></span>
                       <span class="font-bold text-pink-700" x-text="f"></span>
@@ -691,7 +673,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <div class="relative">
                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <input type="text" x-model="search" placeholder="Rechercher par nom, prénom, matricule, poste..."
+                <input type="text" x-model="search" placeholder="Rechercher par nom, prénom, matricule, poste, acronyme direction (ex: DRH)..."
                        class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
               </div>
               <div class="relative">
@@ -719,25 +701,35 @@
                 <select x-model="filterDirection" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
                   <option value="">Toutes les directions</option>
                   <template x-for="d in directions()" :key="'filtre-dir-' + d.id">
-                    <option :value="d.nom" x-text="d.nom"></option>
+                    <option :value="d.nom" x-text="directionLabel(d.nom)"></option>
                   </template>
                 </select>
               </div>
               <div class="relative">
-                <i data-lucide="layers" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <select x-model="filterHierarchie" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
-                  <option value="">Toutes les hiérarchies</option>
-                  <template x-for="h in ['A','B','C']" :key="'filtre-hier-' + h">
-                    <option :value="h" x-text="'Catégorie ' + h"></option>
+                <i data-lucide="badge-check" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <select x-model="filterPoste" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <option value="">Tous les postes</option>
+                  <template x-for="p in uniquePostes()" :key="'filtre-poste-' + p">
+                    <option :value="p" x-text="p"></option>
                   </template>
                 </select>
               </div>
               <div class="relative">
-                <i data-lucide="user-round" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <select x-model="filterSexe" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
-                  <option value="">Tous les sexes</option>
-                  <option value="M">Masculin</option>
-                  <option value="F">Féminin</option>
+                <i data-lucide="briefcase" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <select x-model="filterService" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <option value="">Tous les services</option>
+                  <template x-for="s in uniqueServices()" :key="'filtre-svc-' + s">
+                    <option :value="s" x-text="s"></option>
+                  </template>
+                </select>
+              </div>
+              <div class="relative">
+                <i data-lucide="map" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <select x-model="filterLocalisation" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <option value="">Toutes les localisations</option>
+                  <template x-for="l in uniqueLocalisations()" :key="'filtre-loc-' + l">
+                    <option :value="l" x-text="l"></option>
+                  </template>
                 </select>
               </div>
             </div>
@@ -763,13 +755,14 @@
               <table class="w-full text-left text-sm">
                 <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
                   <tr>
-                    <th class="p-3">Agent</th><th class="p-3">Matricule</th><th class="p-3">Direction</th><th class="p-3">Grade</th>
+                    <th class="p-3">Matricule</th><th class="p-3">Agent</th><th class="p-3">Direction</th><th class="p-3">Poste</th>
                     <th class="p-3">Statut d'activité</th><th class="p-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   <template x-for="agent in filteredAgents()" :key="agent.id">
                     <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition" :class="agent.statut === 'Inactif' ? 'bg-rose-50/30 text-slate-500' : ''">
+                      <td class="p-3 font-mono font-bold text-navy-800 text-xs" x-text="agent.matricule || '—'"></td>
                       <td class="p-3">
                         <div class="flex items-center gap-3">
                           <img x-show="agent.photo_url" :src="agent.photo_url" class="w-8 h-8 rounded-full object-cover border border-slate-200">
@@ -777,12 +770,8 @@
                           <span class="font-semibold" x-text="agent.nom_prenom"></span>
                         </div>
                       </td>
-                      <td class="p-3 font-mono font-bold text-navy-800 text-xs" x-text="agent.matricule || '—'"></td>
-                      <td class="p-3 text-xs" x-text="agent.direction || '—'"></td>
-                      <td class="p-3 text-xs text-slate-500">
-                        <span x-show="agent.hierarchie || agent.categorie || agent.classe || agent.echelon" x-text="[agent.categorie || agent.hierarchie, agent.classe, agent.echelon ? ('éch. ' + agent.echelon) : ''].filter(Boolean).join(' · ')"></span>
-                        <span x-show="!(agent.hierarchie || agent.categorie || agent.classe || agent.echelon)">—</span>
-                      </td>
+                      <td class="p-3 text-xs" x-text="directionLabel(agent.direction)"></td>
+                      <td class="p-3 text-xs text-slate-500" x-text="agent.poste || '—'"></td>
                       <td class="p-3">
                         <span :class="getBadgeClass(agent.statut)" class="text-xs px-2 py-0.5 rounded-full font-medium" x-text="agent.statut"></span>
                         <template x-if="agent.statut === 'Inactif' && agent.motif_inactif">
@@ -808,8 +797,9 @@
                   <img x-show="agent.photo_url" :src="agent.photo_url" class="w-11 h-11 rounded-full object-cover border border-slate-200 shrink-0">
                   <div x-show="!agent.photo_url" class="w-11 h-11 rounded-full bg-navy-50 text-navy-700 flex items-center justify-center font-bold shrink-0" x-text="(agent.nom_prenom || '?').charAt(0).toUpperCase()"></div>
                   <div class="min-w-0 flex-1">
+                    <p class="text-[10px] font-mono font-bold text-navy-700 truncate" x-text="agent.matricule || '—'"></p>
                     <p class="font-semibold text-sm truncate" x-text="agent.nom_prenom"></p>
-                    <p class="text-xs text-slate-500 truncate" x-text="(agent.matricule || '—') + ' · ' + (agent.direction || '—')"></p>
+                    <p class="text-xs text-slate-500 truncate" x-text="(agent.poste || '—') + ' · ' + directionLabel(agent.direction)"></p>
                     <span :class="getBadgeClass(agent.statut)" class="text-[10px] px-2 py-0.5 rounded-full font-medium inline-block mt-1" x-text="agent.statut"></span>
                   </div>
                   <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 shrink-0"></i>
@@ -933,7 +923,7 @@
                   <select x-model="agentFormDirId" @change="onFormDirectionChange()" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">Sélectionner</option>
                     <template x-for="d in directions()" :key="d.id">
-                      <option :value="d.id" x-text="d.nom"></option>
+                      <option :value="d.id" x-text="directionLabel(d.nom)"></option>
                     </template>
                   </select>
                 </div>
@@ -1150,27 +1140,48 @@
           <p class="text-xs text-slate-500 mb-4">Historique des créations, modifications, changements de statut et suppressions de fiches agents (500 dernières entrées).</p>
 
           <div class="bg-white p-4 rounded-2xl shadow-card border border-slate-100 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div class="relative md:col-span-2">
                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 <input type="text" x-model.debounce.400ms="journalSearch" @input="journalGoToPage(1)" placeholder="Rechercher par utilisateur, agent, matricule, champ..."
                        class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:outline-none">
               </div>
+              <div class="relative">
+                <i data-lucide="filter" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <select x-model="journalFilterAction" @change="journalGoToPage(1)" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <option value="">Toutes les actions</option>
+                  <option value="creation">Création</option>
+                  <option value="modification">Modification</option>
+                  <option value="statut">Changement de statut</option>
+                  <option value="suppression">Suppression</option>
+                </select>
+              </div>
               <div class="flex items-center gap-2">
                 <div class="relative flex-1">
-                  <i data-lucide="filter" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                  <select x-model="journalFilterAction" @change="journalGoToPage(1)" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
-                    <option value="">Toutes les actions</option>
-                    <option value="creation">Création</option>
-                    <option value="modification">Modification</option>
-                    <option value="statut">Changement de statut</option>
-                    <option value="suppression">Suppression</option>
+                  <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  <select x-model="journalFilterYear" @change="journalGoToPage(1)" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                    <option value="">Toutes les années</option>
+                    <template x-for="an in journalYearOptions()" :key="'annee-' + an">
+                      <option :value="an" x-text="an"></option>
+                    </template>
                   </select>
                 </div>
                 <button type="button" @click="loadJournal(journalPage)" title="Rafraîchir" class="shrink-0 p-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
                   <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-500"></i>
                 </button>
               </div>
+            </div>
+
+            <!-- ACTIONS DE PURGE DU JOURNAL -->
+            <div x-show="hasPerm('suppression')" class="flex flex-wrap items-center gap-2 justify-end border-t border-slate-100 pt-3">
+              <button type="button" @click="clearJournalByYear()" :disabled="!journalFilterYear"
+                      class="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed transition text-amber-700 px-3 py-2 rounded-lg text-xs font-bold">
+                <i data-lucide="calendar-x" class="w-3.5 h-3.5"></i> Effacer l'année sélectionnée
+              </button>
+              <button type="button" @click="clearJournalAll()"
+                      class="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 transition text-rose-700 px-3 py-2 rounded-lg text-xs font-bold">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Vider tout le journal
+              </button>
             </div>
 
             <div x-show="journalLoading" class="flex flex-col items-center justify-center py-12">
@@ -1190,6 +1201,7 @@
                     <th class="p-3">Ancienne valeur</th>
                     <th class="p-3">Nouvelle valeur</th>
                     <th class="p-3">Détails</th>
+                    <th class="p-3 text-right" x-show="hasPerm('suppression')">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1208,6 +1220,11 @@
                       <td class="p-3 text-rose-600 max-w-[160px] truncate" :title="e.ancienne_valeur" x-text="e.ancienne_valeur || '—'"></td>
                       <td class="p-3 text-emerald-700 font-medium max-w-[160px] truncate" :title="e.nouvelle_valeur" x-text="e.nouvelle_valeur || '—'"></td>
                       <td class="p-3 text-slate-500 max-w-[200px] truncate" :title="e.details" x-text="e.details || '—'"></td>
+                      <td class="p-3 text-right" x-show="hasPerm('suppression')">
+                        <button type="button" @click="deleteJournalEntry(e.id)" title="Supprimer cette entrée" class="text-rose-500 hover:text-rose-700">
+                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </td>
                     </tr>
                   </template>
                 </tbody>
@@ -1259,8 +1276,9 @@
                 <i data-lucide="building-2" class="w-4 h-4 text-navy-500"></i> Organigramme — Directions, Services & Sections
               </h3>
 
-              <form x-show="hasPerm('ecriture')" @submit.prevent="addDirection()" class="flex gap-2 mb-4">
-                <input type="text" x-model="newDirectionName" placeholder="Nom de la nouvelle direction" required class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
+              <form x-show="hasPerm('ecriture')" @submit.prevent="addDirection()" class="flex flex-col sm:flex-row gap-2 mb-4">
+                <input type="text" x-model="newDirectionName" placeholder="Nom complet de la nouvelle direction" required class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <input type="text" x-model="newDirectionAcronyme" placeholder="Acronyme (ex: DRH)" required maxlength="15" class="sm:w-40 px-3 py-2 border border-slate-200 rounded-lg text-xs uppercase focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 <button type="submit" class="inline-flex items-center gap-1 bg-navy-900 hover:bg-navy-800 transition text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">
                   <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter une direction
                 </button>
@@ -1270,17 +1288,39 @@
                 <template x-for="dir in directions()" :key="dir.id">
                   <div class="border border-slate-100 rounded-xl overflow-hidden">
                     <!-- NIVEAU 1 : DIRECTION -->
-                    <div class="flex items-center justify-between gap-2 bg-navy-50/60 px-3 py-2.5">
+                    <div class="flex items-center justify-between gap-2 px-3 py-2.5" :class="dir.en_veille ? 'bg-slate-100' : 'bg-navy-50/60'" x-show="editingDirId !== dir.id">
                       <button type="button" @click="toggleDir(dir.id)" class="flex items-center gap-2 text-left flex-1 min-w-0">
                         <i :data-lucide="expandedDirs.includes(dir.id) ? 'chevron-down' : 'chevron-right'" class="w-4 h-4 text-navy-500 shrink-0"></i>
-                        <i data-lucide="building-2" class="w-3.5 h-3.5 text-navy-600 shrink-0"></i>
-                        <span class="font-bold text-navy-900 text-xs truncate" x-text="dir.nom"></span>
+                        <i data-lucide="building-2" class="w-3.5 h-3.5 shrink-0" :class="dir.en_veille ? 'text-slate-400' : 'text-navy-600'"></i>
+                        <span class="font-bold text-xs truncate" :class="dir.en_veille ? 'text-slate-400' : 'text-navy-900'" x-text="directionLabel(dir.nom)"></span>
                         <span class="text-[10px] text-slate-400 shrink-0" x-text="'(' + servicesOf(dir.id).length + ' service(s))'"></span>
+                        <span x-show="dir.en_veille" class="text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full shrink-0">En veille</span>
+                      </button>
+                      <button type="button" x-show="hasPerm('modification')" @click="toggleDirectionVeille(dir)" :title="dir.en_veille ? 'Réactiver la direction' : 'Mettre en veille (exclue des KPI du tableau de bord)'" class="shrink-0" :class="dir.en_veille ? 'text-emerald-600 hover:text-emerald-800' : 'text-amber-500 hover:text-amber-700'">
+                        <i :data-lucide="dir.en_veille ? 'play' : 'pause'" class="w-3.5 h-3.5"></i>
+                      </button>
+                      <button type="button" x-show="hasPerm('ecriture')" @click="startEditDirection(dir)" title="Modifier le nom / l'acronyme" class="text-navy-500 hover:text-navy-700 shrink-0">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                       </button>
                       <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(dir.id, 'direction')" class="text-rose-500 hover:text-rose-700 shrink-0">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                       </button>
                     </div>
+
+                    <!-- FORMULAIRE D'ÉDITION DE L'ACRONYME DE LA DIRECTION -->
+                    <form x-show="editingDirId === dir.id" x-cloak @submit.prevent="saveEditDirection()" class="flex flex-col sm:flex-row sm:items-center gap-2 bg-navy-50/60 px-3 py-2.5">
+                      <span class="text-xs text-slate-500 flex-1 truncate" x-text="dir.nom"></span>
+                      <input type="text" x-model="editDirForm.acronyme" placeholder="Acronyme" required maxlength="15" class="sm:w-32 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs uppercase focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                      <div class="flex gap-1.5 shrink-0">
+                        <button type="submit" class="inline-flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 transition text-white px-2.5 py-1.5 rounded-lg text-xs font-bold">
+                          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button type="button" @click="cancelEditDirection()" class="inline-flex items-center gap-1 bg-slate-200 hover:bg-slate-300 transition text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold">
+                          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
+                    </form>
+                    <p x-show="editingDirId === dir.id" x-cloak class="text-[10px] text-slate-400 px-3 pb-2 bg-navy-50/60">Seul l'acronyme est modifiable ici : renommer le nom complet casserait le lien avec les agents déjà affectés à cette direction.</p>
 
                     <!-- NIVEAU 2 : SERVICES -->
                     <div x-show="expandedDirs.includes(dir.id)" x-cloak class="pl-6 pr-3 py-3 space-y-2 bg-white">
@@ -1599,7 +1639,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm mt-3">
         <div class="flex items-start gap-2">
           <i data-lucide="building-2" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Direction affectée</span><strong x-text="selectedAgent?.direction || '—'"></strong></div>
+          <div><span class="text-slate-400 block">Direction affectée</span><strong x-text="directionLabel(selectedAgent?.direction)"></strong></div>
         </div>
         <div class="flex items-start gap-2">
           <i data-lucide="briefcase" class="w-5 h-5 text-navy-400 mt-0.5"></i>
@@ -1786,7 +1826,7 @@
               <select x-model="editFormDirId" @change="onEditFormDirectionChange()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 <option value="">Sélectionner</option>
                 <template x-for="d in directions()" :key="d.id">
-                  <option :value="d.id" x-text="d.nom"></option>
+                  <option :value="d.id" x-text="directionLabel(d.nom)"></option>
                 </template>
               </select>
             </div>
@@ -2025,8 +2065,9 @@
       filterStatut: '',
       filterEffectif: '',
       filterDirection: '',
-      filterHierarchie: '',
-      filterSexe: '',
+      filterPoste: '',
+      filterService: '',
+      filterLocalisation: '',
       selectedAgent: null,
       editingAgent: null,
       editFormDirId: '',
@@ -2046,12 +2087,16 @@
       journalLoading: false,
       journalSearch: '',
       journalFilterAction: '',
+      journalFilterYear: '',
       journalPage: 1,
       journalPageSize: 50,
       journalTotalCount: 0,
       usersList: [],
 
       newDirectionName: '',
+      newDirectionAcronyme: '',
+      editingDirId: null,
+      editDirForm: { acronyme: '' },
       newServiceNameMap: {},
       newSectionNameMap: {},
       expandedDirs: [],
@@ -2154,8 +2199,9 @@
         this.$watch('filterStatut', () => this.refreshIcons());
         this.$watch('filterEffectif', () => this.refreshIcons());
         this.$watch('filterDirection', () => this.refreshIcons());
-        this.$watch('filterHierarchie', () => this.refreshIcons());
-        this.$watch('filterSexe', () => this.refreshIcons());
+        this.$watch('filterPoste', () => this.refreshIcons());
+        this.$watch('filterService', () => this.refreshIcons());
+        this.$watch('filterLocalisation', () => this.refreshIcons());
         this.$watch('selectedAgent', () => this.refreshIcons());
         this.$watch('editingAgent', () => this.refreshIcons());
         this.$watch('mobileMenuOpen', () => this.refreshIcons());
@@ -2387,12 +2433,20 @@
       },
 
       countActiveAgents() {
-        return this.agents.filter(a => a.statut !== 'Inactif').length;
+        return this.kpiAgents().length;
+      },
+
+      // Nombre d'agents en maladie / inactifs, hors directions en veille (cartes du tableau de bord).
+      countMalade() {
+        return this.excludeVeille(this.agents.filter(a => a.statut === 'Malade')).length;
+      },
+      countInactifsKPI() {
+        return this.excludeVeille(this.agents.filter(a => a.statut === 'Inactif')).length;
       },
 
       repartitionDirections() {
         const map = {};
-        this.agents.filter(a => a.statut !== 'Inactif').forEach(a => {
+        this.kpiAgents().forEach(a => {
           const d = a.direction || 'Non affecté';
           map[d] = (map[d] || 0) + 1;
         });
@@ -2407,25 +2461,25 @@
         return [...avecDate].sort((a, b) => new Date(b.date_embauche) - new Date(a.date_embauche))[0];
       },
 
-      // Répartition des effectifs actifs par type d'effectif (APM, CDD, MONP, ...).
+      // Répartition des effectifs actifs par type d'effectif (APM, CDD, MONP, ...), hors directions en veille.
       repartitionEffectifs() {
         const map = {};
-        this.agents.filter(a => a.statut !== 'Inactif').forEach(a => {
+        this.kpiAgents().forEach(a => {
           const e = a.effectif || 'Non renseigné';
           map[e] = (map[e] || 0) + 1;
         });
         return Object.entries(map).sort((a, b) => b[1] - a[1]);
       },
 
-      // Nombre d'agents actifs pour un sexe donné ('M' ou 'F').
+      // Nombre d'agents actifs pour un sexe donné ('M' ou 'F'), hors directions en veille.
       countBySexe(sexe) {
-        return this.agents.filter(a => a.statut !== 'Inactif' && a.sexe === sexe).length;
+        return this.kpiAgents().filter(a => a.sexe === sexe).length;
       },
 
       // Répartition Hommes / Femmes par type d'effectif : [[nomEffectif, nbHommes, nbFemmes], ...]
       repartitionSexeParEffectif() {
         const map = {};
-        this.agents.filter(a => a.statut !== 'Inactif').forEach(a => {
+        this.kpiAgents().forEach(a => {
           const e = a.effectif || 'Non renseigné';
           if (!map[e]) map[e] = { M: 0, F: 0 };
           if (a.sexe === 'M') map[e].M++;
@@ -2434,10 +2488,10 @@
         return Object.entries(map).map(([nom, c]) => [nom, c.M, c.F]).sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
       },
 
-      // Répartition Hommes / Femmes par direction : [[nomDirection, nbHommes, nbFemmes], ...]
+      // Répartition Hommes / Femmes par direction : [[nomDirection, nbHommes, nbFemmes], ...], hors directions en veille.
       repartitionSexeParDirection() {
         const map = {};
-        this.agents.filter(a => a.statut !== 'Inactif').forEach(a => {
+        this.kpiAgents().forEach(a => {
           const d = a.direction || 'Non affecté';
           if (!map[d]) map[d] = { M: 0, F: 0 };
           if (a.sexe === 'M') map[d].M++;
@@ -2506,12 +2560,57 @@
       directions() {
         return this.structures.filter(s => s.type === 'direction');
       },
+      // Renvoie "ACRONYME (Nom complet)" pour une direction donnée (par son nom complet stocké sur l'agent).
+      // Si aucun acronyme n'est encore renseigné pour cette direction, retombe simplement sur le nom complet.
+      directionLabel(nomComplet) {
+        if (!nomComplet) return '—';
+        const dir = this.directions().find(d => d.nom === nomComplet);
+        return dir && dir.acronyme ? (dir.acronyme + ' (' + nomComplet + ')') : nomComplet;
+      },
+      // Renvoie uniquement l'acronyme d'une direction (chaîne vide si non renseigné), utile pour la recherche.
+      directionAcronym(nomComplet) {
+        if (!nomComplet) return '';
+        const dir = this.directions().find(d => d.nom === nomComplet);
+        return dir ? (dir.acronyme || '') : '';
+      },
       servicesOf(dirId) {
         return this.structures.filter(s => s.type === 'service' && String(s.parent_id) === String(dirId));
       },
       sectionsOf(serviceId) {
         return this.structures.filter(s => s.type === 'section' && String(s.parent_id) === String(serviceId));
       },
+
+      // --- MISE EN VEILLE / PAUSE D'UNE DIRECTION ---
+      // Une direction en veille reste visible et ses agents restent affectés, mais elle
+      // (et ses agents) sont exclus des statistiques du tableau de bord.
+      async toggleDirectionVeille(dir) {
+        if (!this.hasPerm('modification')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
+        const miseEnVeille = !dir.en_veille;
+        const message = miseEnVeille
+          ? `Mettre la direction "${this.directionLabel(dir.nom)}" en veille ? Elle ne comptera plus dans les statistiques du tableau de bord.`
+          : `Réactiver la direction "${this.directionLabel(dir.nom)}" ? Elle sera à nouveau comptabilisée dans les statistiques du tableau de bord.`;
+        this.openConfirm(message, async () => {
+          const { error } = await supabaseClient.from('structures').update({ en_veille: miseEnVeille }).eq('id', dir.id);
+          if (error) { this.showToast('error', 'Échec: ' + error.message); return; }
+          await this.loadAllData();
+          this.showToast('success', miseEnVeille ? 'Direction mise en veille.' : 'Direction réactivée.');
+        });
+      },
+      // Indique si une direction (par son nom complet) est actuellement en veille.
+      isDirectionEnVeille(nomDirection) {
+        const dir = this.directions().find(d => d.nom === nomDirection);
+        return !!(dir && dir.en_veille);
+      },
+      // Retire d'une liste d'agents ceux rattachés à une direction actuellement en veille.
+      excludeVeille(liste) {
+        return liste.filter(a => !this.isDirectionEnVeille(a.direction));
+      },
+      // Agents à prendre en compte dans les statistiques du tableau de bord :
+      // actifs (statut != Inactif) et non rattachés à une direction en veille.
+      kpiAgents() {
+        return this.excludeVeille(this.agents.filter(a => a.statut !== 'Inactif'));
+      },
+
       toggleDir(id) {
         this.expandedDirs = this.expandedDirs.includes(id) ? this.expandedDirs.filter(x => x !== id) : [...this.expandedDirs, id];
       },
@@ -2520,12 +2619,48 @@
       },
       async addDirection() {
         if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
-        if (!this.newDirectionName.trim()) return;
-        const { error } = await supabaseClient.from('structures').insert([{ type: 'direction', nom: this.newDirectionName.toUpperCase(), parent_id: null }]);
+        if (!this.newDirectionName.trim() || !this.newDirectionAcronyme.trim()) {
+          this.showToast('error', "Le nom complet et l'acronyme de la direction sont obligatoires.");
+          return;
+        }
+        const { error } = await supabaseClient.from('structures').insert([{
+          type: 'direction',
+          nom: this.newDirectionName.toUpperCase(),
+          acronyme: this.newDirectionAcronyme.trim().toUpperCase(),
+          parent_id: null,
+          en_veille: false
+        }]);
         if (error) { this.showToast('error', 'Échec ajout direction: ' + error.message); return; }
         this.newDirectionName = '';
+        this.newDirectionAcronyme = '';
         await this.loadAllData();
         this.showToast('success', 'Direction ajoutée.');
+      },
+
+      // --- MODIFICATION DE L'ACRONYME D'UNE DIRECTION EXISTANTE ---
+      startEditDirection(dir) {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
+        this.editingDirId = dir.id;
+        this.editDirForm = { acronyme: dir.acronyme || '' };
+      },
+      cancelEditDirection() {
+        this.editingDirId = null;
+        this.editDirForm = { acronyme: '' };
+      },
+      async saveEditDirection() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
+        if (!this.editDirForm.acronyme.trim()) {
+          this.showToast('error', "L'acronyme ne peut pas être vide.");
+          return;
+        }
+        const { error } = await supabaseClient.from('structures')
+          .update({ acronyme: this.editDirForm.acronyme.trim().toUpperCase() })
+          .eq('id', this.editingDirId);
+        if (error) { this.showToast('error', "Échec de la mise à jour de l'acronyme : " + error.message); return; }
+        this.editingDirId = null;
+        this.editDirForm = { acronyme: '' };
+        await this.loadAllData();
+        this.showToast('success', "Acronyme de la direction mis à jour.");
       },
       async addService(dirId) {
         if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
@@ -2898,6 +3033,9 @@
 
         let query = supabaseClient.from('journal_activite').select('*', { count: 'exact' });
         if (this.journalFilterAction) query = query.eq('action', this.journalFilterAction);
+        if (this.journalFilterYear) {
+          query = query.gte('created_at', `${this.journalFilterYear}-01-01`).lt('created_at', `${Number(this.journalFilterYear) + 1}-01-01`);
+        }
         const q = this.journalSearch.trim();
         if (q) {
           const motif = '%' + q.replace(/[%_]/g, '') + '%';
@@ -2924,6 +3062,51 @@
       journalGoToPage(page) {
         const p = Math.min(Math.max(1, page), this.journalTotalPages());
         if (p !== this.journalPage) this.loadJournal(p);
+      },
+
+      // Liste d'années proposées pour le filtre du journal (année en cours + 8 années précédentes).
+      journalYearOptions() {
+        const anneeActuelle = new Date().getFullYear();
+        const annees = [];
+        for (let a = anneeActuelle; a >= anneeActuelle - 8; a--) annees.push(a);
+        return annees;
+      },
+
+      // Supprime une seule ligne du journal d'activité.
+      deleteJournalEntry(id) {
+        if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
+        this.openConfirm("Supprimer cette entrée du journal ? Cette action est irréversible.", async () => {
+          const { error } = await supabaseClient.from('journal_activite').delete().eq('id', id);
+          if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          this.showToast('success', 'Entrée supprimée.');
+          await this.loadJournal(this.journalPage);
+        });
+      },
+
+      // Supprime toutes les entrées du journal correspondant à l'année actuellement sélectionnée dans le filtre.
+      clearJournalByYear() {
+        if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
+        if (!this.journalFilterYear) { this.showToast('error', "Sélectionnez d'abord une année dans le filtre."); return; }
+        const annee = this.journalFilterYear;
+        this.openConfirm(`Effacer définitivement toutes les entrées du journal pour l'année ${annee} ? Cette action est irréversible.`, async () => {
+          const { error } = await supabaseClient.from('journal_activite').delete()
+            .gte('created_at', `${annee}-01-01`).lt('created_at', `${Number(annee) + 1}-01-01`);
+          if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          this.showToast('success', `Entrées de l'année ${annee} supprimées.`);
+          await this.loadJournal(1);
+        });
+      },
+
+      // Vide entièrement le journal d'activité (remise à zéro complète).
+      clearJournalAll() {
+        if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
+        this.openConfirm("Vider entièrement le journal d'activité ? Toutes les entrées, sans exception, seront supprimées définitivement. Cette action est irréversible.", async () => {
+          const { error } = await supabaseClient.from('journal_activite').delete().gte('created_at', '1900-01-01');
+          if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          this.journalFilterYear = '';
+          this.showToast('success', 'Journal entièrement vidé.');
+          await this.loadJournal(1);
+        });
       },
 
       // Libellé lisible pour le type d'action journalisée.
@@ -3036,14 +3219,26 @@
         return this.agents.filter(a => {
           const matchSearch = (a.nom_prenom || '').toLowerCase().includes(q)
             || (a.matricule || '').toLowerCase().includes(q)
-            || (a.poste || '').toLowerCase().includes(q);
+            || (a.poste || '').toLowerCase().includes(q)
+            || this.directionAcronym(a.direction).toLowerCase().includes(q);
           const matchStatut = this.filterStatut ? a.statut === this.filterStatut : true;
           const matchEffectif = this.filterEffectif ? a.effectif === this.filterEffectif : true;
           const matchDirection = this.filterDirection ? a.direction === this.filterDirection : true;
-          const matchHierarchie = this.filterHierarchie ? a.hierarchie === this.filterHierarchie : true;
-          const matchSexe = this.filterSexe ? a.sexe === this.filterSexe : true;
-          return matchSearch && matchStatut && matchEffectif && matchDirection && matchHierarchie && matchSexe;
+          const matchPoste = this.filterPoste ? a.poste === this.filterPoste : true;
+          const matchService = this.filterService ? a.service === this.filterService : true;
+          const matchLocalisation = this.filterLocalisation ? a.localisation === this.filterLocalisation : true;
+          return matchSearch && matchStatut && matchEffectif && matchDirection && matchPoste && matchService && matchLocalisation;
         });
+      },
+      // Listes déroulantes générées dynamiquement à partir des valeurs réellement présentes chez les agents.
+      uniquePostes() {
+        return [...new Set(this.agents.map(a => a.poste).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+      },
+      uniqueServices() {
+        return [...new Set(this.agents.map(a => a.service).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+      },
+      uniqueLocalisations() {
+        return [...new Set(this.agents.map(a => a.localisation).filter(Boolean))].sort((a, b) => a.localeCompare(b));
       },
       // Liste des critères de filtre actuellement actifs, sous forme de "puces" affichables
       // avec leur libellé et une action de suppression individuelle.
@@ -3051,9 +3246,10 @@
         const chips = [];
         if (this.filterStatut) chips.push({ key: 'filterStatut', label: 'Statut : ' + this.filterStatut });
         if (this.filterEffectif) chips.push({ key: 'filterEffectif', label: 'Effectif : ' + this.filterEffectif });
-        if (this.filterDirection) chips.push({ key: 'filterDirection', label: 'Direction : ' + this.filterDirection });
-        if (this.filterHierarchie) chips.push({ key: 'filterHierarchie', label: 'Hiérarchie : ' + this.filterHierarchie });
-        if (this.filterSexe) chips.push({ key: 'filterSexe', label: 'Sexe : ' + (this.filterSexe === 'M' ? 'Masculin' : 'Féminin') });
+        if (this.filterDirection) chips.push({ key: 'filterDirection', label: 'Direction : ' + this.directionLabel(this.filterDirection) });
+        if (this.filterPoste) chips.push({ key: 'filterPoste', label: 'Poste : ' + this.filterPoste });
+        if (this.filterService) chips.push({ key: 'filterService', label: 'Service : ' + this.filterService });
+        if (this.filterLocalisation) chips.push({ key: 'filterLocalisation', label: 'Localisation : ' + this.filterLocalisation });
         if (this.search) chips.push({ key: 'search', label: 'Recherche : "' + this.search + '"' });
         return chips;
       },
@@ -3065,8 +3261,9 @@
         this.filterStatut = '';
         this.filterEffectif = '';
         this.filterDirection = '';
-        this.filterHierarchie = '';
-        this.filterSexe = '';
+        this.filterPoste = '';
+        this.filterService = '';
+        this.filterLocalisation = '';
       },
 
       exportExcel() {
