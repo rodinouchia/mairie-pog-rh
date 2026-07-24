@@ -583,12 +583,12 @@
             </div>
           </div>
 
-          <!-- DERNIER AGENT EMBAUCHÉ -->
-          <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100 mb-6" x-show="dernierAgentEmbauche()">
+          <!-- DERNIER AGENT EMBAUCHÉ (visible uniquement pour les comptes ayant le droit de consulter les fiches agents) -->
+          <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-100 mb-6" x-show="hasPerm('lecture') && dernierAgentEmbauche()">
             <h3 class="font-display font-bold text-sm text-navy-900 mb-4 flex items-center gap-2">
               <i data-lucide="user-plus" class="w-4 h-4 text-navy-500"></i> Dernier agent embauché
             </h3>
-            <template x-if="dernierAgentEmbauche()">
+            <template x-if="hasPerm('lecture') && dernierAgentEmbauche()">
               <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div class="w-14 h-14 bg-navy-50 text-navy-700 rounded-full flex items-center justify-center text-lg font-bold border-2 border-gold-300 shrink-0"
                      x-text="(dernierAgentEmbauche().nom_prenom || '?').charAt(0).toUpperCase()"></div>
@@ -1731,17 +1731,17 @@
               <div class="max-h-[28rem] overflow-y-auto border border-slate-100 rounded-lg text-xs divide-y divide-slate-100">
                 <template x-for="u in usersList" :key="u.id">
                   <div class="p-3 space-y-2">
-                    <div class="flex justify-between items-center">
-                      <div class="flex items-center gap-2">
-                        <span class="font-bold text-slate-700" x-text="u.username"></span>
-                        <select x-model="u.role" :disabled="u.username === 'admin'" class="px-2 py-1 border border-slate-200 rounded text-[11px] bg-white disabled:bg-slate-50">
+                    <div class="flex items-center justify-between gap-2 flex-nowrap">
+                      <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <span class="font-bold text-slate-700 truncate" x-text="u.username"></span>
+                        <select x-model="u.role" :disabled="u.username === 'admin'" class="shrink-0 px-2 py-1 border border-slate-200 rounded text-[11px] bg-white disabled:bg-slate-50">
                           <option value="consultation">Consultation</option>
                           <option value="rh">Service RH</option>
                           <option value="admin_general">Admin général</option>
                           <option value="agent">Agent (fiche personnelle)</option>
                         </select>
                       </div>
-                      <button type="button" x-show="u.username !== 'admin' && hasPerm('suppression')" @click="deleteUser(u.id)" class="text-rose-600 hover:text-rose-700 flex items-center gap-1 font-semibold">
+                      <button type="button" x-show="u.username !== 'admin' && hasPerm('suppression')" @click="deleteUser(u.id)" class="shrink-0 whitespace-nowrap text-rose-600 hover:text-rose-700 flex items-center gap-1 font-semibold">
                         <i data-lucide="user-minus" class="w-3.5 h-3.5"></i> Révoquer
                       </button>
                     </div>
@@ -2357,6 +2357,12 @@
                 <option value="">— Sélectionner un effectif —</option>
                 <template x-for="ef in EFFECTIF_TYPES" :key="ef.code">
                   <option :value="ef.nom" x-text="ef.code + ' — ' + ef.nom"></option>
+                </template>
+                <!-- Filet de sécurité : si la valeur déjà enregistrée en base ne correspond à aucun type de la
+                     liste ci-dessus (ancienne donnée, orthographe différente...), on l'ajoute quand même comme
+                     option pour qu'elle reste visible et sélectionnée, au lieu de paraître avoir disparu. -->
+                <template x-if="editingAgent.effectif && !EFFECTIF_TYPES.some(ef => ef.nom === editingAgent.effectif)">
+                  <option :value="editingAgent.effectif" x-text="editingAgent.effectif + ' (valeur existante non standard)'"></option>
                 </template>
               </select>
             </div>
@@ -3300,31 +3306,68 @@
       },
 
       // Insights textuels générés dynamiquement à partir des vraies données du tableau de bord.
+      // Date de fin du contrat CDD actuellement en vigueur pour un agent : le second contrat s'il a été
+      // renouvelé (fin_contrat2), sinon le premier (fin_contrat1).
+      dateFinCDDActuelle(agent) {
+        return (agent && (agent.fin_contrat2 || agent.fin_contrat1)) || null;
+      },
+
+      // Nombre de jours restants avant une date donnée (0 = aujourd'hui, négatif = déjà passée).
+      joursRestants(dateStr) {
+        if (!dateStr) return null;
+        const cible = new Date(dateStr);
+        if (isNaN(cible.getTime())) return null;
+        const auj = new Date();
+        auj.setHours(0, 0, 0, 0);
+        cible.setHours(0, 0, 0, 0);
+        return Math.round((cible - auj) / 86400000);
+      },
+
+      // Agents dont le CDD arrive à échéance dans le mois qui vient (entre aujourd'hui et +31 jours).
+      agentsFinCDDProche() {
+        return this.kpiAgents().filter(a => {
+          const j = this.joursRestants(this.dateFinCDDActuelle(a));
+          return j !== null && j >= 0 && j <= 31;
+        }).sort((a, b) => this.joursRestants(this.dateFinCDDActuelle(a)) - this.joursRestants(this.dateFinCDDActuelle(b)));
+      },
+
+      // Agents dont le départ à la retraite est prévu dans les 3 prochains mois (~92 jours).
+      agentsRetraiteProche() {
+        return this.kpiAgents().filter(a => {
+          const dr = a.date_retraite || this.calcDateRetraite(a.date_naissance);
+          const j = this.joursRestants(dr);
+          return j !== null && j >= 0 && j <= 92;
+        }).sort((a, b) => {
+          const ja = this.joursRestants(a.date_retraite || this.calcDateRetraite(a.date_naissance));
+          const jb = this.joursRestants(b.date_retraite || this.calcDateRetraite(b.date_naissance));
+          return ja - jb;
+        });
+      },
+
+      // Insights / alertes du tableau de bord : uniquement les agents à moins d'1 mois de la fin de leur CDD,
+      // et les agents à moins de 3 mois de leur départ à la retraite.
       insightsRH() {
         const list = [];
-        const total = this.countActiveAgents();
-        const retraite3 = this.totalPrevisionsRetraite3Ans();
-        const indisponibles = this.countIndisponibles();
-        const h = this.countBySexe('M'), f = this.countBySexe('F');
-        const dirs = this.repartitionDirections();
-        if (retraite3) {
-          list.push({ icon: 'user-round-x', color: 'amber', text: retraite3 + ' départ' + (retraite3 > 1 ? 's' : '') + ' à la retraite prévu' + (retraite3 > 1 ? 's' : '') + ' sur les 3 prochaines années.' });
-        }
-        if (indisponibles) {
-          list.push({ icon: 'activity', color: 'rose', text: indisponibles + ' agent(s) actuellement indisponible(s) : ' + this.countMalade() + ' malade(s), ' + this.countDetachement() + ' en détachement, ' + this.countDisponibilite() + ' mis en disponibilité.' });
-        }
+        this.agentsFinCDDProche().forEach(a => {
+          const fin = this.dateFinCDDActuelle(a);
+          const j = this.joursRestants(fin);
+          list.push({
+            icon: 'file-signature',
+            color: 'rose',
+            text: 'CDD de ' + (a.nom_prenom || 'un agent') + ' : fin le ' + fin + (j === 0 ? " (aujourd'hui)" : j === 1 ? ' (demain)' : ' (dans ' + j + ' jours)') + '.'
+          });
+        });
+        this.agentsRetraiteProche().forEach(a => {
+          const dr = a.date_retraite || this.calcDateRetraite(a.date_naissance);
+          const j = this.joursRestants(dr);
+          list.push({
+            icon: 'user-round-x',
+            color: 'amber',
+            text: 'Retraite de ' + (a.nom_prenom || 'un agent') + ' : prévue le ' + dr + (j === 0 ? " (aujourd'hui)" : j === 1 ? ' (demain)' : ' (dans ' + j + ' jours)') + '.'
+          });
+        });
         if (this.demandesEnAttenteCount) {
-          list.push({ icon: 'bell', color: 'amber', text: this.demandesEnAttenteCount + ' demande(s) de modification en attente de traitement (Journal d\'Activité).' });
-        }
-        const anneeCourante = this.evolutionEffectifsAnnuelle().slice(-1)[0];
-        if (anneeCourante && (anneeCourante.departs || anneeCourante.deces)) {
-          list.push({ icon: 'user-round-x', color: 'slate', text: 'En ' + anneeCourante.annee + ' : ' + anneeCourante.departs + ' départ(s) et ' + anneeCourante.deces + ' décès enregistré(s).' });
-        }
-        if (total) {
-          list.push({ icon: 'users', color: 'emerald', text: total + ' agents actifs au total, dont ' + h + ' hommes et ' + f + ' femmes.' });
-        }
-        if (dirs.length) {
-          list.push({ icon: 'building-2', color: 'navy', text: this.directionLabel(dirs[0][0]) + ' regroupe l\'effectif le plus important (' + dirs[0][1] + ' agents).' });
+          list.push({ icon: 'bell', color: 'slate', text: this.demandesEnAttenteCount + ' demande(s) de modification en attente de traitement (Journal d\'Activité).' });
         }
         return list;
       },
