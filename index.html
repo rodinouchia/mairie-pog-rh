@@ -44,455 +44,101 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<!-- [SÉCURISATION MDP - étape 1/ajout] Bibliothèque bcryptjs, utilisée pour hacher les mots de passe (coût = 12)
+     à la création d'un compte, et pour vérifier le mot de passe des comptes déjà migrés à la connexion.
+     Expose un global `bcrypt` (compatible API avec le module Node `bcrypt`). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcrypt.js/2.4.3/bcrypt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-  /* =====================================================================
-     Design refresh — inspiré Apple (HIG) : minimaliste, premium, fluide.
-     Aucune modification HTML/JS : uniquement style visuel.
-     ===================================================================== */
-
-  :root {
-    --ink-900:   #0b1d2e;
-    --ink-700:   #1c2e42;
-    --ink-500:   #4a5a6e;
-    --gold-600:  #b7883a;
-    --gold-500:  #cea653;
-    --gold-300:  #e8cd94;
-    --paper:     #f6f5f1;
-    --paper-2:   #ffffff;
-    --line:      rgba(11,29,46,0.08);
-    --line-2:    rgba(11,29,46,0.12);
-    --shadow-xs: 0 1px 2px rgba(10,20,32,0.04);
-    --shadow-sm: 0 2px 8px -2px rgba(10,20,32,0.08), 0 1px 2px rgba(10,20,32,0.04);
-    --shadow-md: 0 10px 28px -12px rgba(10,20,32,0.18), 0 2px 6px -2px rgba(10,20,32,0.08);
-    --shadow-lg: 0 24px 60px -20px rgba(10,20,32,0.28), 0 6px 14px -6px rgba(10,20,32,0.12);
-    --ease:      cubic-bezier(.22,.61,.36,1);
-    --ease-out:  cubic-bezier(.16,1,.3,1);
-    --radius:    14px;
-    --radius-lg: 20px;
-  }
-
-  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
-
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter',
-                 'Helvetica Neue', Arial, sans-serif;
-    font-feature-settings: "ss01","cv11","kern";
-    letter-spacing: -0.005em;
-    background-color: #f7f6f2;
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f1ea;
     background-image:
-      radial-gradient(1200px 600px at 8% -10%, rgba(206,166,83,0.10) 0%, transparent 60%),
-      radial-gradient(1000px 700px at 100% 110%, rgba(11,29,46,0.07) 0%, transparent 55%),
-      radial-gradient(600px 400px at 50% 40%, rgba(255,255,255,0.5) 0%, transparent 70%);
+      radial-gradient(circle at 12% 8%, rgba(183,136,58,0.05) 0%, transparent 45%),
+      radial-gradient(circle at 88% 92%, rgba(11,29,46,0.05) 0%, transparent 45%);
     background-attachment: fixed;
-    color: #0b1d2e;
   }
-
-  .font-display {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
-                 '"Plus Jakarta Sans"', 'Inter', sans-serif;
-    letter-spacing: -0.022em;
-    font-weight: 600;
-  }
-  h1, h2, h3, h4 { letter-spacing: -0.02em; }
-
+  .font-display { font-family: '"Plus Jakarta Sans"', 'Inter', sans-serif; letter-spacing: -0.01em; }
   [x-cloak] { display: none !important; }
 
   ::selection { background: rgba(206,166,83,0.35); color: #0b1d2e; }
 
-  /* Focus ring plus subtil, style macOS */
   a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
   textarea:focus-visible, [tabindex]:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(0,122,255,0.18), 0 0 0 1.5px rgba(0,122,255,0.9);
-    border-radius: 10px;
-    transition: box-shadow .18s var(--ease);
+    outline: 2px solid #cea653; outline-offset: 2px; border-radius: 4px;
   }
 
-  /* Scrollbars fines et discrètes */
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(11,29,46,0.16);
-    border-radius: 999px;
-    border: 3px solid transparent;
-    background-clip: padding-box;
-    transition: background .2s var(--ease);
-  }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(11,29,46,0.32); background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb { background: rgba(11,29,46,0.16); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(11,29,46,0.30); background-clip: padding-box; }
 
-  /* ---- Tailwind overrides : polish global ---- */
-
-  /* Bords plus doux partout */
-  .rounded-md   { border-radius: 10px !important; }
-  .rounded-lg   { border-radius: 14px !important; }
-  .rounded-xl   { border-radius: 18px !important; }
-  .rounded-2xl  { border-radius: 22px !important; }
-  .rounded-3xl  { border-radius: 28px !important; }
-
-  /* Surfaces claires : blancs papier + verre subtil */
-  .bg-white {
-    background-color: rgba(255,255,255,0.92) !important;
-    backdrop-filter: saturate(140%) blur(8px);
-    -webkit-backdrop-filter: saturate(140%) blur(8px);
-  }
-  .bg-slate-50  { background-color: #fafaf7 !important; }
-  .bg-slate-100 { background-color: #f2f2ee !important; }
-
-  /* Bordures unifiées, presque invisibles */
-  .border, .border-t, .border-b, .border-l, .border-r,
-  .border-slate-100, .border-slate-200, .border-slate-300, .border-gray-200 {
-    border-color: var(--line) !important;
+  .security-pattern {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.07) 1px, transparent 0);
+    background-size: 22px 22px;
   }
 
-  /* Ombres douces, façon HIG */
-  .shadow-sm { box-shadow: var(--shadow-xs) !important; }
-  .shadow    { box-shadow: var(--shadow-sm) !important; }
-  .shadow-md { box-shadow: var(--shadow-sm) !important; }
-  .shadow-lg { box-shadow: var(--shadow-md) !important; }
-  .shadow-xl, .shadow-2xl { box-shadow: var(--shadow-lg) !important; }
-
-  /* ---- Boutons : rounded pill, transitions fluides, feedback tactile ---- */
-  button, .btn, [role="button"], input[type="submit"], input[type="button"] {
-    transition: transform .12s var(--ease-out),
-                box-shadow .2s var(--ease),
-                background-color .2s var(--ease),
-                border-color .2s var(--ease),
-                opacity .18s var(--ease);
-    letter-spacing: -0.005em;
-  }
-  button:not(:disabled):hover { filter: brightness(1.03); }
-  button:not(:disabled):active { transform: scale(0.985); }
-  button:disabled { opacity: 0.5; }
-
-  /* Boutons sombres — style « primaire » Apple */
-  button.bg-slate-900, button.bg-slate-800, button.bg-black,
-  .bg-slate-900 > button, .btn-primary {
-    background: linear-gradient(180deg, #1a2e46 0%, #0b1d2e 100%) !important;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset,
-                0 6px 16px -8px rgba(11,29,46,0.55),
-                0 1px 2px rgba(11,29,46,0.25);
-    color: #fff !important;
-  }
-  button.bg-slate-900:hover { box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset,
-                                            0 10px 22px -10px rgba(11,29,46,0.6),
-                                            0 2px 4px rgba(11,29,46,0.25); }
-
-  /* Boutons dorés — accent */
-  button.bg-amber-500, button.bg-yellow-500, button.bg-\[\#b7883a\], button.bg-\[\#cea653\] {
-    background: linear-gradient(180deg, #d9b466 0%, #b7883a 100%) !important;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset,
-                0 8px 18px -8px rgba(183,136,58,0.55),
-                0 1px 2px rgba(83,60,20,0.3);
-    color: #0b1d2e !important;
-  }
-
-  /* ---- Champs : bord fin, focus bleu Apple, coins doux ---- */
-  input, select, textarea {
-    transition: box-shadow .18s var(--ease), border-color .18s var(--ease), background-color .18s var(--ease);
-    border-radius: 10px !important;
-  }
-  input:hover, select:hover, textarea:hover { border-color: rgba(11,29,46,0.22) !important; }
-  input:focus, select:focus, textarea:focus {
-    outline: none !important;
-    border-color: rgba(0,122,255,0.6) !important;
-    box-shadow: 0 0 0 4px rgba(0,122,255,0.15) !important;
-    background-color: #fff !important;
-  }
-
-  /* ---- Cartes : relief soigné, hover fluide ---- */
-  .card-hover {
-    position: relative;
-    border-radius: var(--radius-lg);
-    transition: transform .28s var(--ease-out),
-                box-shadow .28s var(--ease),
-                border-color .28s var(--ease),
-                background-color .28s var(--ease);
-    will-change: transform;
-  }
-  .card-hover::after {
-    content: '';
-    position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-    box-shadow: inset 0 0 0 1px rgba(183,136,58,0);
-    transition: box-shadow .28s var(--ease);
-  }
-  .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-    border-color: rgba(206,166,83,0.30) !important;
-  }
-  .card-hover:hover::after { box-shadow: inset 0 0 0 1px rgba(183,136,58,0.22); }
-
-  /* ---- Bandeau officiel : plus subtil, animation douce ---- */
+  /* Ruban officiel - dégradé animé subtil façon galon cérémoniel */
   .letterhead-bar {
-    background: linear-gradient(90deg, #0b1d2e 0%, #b7883a 22%, #f0dcad 50%, #b7883a 78%, #0b1d2e 100%);
-    background-size: 220% 100%;
-    animation: ribbon-shift 18s linear infinite;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset,
-                0 4px 14px -6px rgba(11,29,46,0.35);
+    background: linear-gradient(90deg, #0b1d2e 0%, #b7883a 20%, #e8cd94 50%, #b7883a 80%, #0b1d2e 100%);
+    background-size: 200% 100%;
+    animation: ribbon-shift 14s linear infinite;
   }
   @keyframes ribbon-shift {
-    0%   { background-position: 0% 50%; }
-    100% { background-position: 220% 50%; }
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
   }
   @media (prefers-reduced-motion: reduce) {
     .letterhead-bar { animation: none; }
-    *, *::before, *::after { transition: none !important; animation: none !important; }
   }
 
   .watermark-crest {
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
-    opacity: 0.045;
-    filter: saturate(0.6);
+    opacity: 0.05;
   }
 
-  .security-pattern {
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0);
-    background-size: 24px 24px;
-  }
-
-  /* ---- Sidebar : navigation type macOS, pastille active dorée ---- */
-  .nav-item {
+  /* Cartes - relief soigné avec liseré doré au survol */
+  .card-hover {
     position: relative;
-    overflow: hidden;
-    border-radius: 12px !important;
-    transition: background-color .2s var(--ease), color .2s var(--ease), transform .12s var(--ease-out);
+    transition: transform .22s cubic-bezier(.2,.7,.3,1), box-shadow .22s ease, border-color .22s ease;
   }
+  .card-hover::after {
+    content: '';
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    box-shadow: inset 0 0 0 1px rgba(183,136,58,0);
+    transition: box-shadow .22s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px -16px rgba(10,20,32,0.28), 0 2px 8px -2px rgba(10,20,32,0.12);
+    border-color: rgba(206,166,83,0.35) !important;
+  }
+  .card-hover:hover::after { box-shadow: inset 0 0 0 1px rgba(183,136,58,0.18); }
+
+  /* Navigation laterale - pastille active en degrade dore, transition fluide */
+  .nav-item { position: relative; overflow: hidden; }
   .nav-item::before {
     content: '';
-    position: absolute; left: 6px; top: 10px; bottom: 10px; width: 3px;
+    position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
     background: linear-gradient(180deg, #e8cd94, #b7883a);
-    border-radius: 999px;
+    border-radius: 0 4px 4px 0;
     transform: scaleY(0); transform-origin: center;
-    transition: transform .3s var(--ease-out);
+    transition: transform .22s cubic-bezier(.2,.7,.3,1);
   }
   .nav-item.active::before { transform: scaleY(1); }
-  .nav-item.active {
-    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04)) !important;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08),
-                0 6px 20px -12px rgba(0,0,0,0.5);
-  }
-  .nav-item:not(.active):hover {
-    background-color: rgba(255,255,255,0.06) !important;
-    transform: translateX(1px);
-  }
+  .nav-item.active { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
+  .nav-item:not(.active) { transition: background-color .18s ease, color .18s ease; }
 
+  /* Champs de saisie - transition douce du focus */
+  input, select, textarea, button { transition: box-shadow .16s ease, border-color .16s ease, background-color .16s ease, transform .12s ease; }
+  button:active { transform: translateY(0.5px); }
+
+  /* Petit sceau discret pour l'en-tete de sidebar */
   .crest-glow {
-    background: radial-gradient(circle, rgba(206,166,83,0.28) 0%, transparent 70%);
-    filter: blur(2px);
-  }
-
-  /* ---- Tables : lignes fines, hover doux ---- */
-  table { border-collapse: separate; border-spacing: 0; }
-  thead th {
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    font-size: 11px;
-    color: #4a5a6e;
-    background: rgba(246,245,241,0.7);
-    backdrop-filter: blur(6px);
-  }
-  tbody tr { transition: background-color .15s var(--ease); }
-  tbody tr:hover { background-color: rgba(206,166,83,0.06); }
-  tbody td, thead th { border-color: var(--line) !important; }
-
-  /* ---- Badges / pastilles ---- */
-  .rounded-full { transition: transform .2s var(--ease), box-shadow .2s var(--ease); }
-
-  /* ---- Modales / overlays : verre dépoli ---- */
-  .fixed.inset-0.bg-black, .fixed.inset-0.bg-slate-900,
-  [class*="bg-black/"], [class*="bg-slate-900/"] {
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
-    background-color: rgba(11,29,46,0.45) !important;
-  }
-
-  /* ---- Apparitions douces ---- */
-  @keyframes app-fade-up {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  main > *, .card-hover, section, article { animation: app-fade-up .5s var(--ease-out) both; }
-
-  /* ---- Typographie utilitaire ---- */
-  .text-xs  { letter-spacing: 0.01em; }
-  .text-sm  { letter-spacing: 0.002em; }
-  .text-2xl, .text-3xl, .text-4xl, .text-5xl { letter-spacing: -0.025em; font-weight: 600; }
-
-  /* ---- Liens ---- */
-  a { transition: color .18s var(--ease), opacity .18s var(--ease); }
-  a:hover { opacity: 0.85; }
-
-  /* ---- Séparateurs plus aériens ---- */
-  hr { border-color: var(--line) !important; }
-
-  /* ---- Chart.js container : ombre douce ---- */
-  canvas { border-radius: 12px; }
-
-  /* =====================================================================
-     Responsivité — tablette & mobile. Ajuste espacements, typographie
-     et grilles Tailwind existantes sans toucher au HTML.
-     ===================================================================== */
-
-  /* Fluidité générale : jamais de scroll horizontal, media adaptatifs */
-  html, body { max-width: 100%; overflow-x: hidden; }
-  img, svg, video, canvas { max-width: 100%; height: auto; }
-  table { max-width: 100%; }
-
-  /* ---------- TABLETTE ( <= 1024px ) ---------- */
-  @media (max-width: 1024px) {
-    /* Grilles denses → 2 colonnes lisibles */
-    .grid.grid-cols-3, .grid.grid-cols-4, .grid.grid-cols-5, .grid.grid-cols-6 {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-    .lg\:grid-cols-3, .lg\:grid-cols-4, .lg\:grid-cols-5, .lg\:grid-cols-6 {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    /* Espacements internes plus mesurés */
-    .p-8  { padding: 1.5rem !important; }
-    .p-10 { padding: 1.75rem !important; }
-    .px-8 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
-    .py-8 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
-    .gap-8 { gap: 1.25rem !important; }
-    .gap-10 { gap: 1.5rem !important; }
-
-    /* Titres légèrement réduits */
-    .text-4xl { font-size: 1.875rem !important; line-height: 2.15rem !important; }
-    .text-5xl { font-size: 2.25rem !important; line-height: 2.5rem !important; }
-    .text-3xl { font-size: 1.625rem !important; line-height: 2rem !important; }
-
-    /* Tableaux : défilement horizontal élégant */
-    .overflow-x-auto, .overflow-auto { -webkit-overflow-scrolling: touch; }
-    table { min-width: 640px; }
-  }
-
-  /* ---------- MOBILE ( <= 768px ) ---------- */
-  @media (max-width: 768px) {
-    /* Toutes les grilles multi-colonnes → 1 colonne empilée */
-    .grid.grid-cols-2, .grid.grid-cols-3, .grid.grid-cols-4,
-    .grid.grid-cols-5, .grid.grid-cols-6, .grid.grid-cols-12,
-    .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4,
-    .lg\:grid-cols-2, .lg\:grid-cols-3, .lg\:grid-cols-4,
-    .xl\:grid-cols-2, .xl\:grid-cols-3, .xl\:grid-cols-4 {
-      grid-template-columns: minmax(0, 1fr) !important;
-    }
-
-    /* Flex-row → colonne, alignement à gauche */
-    .flex.items-center.justify-between:not(.keep-row),
-    .flex.justify-between:not(.keep-row) {
-      flex-wrap: wrap;
-      row-gap: 0.75rem;
-    }
-
-    /* Padding & marges resserrés mais aérés */
-    .p-4  { padding: 1rem !important; }
-    .p-5  { padding: 1rem !important; }
-    .p-6  { padding: 1.125rem !important; }
-    .p-8  { padding: 1.25rem !important; }
-    .p-10 { padding: 1.25rem !important; }
-    .px-4, .px-5, .px-6, .px-8, .px-10 { padding-left: 1rem !important; padding-right: 1rem !important; }
-    .py-4 { padding-top: 0.875rem !important; padding-bottom: 0.875rem !important; }
-    .py-6 { padding-top: 1.125rem !important; padding-bottom: 1.125rem !important; }
-    .py-8, .py-10 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
-    .gap-4, .gap-5, .gap-6, .gap-8, .gap-10 { gap: 0.875rem !important; }
-    .space-y-6 > * + *, .space-y-8 > * + * { margin-top: 1rem !important; }
-
-    /* Marges de section */
-    main, section { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
-
-    /* Typographie : hiérarchie préservée, tailles réduites proportionnellement */
-    .text-5xl { font-size: 1.875rem !important; line-height: 2.15rem !important; letter-spacing: -0.025em; }
-    .text-4xl { font-size: 1.625rem !important; line-height: 1.95rem !important; letter-spacing: -0.025em; }
-    .text-3xl { font-size: 1.375rem !important; line-height: 1.75rem !important; letter-spacing: -0.02em; }
-    .text-2xl { font-size: 1.175rem !important; line-height: 1.5rem !important; }
-    .text-xl  { font-size: 1.0625rem !important; line-height: 1.4rem !important; }
-    .text-lg  { font-size: 1rem !important; line-height: 1.35rem !important; }
-    .text-base { font-size: 0.9375rem !important; line-height: 1.35rem !important; }
-    .text-sm  { font-size: 0.8125rem !important; line-height: 1.15rem !important; }
-    .text-xs  { font-size: 0.72rem !important; line-height: 1rem !important; }
-
-    /* Boutons : cible tactile 44px min (HIG) */
-    button, .btn, [role="button"], input[type="submit"], a.btn {
-      min-height: 42px;
-      padding-left: 0.9rem !important;
-      padding-right: 0.9rem !important;
-    }
-    button.p-1, button.p-2 { min-height: 36px; min-width: 36px; }
-
-    /* Champs plus grands, plus faciles à cibler, pas de zoom iOS */
-    input, select, textarea {
-      font-size: 16px !important;
-      min-height: 42px;
-      padding: 0.6rem 0.75rem !important;
-    }
-    textarea { min-height: 88px; }
-
-    /* Sidebar / navigation latérale : passe en tiroir plein-écran quand ouverte */
-    aside, .sidebar, [class*="w-64"], [class*="w-72"], [class*="w-80"] {
-      /* Si visible, elle prend une largeur confortable ; Alpine gère l'ouverture */
-    }
-    aside.fixed, .sidebar.fixed { width: min(88vw, 320px) !important; }
-
-    /* Cartes : rayons légèrement réduits, pas de hover translate (tactile) */
-    .rounded-3xl { border-radius: 22px !important; }
-    .rounded-2xl { border-radius: 18px !important; }
-    .card-hover:hover { transform: none; }
-
-    /* Tableaux : conteneur scrollable + indication visuelle */
-    .overflow-x-auto, .overflow-auto {
-      -webkit-overflow-scrolling: touch;
-      mask-image: linear-gradient(90deg, #000 0, #000 92%, transparent 100%);
-    }
-    table { min-width: 560px; font-size: 0.8125rem; }
-    thead th, tbody td { padding: 0.6rem 0.75rem !important; }
-
-    /* Modales : plein écran mobile, marges internes ajustées */
-    .fixed.inset-0 > .bg-white,
-    .fixed.inset-0 [class*="max-w-"] {
-      max-width: 96vw !important;
-      width: 96vw !important;
-      margin: 0.75rem auto !important;
-      max-height: calc(100vh - 1.5rem);
-      overflow-y: auto;
-    }
-
-    /* En-tête officiel : logo/titres empilés proprement */
-    header .flex.items-center { flex-wrap: wrap; row-gap: 0.5rem; }
-
-    /* Charts : hauteur adaptée */
-    canvas { max-height: 260px !important; }
-
-    /* Masquer les décorations trop lourdes */
-    .watermark-crest { opacity: 0.03; }
-  }
-
-  /* ---------- PETIT MOBILE ( <= 420px ) ---------- */
-  @media (max-width: 420px) {
-    .text-5xl { font-size: 1.625rem !important; }
-    .text-4xl { font-size: 1.4rem !important; }
-    .text-3xl { font-size: 1.2rem !important; }
-    .p-6, .p-8 { padding: 1rem !important; }
-    main, section { padding-left: 0.625rem !important; padding-right: 0.625rem !important; }
-    aside.fixed, .sidebar.fixed { width: 92vw !important; }
-    table { min-width: 480px; }
-    canvas { max-height: 220px !important; }
-  }
-
-  /* ---------- Orientation paysage mobile : compresser un peu ---------- */
-  @media (max-height: 480px) and (orientation: landscape) {
-    .py-8, .py-10 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
-    canvas { max-height: 200px !important; }
-  }
-
-  /* ---------- Écrans haute densité : polish typographique ---------- */
-  @media (min-resolution: 2dppx) {
-    body { -webkit-font-smoothing: antialiased; }
+    background: radial-gradient(circle, rgba(206,166,83,0.22) 0%, transparent 70%);
   }
 </style>
 </head>
@@ -690,22 +336,29 @@
     </div>
 
     <nav class="flex-1 flex flex-col gap-1.5 px-3 py-5 overflow-y-auto">
-      <button @click="currentTab = 'dashboard'; mobileMenuOpen = false"
+      <button x-show="userRole !== 'agent'" @click="currentTab = 'dashboard'; mobileMenuOpen = false"
               :class="currentTab === 'dashboard' ? 'active bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white'"
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition">
         <i data-lucide="layout-dashboard" class="w-4.5 h-4.5 w-[18px] h-[18px]"></i> <span>Tableau de bord</span>
       </button>
-      <button x-show="hasPerm('lecture')" @click="currentTab = 'agents'; mobileMenuOpen = false"
+      <button x-show="hasPerm('lecture') && userRole !== 'agent'" @click="currentTab = 'agents'; mobileMenuOpen = false"
               :class="currentTab === 'agents' ? 'active bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white'"
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition">
         <i data-lucide="users" class="w-[18px] h-[18px]"></i> <span>Annuaire des agents</span>
       </button>
-      <button x-show="hasPerm('voir_journal')" @click="currentTab = 'journal'; mobileMenuOpen = false; loadJournal()"
-              :class="currentTab === 'journal' ? 'active bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white'"
+      <button x-show="userRole === 'agent'" @click="currentTab = 'ma_fiche'; mobileMenuOpen = false"
+              :class="currentTab === 'ma_fiche' ? 'active bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white'"
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition">
-        <i data-lucide="history" class="w-[18px] h-[18px]"></i> <span>Journal d'Activité</span>
+        <i data-lucide="user-round" class="w-[18px] h-[18px]"></i> <span>Ma fiche</span>
       </button>
-      <button x-show="userRole === 'admin_general' || hasPerm('configuration_systeme')" @click="currentTab = 'outils'; mobileMenuOpen = false"
+      <button x-show="hasPerm('voir_journal') && userRole !== 'agent'" @click="currentTab = 'journal'; mobileMenuOpen = false; loadJournal()"
+              :class="currentTab === 'journal' ? 'active bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white'"
+              class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition relative">
+        <i data-lucide="history" class="w-[18px] h-[18px]"></i> <span>Journal d'Activité</span>
+        <span x-show="demandesEnAttenteCount > 0" x-text="demandesEnAttenteCount"
+              class="ml-auto bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"></span>
+      </button>
+      <button x-show="(userRole === 'admin_general' || hasPerm('configuration_systeme')) && userRole !== 'agent'" @click="currentTab = 'outils'; mobileMenuOpen = false"
               :class="currentTab === 'outils' ? 'active bg-gold-500/20 text-gold-300' : 'text-gold-300/70 hover:bg-gold-500/10 hover:text-gold-200'"
               class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition mt-3 border-t border-white/10 pt-4">
         <i data-lucide="shield" class="w-[18px] h-[18px]"></i> <span>Outils administrateur</span>
@@ -1622,6 +1275,7 @@
                   <option value="modification">Modification</option>
                   <option value="statut">Changement de statut</option>
                   <option value="suppression">Suppression</option>
+                  <option value="demande_modification">Demande agent</option>
                 </select>
               </div>
               <div class="flex items-center gap-2">
@@ -1669,6 +1323,7 @@
                     <th class="p-3">Ancienne valeur</th>
                     <th class="p-3">Nouvelle valeur</th>
                     <th class="p-3">Détails</th>
+                    <th class="p-3">Statut demande</th>
                     <th class="p-3 text-right" x-show="hasPerm('suppression')">Actions</th>
                   </tr>
                 </thead>
@@ -1688,6 +1343,21 @@
                       <td class="p-3 text-rose-600 max-w-[160px] truncate" :title="e.ancienne_valeur" x-text="e.ancienne_valeur || '—'"></td>
                       <td class="p-3 text-emerald-700 font-medium max-w-[160px] truncate" :title="e.nouvelle_valeur" x-text="e.nouvelle_valeur || '—'"></td>
                       <td class="p-3 text-slate-500 max-w-[200px] truncate" :title="e.details" x-text="e.details || '—'"></td>
+                      <td class="p-3 whitespace-nowrap">
+                        <template x-if="e.action === 'demande_modification'">
+                          <div class="flex flex-col items-start gap-1">
+                            <span :class="demandeStatutClass(e.statut_demande)" class="px-2 py-0.5 rounded-full font-medium" x-text="demandeStatutLabel(e.statut_demande)"></span>
+                            <span class="text-slate-400 max-w-[160px] truncate" :title="e.reponse" x-show="e.reponse" x-text="e.reponse"></span>
+                            <button type="button" x-show="hasPerm('modification') && (!e.statut_demande || e.statut_demande === 'en_attente')" @click="openRepondreDemande(e)"
+                                    class="inline-flex items-center gap-1 text-navy-700 hover:text-navy-900 font-bold">
+                              <i data-lucide="reply" class="w-3 h-3"></i> Répondre
+                            </button>
+                          </div>
+                        </template>
+                        <template x-if="e.action !== 'demande_modification'">
+                          <span class="text-slate-300">—</span>
+                        </template>
+                      </td>
                       <td class="p-3 text-right" x-show="hasPerm('suppression')">
                         <button type="button" @click="deleteJournalEntry(e.id)" title="Supprimer cette entrée" class="text-rose-500 hover:text-rose-700">
                           <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -1946,6 +1616,10 @@
 
               <template x-if="hasPerm('gestion_agents')">
               <div>
+              <button type="button" @click="genererComptesAgentsManquants()"
+                      class="w-full mb-4 inline-flex items-center justify-center gap-1.5 bg-violet-50 hover:bg-violet-100 transition text-violet-700 py-2 rounded-lg text-xs font-bold">
+                <i data-lucide="user-check" class="w-3.5 h-3.5"></i> Générer les comptes agents manquants (rôle "Agent (fiche personnelle)")
+              </button>
               <form @submit.prevent="createUser()" class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
                 <input type="text" x-model="newUser.username" placeholder="Identifiant" required class="px-2.5 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 <input type="text" x-model="newUser.password" placeholder="Mot de passe" required class="px-2.5 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
@@ -1953,8 +1627,23 @@
                   <option value="consultation">Consultation</option>
                   <option value="rh">Service RH</option>
                   <option value="admin_general">Admin général</option>
+                  <option value="agent">Agent (fiche personnelle)</option>
                 </select>
 
+                <template x-if="newUser.role === 'agent'">
+                  <div class="sm:col-span-3">
+                    <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">Fiche agent à lier à ce compte</p>
+                    <select x-model="newUser.agent_id" class="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                      <option value="">-- Sélectionner un agent --</option>
+                      <template x-for="a in agents" :key="'sel-agent-' + a.id">
+                        <option :value="a.id" x-text="a.nom_prenom + (a.matricule ? ' (' + a.matricule + ')' : ' (sans matricule, ID ' + a.id + ')')"></option>
+                      </template>
+                    </select>
+                    <p class="text-[10px] text-slate-400 mt-1">Lié par l'identifiant interne de la fiche (fonctionne même sans matricule). Ce compte pourra uniquement consulter (lecture seule) la fiche de cet agent, et faire des demandes de modification.</p>
+                  </div>
+                </template>
+
+                <template x-if="newUser.role !== 'agent'">
                 <div class="sm:col-span-3">
                   <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">Permissions accordées à ce compte</p>
                   <div class="flex flex-wrap gap-2">
@@ -1969,6 +1658,7 @@
                     </template>
                   </div>
                 </div>
+                </template>
 
                 <button type="submit" class="sm:col-span-3 inline-flex items-center justify-center gap-1.5 bg-gold-600 hover:bg-gold-700 transition text-white py-2 rounded-lg text-xs font-bold mt-1">
                   <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Créer l'utilisateur
@@ -1984,13 +1674,23 @@
                           <option value="consultation">Consultation</option>
                           <option value="rh">Service RH</option>
                           <option value="admin_general">Admin général</option>
+                          <option value="agent">Agent (fiche personnelle)</option>
                         </select>
                       </div>
                       <button type="button" x-show="u.username !== 'admin' && hasPerm('suppression')" @click="deleteUser(u.id)" class="text-rose-600 hover:text-rose-700 flex items-center gap-1 font-semibold">
                         <i data-lucide="user-minus" class="w-3.5 h-3.5"></i> Révoquer
                       </button>
                     </div>
-                    <div x-show="u.role !== 'admin_general'" class="flex flex-wrap gap-2 bg-slate-50 rounded-xl px-3 py-2.5">
+                    <div x-show="u.role === 'agent'" class="bg-violet-50 rounded-xl px-3 py-2.5">
+                      <p class="text-[10px] font-bold uppercase tracking-wide text-violet-500 mb-1">Fiche agent liée</p>
+                      <select x-model="u.agent_id" class="w-full px-2.5 py-1.5 border border-violet-200 rounded-lg text-[11px] bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                        <option value="">-- Sélectionner un agent --</option>
+                        <template x-for="a in agents" :key="'sel-u-' + u.id + '-' + a.id">
+                          <option :value="a.id" x-text="a.nom_prenom + (a.matricule ? ' (' + a.matricule + ')' : ' (sans matricule, ID ' + a.id + ')')"></option>
+                        </template>
+                      </select>
+                    </div>
+                    <div x-show="u.role !== 'admin_general' && u.role !== 'agent'" class="flex flex-wrap gap-2 bg-slate-50 rounded-xl px-3 py-2.5">
                       <template x-for="perm in PERMISSIONS_META" :key="u.id + '-' + perm.key">
                         <label class="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all select-none text-[11px] font-medium"
                                :class="u.permissions[perm.key] ? 'bg-navy-800 border-navy-800 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-navy-300'"
@@ -2017,8 +1717,264 @@
           </div>
         </div>
 
+        <!-- MA FICHE (rôle "agent" : consultation en lecture seule de sa propre fiche uniquement) -->
+        <div x-show="currentTab === 'ma_fiche' && userRole === 'agent'" x-cloak>
+          <h2 class="text-xl md:text-2xl font-display font-bold text-navy-950 mb-1">Ma fiche</h2>
+          <p class="text-xs text-slate-500 mb-4">Vous consultez ici l'ensemble des informations de votre propre dossier, en lecture seule.</p>
+
+          <template x-if="!monAgent()">
+            <div class="bg-white p-8 rounded-2xl shadow-card border border-slate-100 text-center">
+              <i data-lucide="user-x" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+              <p class="text-sm text-slate-500">Aucune fiche agent n'est encore associée à votre compte.</p>
+              <p class="text-xs text-slate-400 mt-1">Merci de contacter le service RH ou un administrateur.</p>
+            </div>
+          </template>
+
+          <template x-if="monAgent()">
+            <div class="bg-white rounded-2xl shadow-card border border-slate-100 overflow-hidden">
+              <div class="bg-gradient-to-r from-navy-900 to-navy-800 p-6">
+                <div class="flex items-center gap-4">
+                  <template x-if="monAgent().photo_url">
+                    <img :src="monAgent().photo_url" class="w-16 h-16 rounded-full object-cover border-2 border-gold-400" alt="Photo agent">
+                  </template>
+                  <template x-if="!monAgent().photo_url">
+                    <div class="w-16 h-16 bg-white/10 text-white rounded-full flex items-center justify-center text-xl font-bold border-2 border-gold-400" x-text="(monAgent().nom_prenom || '?').charAt(0).toUpperCase()"></div>
+                  </template>
+                  <div class="min-w-0">
+                    <h3 class="font-display font-bold text-lg text-white truncate" x-text="monAgent().nom_prenom"></h3>
+                    <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                      <span class="text-sm font-mono bg-white/10 text-gold-200 px-2 py-0.5 rounded font-bold" x-text="'Matricule : ' + (monAgent().matricule || 'non assigné')"></span>
+                      <span :class="getBadgeClass(monAgent().statut)" class="text-sm px-2 py-0.5 rounded-full font-medium" x-text="monAgent().statut"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-6">
+                <template x-if="monAgent().statut === 'Inactif'">
+                  <div class="mb-5 bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm">
+                    <strong class="text-rose-900 block font-bold flex items-center gap-1.5"><i data-lucide="ban" class="w-3.5 h-3.5"></i> Statut : inactif</strong>
+                    <span class="text-slate-600" x-text="'Motif enregistré : ' + (monAgent().motif_inactif || 'non précisé')"></span>
+                  </div>
+                </template>
+
+                <h4 class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">Informations personnelles</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm">
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="cake" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div>
+                      <span class="text-slate-400 block">Date de naissance</span>
+                      <strong x-text="monAgent().date_naissance || '—'"></strong>
+                      <template x-if="monAgent().date_naissance && calcAge(monAgent().date_naissance) !== null">
+                        <span class="text-slate-400" x-text="' (' + calcAge(monAgent().date_naissance) + ' ans)'"></span>
+                      </template>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="map-pin" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Lieu de naissance</span><strong x-text="monAgent().lieu_naissance || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="flag" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Nationalité</span><strong x-text="monAgent().nationalite || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="heart" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Situation familiale</span><strong x-text="monAgent().situation_familiale || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="baby" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Nombre d'enfants</span><strong x-text="monAgent().nbr_enfants ?? '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="phone" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Téléphone</span><strong x-text="monAgent().telephone || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="graduation-cap" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Diplômes</span><strong x-text="monAgent().diplomes || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="hash" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">N° CNSS / CNAMGS</span><strong x-text="(monAgent().n_cnss || '—') + ' / ' + (monAgent().n_cnamgs || '—')"></strong></div>
+                  </div>
+                </div>
+
+                <h4 class="text-xs font-bold uppercase tracking-wide text-slate-400 mt-4 mb-2">Carrière &amp; affectation</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm">
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="calendar-check" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div>
+                      <span class="text-slate-400 block">Date d'embauche</span>
+                      <strong x-text="monAgent().date_embauche || '—'"></strong>
+                      <template x-if="monAgent().date_embauche && calcAnciennete(monAgent().date_embauche) !== null">
+                        <span class="text-slate-400" x-text="' (' + calcAnciennete(monAgent().date_embauche) + ')'"></span>
+                      </template>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="calendar-clock" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Date de départ en retraite</span><strong class="capitalize" x-text="monAgent().date_retraite ? formatMoisAnnee(monAgent().date_retraite) : '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="building-2" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Direction</span><strong x-text="directionLabel(monAgent().direction)"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="briefcase" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Service</span><strong x-text="monAgent().service || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="layers" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Section</span><strong x-text="monAgent().section || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="map" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Localisation</span><strong x-text="monAgent().localisation || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="badge-check" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Poste actuel</span><strong x-text="monAgent().poste || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="lock" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Poste à l'embauche</span><strong x-text="monAgent().poste_embauche || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="users" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Type d'effectif</span><strong x-text="monAgent().effectif || '—'"></strong></div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <i data-lucide="clipboard-list" class="w-5 h-5 text-navy-400 mt-0.5"></i>
+                    <div><span class="text-slate-400 block">Imputation</span><strong x-text="monAgent().imputation || '—'"></strong></div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm mt-3">
+                  <div><span class="text-slate-400 block mb-1">Hiérarchie</span><strong class="text-navy-900" x-text="monAgent().hierarchie || '—'"></strong></div>
+                  <div><span class="text-slate-400 block mb-1">Catégorie</span><strong class="text-navy-900" x-text="monAgent().categorie || '—'"></strong></div>
+                  <div><span class="text-slate-400 block mb-1">Classe</span><strong class="text-navy-900" x-text="monAgent().classe || '—'"></strong></div>
+                  <div><span class="text-slate-400 block mb-1">Échelon</span><strong class="text-navy-900" x-text="monAgent().echelon || '—'"></strong></div>
+                  <div><span class="text-slate-400 block mb-1">Val. indiciaire</span><strong class="text-navy-900" x-text="monAgent().valeur_indiciaire ?? '—'"></strong></div>
+                </div>
+
+                <h4 class="text-xs font-bold uppercase tracking-wide text-slate-400 mt-4 mb-2">Rémunération</h4>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm">
+                  <template x-for="champ in ['salaire_entree','salaire_base_actuel','prime_logement','prime_transport','indemnite_fonction','indemnite_sujetion','prime_etat_civil','solidarite_nationale','prime_risque','prime_salissure','prime_perception','autres_primes']" :key="'remu-' + champ">
+                    <div>
+                      <span class="text-slate-400 block mb-0.5" x-text="FIELD_LABELS[champ]"></span>
+                      <strong class="text-navy-900" x-text="(monAgent()[champ] || 0).toLocaleString('fr-FR') + ' FCFA'"></strong>
+                    </div>
+                  </template>
+                </div>
+
+                <template x-if="mesDemandes.length">
+                  <div class="mt-4">
+                    <h4 class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">Mes demandes de modification</h4>
+                    <div class="space-y-2">
+                      <template x-for="d in mesDemandes" :key="'demande-' + d.id">
+                        <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm">
+                          <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <span class="font-bold text-navy-900" x-text="d.champ || 'Général'"></span>
+                              <span class="text-slate-400 text-xs ml-1" x-text="new Date(d.created_at).toLocaleDateString('fr-FR', { dateStyle: 'medium' })"></span>
+                            </div>
+                            <span :class="demandeStatutClass(d.statut_demande)" class="text-xs px-2 py-0.5 rounded-full font-medium" x-text="demandeStatutLabel(d.statut_demande)"></span>
+                          </div>
+                          <p class="text-slate-600 mt-1.5" x-text="d.details"></p>
+                          <template x-if="d.reponse">
+                            <div class="mt-2 bg-white border border-slate-200 rounded-lg p-2.5">
+                              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-0.5">Réponse du service RH</p>
+                              <p class="text-slate-700" x-text="d.reponse"></p>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+
+                <div class="mt-6 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+                  <button type="button" @click="openDemandeModif()"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-navy-800 hover:bg-navy-900 transition text-white rounded-lg text-xs font-bold">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i> Demander une modification
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
       </div>
     </main>
+  </div>
+</div>
+
+<!-- MODALE DEMANDE DE MODIFICATION (rôle "agent") -->
+<div x-show="demandeBox.show" x-cloak class="fixed inset-0 bg-navy-950/70 backdrop-blur-md flex items-center justify-center p-4 z-[75]"
+     x-transition.opacity>
+  <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl" @click.outside="demandeBox.show = false">
+    <h3 class="font-display font-bold text-navy-900 mb-1 flex items-center gap-2"><i data-lucide="send" class="w-4 h-4"></i> Demander une modification</h3>
+    <p class="text-xs text-slate-500 mb-4">Votre demande sera transmise au service RH via le journal d'activité. Elle ne modifie pas votre fiche directement.</p>
+    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Champ concerné (optionnel)</label>
+    <input type="text" x-model="demandeBox.champ" placeholder="ex : Téléphone, Situation familiale..."
+           class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-navy-500 focus:outline-none">
+    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Votre demande</label>
+    <textarea x-model="demandeBox.message" rows="4" placeholder="Décrivez la modification souhaitée..."
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm mb-4 focus:ring-2 focus:ring-navy-500 focus:outline-none"></textarea>
+    <div class="flex justify-end gap-2">
+      <button @click="demandeBox.show = false" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Annuler</button>
+      <button @click="submitDemandeModif()" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-navy-800 hover:bg-navy-900 transition">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE RÉPONDRE À UNE DEMANDE DE MODIFICATION (service RH / admin) -->
+<div x-show="reponseDemandeBox.show" x-cloak class="fixed inset-0 bg-navy-950/70 backdrop-blur-md flex items-center justify-center p-4 z-[75]"
+     x-transition.opacity>
+  <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl" @click.outside="reponseDemandeBox.show = false">
+    <h3 class="font-display font-bold text-navy-900 mb-1 flex items-center gap-2"><i data-lucide="reply" class="w-4 h-4"></i> Répondre à la demande</h3>
+    <p class="text-xs text-slate-500 mb-4">Votre réponse et la décision seront visibles par l'agent sur sa fiche.</p>
+    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Décision</label>
+    <select x-model="reponseDemandeBox.decision" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm mb-3 bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+      <option value="traitee">Traitée / Acceptée</option>
+      <option value="rejetee">Rejetée</option>
+    </select>
+    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Réponse (optionnelle)</label>
+    <textarea x-model="reponseDemandeBox.reponse" rows="4" placeholder="Précisez ce qui a été fait, ou le motif du refus..."
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm mb-4 focus:ring-2 focus:ring-navy-500 focus:outline-none"></textarea>
+    <div class="flex justify-end gap-2">
+      <button @click="reponseDemandeBox.show = false" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Annuler</button>
+      <button @click="submitReponseDemande()" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-navy-800 hover:bg-navy-900 transition">Enregistrer la réponse</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE IDENTIFIANTS GÉNÉRÉS (comptes agents créés automatiquement) -->
+<div x-show="credentialsModal.show" x-cloak class="fixed inset-0 bg-navy-950/70 backdrop-blur-md flex items-center justify-center p-4 z-[80]"
+     x-transition.opacity>
+  <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto" @click.outside="credentialsModal.show = false">
+    <h3 class="font-display font-bold text-navy-900 mb-1 flex items-center gap-2"><i data-lucide="key-round" class="w-4 h-4 text-gold-600"></i> Comptes "agent" créés</h3>
+    <p class="text-xs text-rose-600 font-medium mb-4">⚠️ Ces mots de passe temporaires ne seront plus affichés après fermeture de cette fenêtre. Notez-les ou communiquez-les maintenant aux agents concernés.</p>
+    <div class="border border-slate-100 rounded-lg overflow-hidden mb-4">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 font-semibold uppercase text-slate-500">
+          <tr><th class="p-2.5">Agent</th><th class="p-2.5">Identifiant</th><th class="p-2.5">Mot de passe</th></tr>
+        </thead>
+        <tbody>
+          <template x-for="(row, i) in credentialsModal.rows" :key="'cred-' + i">
+            <tr class="border-t border-slate-100">
+              <td class="p-2.5" x-text="row.nom + (row.matricule && row.matricule !== '—' ? ' (' + row.matricule + ')' : '')"></td>
+              <td class="p-2.5 font-mono font-bold text-navy-900" x-text="row.username"></td>
+              <td class="p-2.5 font-mono font-bold text-emerald-700" x-text="row.password"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+    <div class="flex justify-end">
+      <button @click="credentialsModal.show = false" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-navy-800 hover:bg-navy-900 transition">J'ai bien noté ces identifiants, fermer</button>
+    </div>
   </div>
 </div>
 
@@ -2544,6 +2500,12 @@
       toast: { show: false, type: 'success', message: '' },
       confirmBox: { show: false, message: '', onConfirm: null },
       motifBox: { show: false, agentId: null, value: '' },
+      demandeBox: { show: false, champ: '', message: '' },
+      reponseDemandeBox: { show: false, entryId: null, reponse: '', decision: 'traitee' },
+      credentialsModal: { show: false, rows: [] },
+      linkedAgentId: null,
+      mesDemandes: [],
+      demandesEnAttenteCount: 0,
 
       now: new Date(),
       locationName: '',
@@ -2646,7 +2608,7 @@
       ],
       currentPermissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false, voir_journal: false },
 
-      newUser: { username: '', password: '', role: 'consultation', permissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false, voir_journal: false } },
+      newUser: { username: '', password: '', role: 'consultation', agent_id: '', permissions: { lecture: true, ecriture: false, modification: false, suppression: false, gestion_agents: false, configuration_systeme: false, voir_salaire: false, voir_journal: false } },
       newAgent: {
         nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
         date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
@@ -2680,7 +2642,9 @@
           this.currentUser = localStorage.getItem('m_user');
           this.userRole = localStorage.getItem('m_role') || 'consultation';
           this.currentPermissions = this.loadStoredPermissions();
+          this.linkedAgentId = localStorage.getItem('m_agent_id') || null;
           this.isLoggedIn = true;
+          if (this.userRole === 'agent') this.currentTab = 'ma_fiche';
           await this.loadAllData();
         }
         this.startClock();
@@ -2799,7 +2763,7 @@
       },
 
       roleLabel(role) {
-        const labels = { admin_general: 'Administrateur général', rh: 'Service RH', consultation: 'Consultation' };
+        const labels = { admin_general: 'Administrateur général', rh: 'Service RH', consultation: 'Consultation', agent: 'Agent (fiche personnelle)' };
         return labels[role] || role;
       },
 
@@ -2849,26 +2813,46 @@
       async login() {
         this.isLoading = true;
         try {
+          // [SÉCURISATION MDP - étape 1] On ne filtre plus par mot de passe directement dans la requête
+          // (impossible de comparer un mot de passe en clair à un hash bcrypt côté base). On récupère le
+          // compte par identifiant, puis on vérifie le mot de passe côté client via verifyPasswordCompat()
+          // (bcrypt si `password_hash` est renseigné, sinon comparaison `password_clair` comme avant).
           const { data, error } = await supabaseClient
             .from('utilisateurs')
             .select('*')
-            .eq('username', this.loginForm.username)
-            .eq('password_clair', this.loginForm.password);
+            .eq('username', this.loginForm.username);
 
-          if (error || !data || data.length === 0) {
+          const user = (data && data.length) ? data[0] : null;
+          const motDePasseValide = user && this.verifyPasswordCompat(this.loginForm.password, user);
+
+          if (error || !user || !motDePasseValide) {
             this.showToast('error', 'Identifiants de la Mairie incorrects.');
           } else {
-            const user = data[0];
             const perms = this.normalizePermissions(user.permissions);
             localStorage.setItem('m_user', user.username);
             localStorage.setItem('m_role', user.role);
+            localStorage.setItem('m_agent_id', user.agent_id != null ? String(user.agent_id) : '');
             this.persistPermissions(perms);
             this.currentUser = user.username;
             this.userRole = user.role;
             this.currentPermissions = perms;
+            this.linkedAgentId = user.agent_id != null ? String(user.agent_id) : null;
             this.isLoggedIn = true;
             await this.loadAllData();
-            this.currentTab = 'dashboard';
+            this.currentTab = user.role === 'agent' ? 'ma_fiche' : 'dashboard';
+
+            // [SÉCURISATION MDP - étape 2] Migration progressive et silencieuse : si ce compte n'avait pas
+            // encore de `password_hash` (connexion validée via l'ancien `password_clair`), on génère le hash
+            // bcrypt maintenant, à partir du mot de passe qui vient d'être vérifié, et on l'enregistre.
+            // Rien d'autre ne change pour l'utilisateur (aucun message, aucun impact sur l'UI/le comportement) ;
+            // `password_clair` n'est ni modifié ni supprimé, conformément à la phase de migration en cours.
+            if (!user.password_hash) {
+              const hashGenere = this.hashPasswordBcrypt(this.loginForm.password);
+              if (hashGenere) {
+                supabaseClient.from('utilisateurs').update({ password_hash: hashGenere }).eq('id', user.id)
+                  .then(({ error: migErr }) => { if (migErr) console.error('[SÉCURISATION MDP] Échec migration password_hash pour', user.username, migErr); });
+              }
+            }
           }
         } catch (e) {
           this.showToast('error', 'Erreur de connexion réseau avec Supabase.');
@@ -2884,6 +2868,34 @@
 
       async loadAllData() {
         try {
+          if (this.userRole === 'agent') {
+            // Sécurité côté application : un compte "agent" ne charge JAMAIS que sa propre fiche.
+            // (À doubler impérativement d'une politique RLS côté Supabase pour une sécurité réelle, cf. note de configuration.)
+            if (this.linkedAgentId) {
+              let { data: ags, error: agsErr } = await supabaseClient.from('agents').select('*').eq('id', this.linkedAgentId);
+              if (agsErr) { console.error('Erreur chargement de la fiche agent:', agsErr); this.showToast('error', 'Chargement de votre fiche : ' + agsErr.message); }
+              this.agents = ags || [];
+
+              // Historique de ses propres demandes de modification (avec statut et réponse éventuelle du service RH).
+              let { data: demandes, error: demandesErr } = await supabaseClient
+                .from('journal_activite')
+                .select('*')
+                .eq('action', 'demande_modification')
+                .eq('agent_id', String(this.linkedAgentId))
+                .order('created_at', { ascending: false });
+              if (demandesErr) { console.error('Erreur chargement de vos demandes:', demandesErr); }
+              this.mesDemandes = demandes || [];
+            } else {
+              this.agents = [];
+              this.mesDemandes = [];
+            }
+            let { data: strs, error: strsErr } = await supabaseClient.from('structures').select('*');
+            if (strsErr) { console.error('Erreur chargement structures:', strsErr); }
+            this.structures = strs || [];
+            this.refreshIcons();
+            return;
+          }
+
           let { data: ags, error: agsErr } = await supabaseClient.from('agents').select('*').order('nom_prenom', { ascending: true });
           if (agsErr) { console.error('Erreur chargement agents:', agsErr); this.showToast('error', 'Chargement agents: ' + agsErr.message); }
           this.agents = ags || [];
@@ -2892,8 +2904,10 @@
           if (strsErr) { console.error('Erreur chargement structures:', strsErr); this.showToast('error', 'Chargement structure: ' + strsErr.message); }
           this.structures = strs || [];
 
-          if (this.userRole === 'admin_general') {
-            let { data: usrs, error: usrsErr } = await supabaseClient.from('utilisateurs').select('id, username, role, permissions');
+          // La liste des comptes (au moins id/rôle/agent lié) est chargée dès que l'utilisateur gère les comptes,
+          // pas seulement pour l'admin général : nécessaire pour détecter les agents sans compte "agent" encore créé.
+          if (this.userRole === 'admin_general' || this.hasPerm('gestion_agents')) {
+            let { data: usrs, error: usrsErr } = await supabaseClient.from('utilisateurs').select('id, username, role, permissions, agent_id');
             if (usrsErr) { console.error('Erreur chargement utilisateurs:', usrsErr); }
             this.usersList = (usrs || []).map(u => ({ ...u, permissions: this.normalizePermissions(u.permissions) }));
           }
@@ -2908,6 +2922,17 @@
             .order('created_at', { ascending: true });
           if (sortiesErr) { console.error('Erreur chargement historique des sorties:', sortiesErr); }
           this.historiqueSorties = sorties || [];
+
+          // Compteur d'alerte : demandes de modification (envoyées par les agents) en attente de traitement.
+          if (this.hasPerm('voir_journal')) {
+            const { count, error: countErr } = await supabaseClient
+              .from('journal_activite')
+              .select('id', { count: 'exact', head: true })
+              .eq('action', 'demande_modification')
+              .or('statut_demande.eq.en_attente,statut_demande.is.null');
+            if (countErr) { console.error('Erreur comptage des demandes en attente:', countErr); }
+            this.demandesEnAttenteCount = count || 0;
+          }
         } catch (e) { console.error(e); this.showToast('error', 'Erreur réseau lors du chargement.'); }
         this.refreshIcons();
         this.renderDashboardCharts();
@@ -2915,6 +2940,44 @@
 
       countActiveAgents() {
         return this.kpiAgents().length;
+      },
+
+      // Fiche de l'agent connecté (rôle "agent" uniquement) : this.agents ne contient alors
+      // jamais que cette unique fiche (cf. loadAllData), ce qui garantit qu'aucune autre
+      // information que la sienne n'est accessible à l'écran.
+      monAgent() {
+        return this.agents && this.agents.length ? this.agents[0] : null;
+      },
+
+      openDemandeModif() {
+        this.demandeBox = { show: true, champ: '', message: '' };
+        this.refreshIcons();
+      },
+      async submitDemandeModif() {
+        if (!this.demandeBox.message.trim()) {
+          this.showToast('error', 'Veuillez décrire votre demande avant de l\'envoyer.');
+          return;
+        }
+        const agent = this.monAgent();
+        try {
+          await supabaseClient.from('journal_activite').insert([{
+            utilisateur: this.currentUser,
+            action: 'demande_modification',
+            agent_id: agent?.id != null ? String(agent.id) : null,
+            agent_nom_prenom: agent?.nom_prenom || null,
+            agent_matricule: agent?.matricule || null,
+            champ: this.demandeBox.champ.trim() || 'Général',
+            details: this.demandeBox.message.trim(),
+            statut_demande: 'en_attente'
+          }]);
+        } catch (e) {
+          console.error('Erreur envoi demande de modification:', e);
+          this.showToast('error', "Échec de l'envoi de votre demande. Réessayez plus tard.");
+          return;
+        }
+        this.demandeBox.show = false;
+        this.showToast('success', "Votre demande a été transmise au service RH.");
+        await this.loadAllData();
       },
 
       // Nombre d'agents en maladie / inactifs, hors directions en veille (cartes du tableau de bord).
@@ -3159,6 +3222,9 @@
         if (indisponibles) {
           list.push({ icon: 'activity', color: 'rose', text: indisponibles + ' agent(s) actuellement indisponible(s) : ' + this.countMalade() + ' malade(s), ' + this.countDetachement() + ' en détachement, ' + this.countDisponibilite() + ' mis en disponibilité.' });
         }
+        if (this.demandesEnAttenteCount) {
+          list.push({ icon: 'bell', color: 'amber', text: this.demandesEnAttenteCount + ' demande(s) de modification en attente de traitement (Journal d\'Activité).' });
+        }
         const anneeCourante = this.evolutionEffectifsAnnuelle().slice(-1)[0];
         if (anneeCourante && (anneeCourante.departs || anneeCourante.deces)) {
           list.push({ icon: 'user-round-x', color: 'slate', text: 'En ' + anneeCourante.annee + ' : ' + anneeCourante.departs + ' départ(s) et ' + anneeCourante.deces + ' décès enregistré(s).' });
@@ -3290,15 +3356,148 @@
         });
       },
 
+      // ============================================================
+      // [SÉCURISATION MDP - étape 1] Utilitaires bcrypt (hachage / vérification)
+      // ============================================================
+      // Coût bcrypt demandé pour cette étape de sécurisation. Ne pas modifier sans repasser
+      // par une nouvelle étape de migration (un coût plus élevé ralentit hash/vérif côté navigateur).
+      BCRYPT_COST: 12,
+
+      // Résout la bibliothèque bcryptjs quelle que soit la façon dont le script CDN l'expose
+      // (`window.bcrypt` dans la majorité des cas, ou `window.dcodeIO.bcrypt` selon la version/le bundle).
+      _resolveBcrypt() {
+        const lib = (typeof bcrypt !== 'undefined' && bcrypt) || (window.dcodeIO && window.dcodeIO.bcrypt) || null;
+        if (!lib) console.error('[SÉCURISATION MDP] La bibliothèque bcryptjs ne semble pas chargée (vérifier la balise <script> CDN).');
+        return lib;
+      },
+
+      // [SÉCURISATION MDP - étape 1] Génère un hash bcrypt (coût = this.BCRYPT_COST) pour un mot de passe en clair.
+      // Utilisé uniquement à la création d'un compte (cf. createUser()). Retourne null en cas d'échec
+      // (bibliothèque non chargée), auquel cas l'appelant doit garder l'ancien comportement (password_clair).
+      hashPasswordBcrypt(motDePasseClair) {
+        const lib = this._resolveBcrypt();
+        if (!lib) return null;
+        try {
+          return lib.hashSync(motDePasseClair, this.BCRYPT_COST);
+        } catch (e) {
+          console.error('[SÉCURISATION MDP] Échec du hachage bcrypt:', e);
+          return null;
+        }
+      },
+
+      // [SÉCURISATION MDP - étape 1] Vérifie le mot de passe saisi à la connexion.
+      // - Si le compte a déjà un `password_hash` (colonne bcrypt) : vérification bcrypt (méthode sécurisée).
+      // - Sinon (compte pas encore migré) : compatibilité temporaire, on retombe sur l'ancienne
+      //   comparaison directe avec `password_clair`, exactement comme avant cette modification.
+      // Ne supprime ni ne modifie `password_clair` : cette fonction ne fait que choisir la méthode de vérification.
+      verifyPasswordCompat(motDePasseSaisi, userRow) {
+        if (userRow && userRow.password_hash) {
+          const lib = this._resolveBcrypt();
+          if (!lib) {
+            // Filet de sécurité si la bibliothèque n'a pas pu charger : on refuse plutôt que de
+            // contourner silencieusement une vérification censée être sécurisée.
+            console.error('[SÉCURISATION MDP] Vérification bcrypt impossible (bibliothèque absente).');
+            return false;
+          }
+          try {
+            return lib.compareSync(motDePasseSaisi, userRow.password_hash);
+          } catch (e) {
+            console.error('[SÉCURISATION MDP] Échec de la vérification bcrypt:', e);
+            return false;
+          }
+        }
+        // Compatibilité temporaire : ancien comportement inchangé pour les comptes non encore migrés.
+        return !!userRow && userRow.password_clair === motDePasseSaisi;
+      },
+
+      // ============================================================
+      // GÉNÉRATION AUTOMATIQUE DES COMPTES "AGENT" (accès en lecture seule à sa propre fiche)
+      // ============================================================
+      // Mot de passe temporaire simple (6 chiffres), à communiquer à l'agent : il n'est affiché
+      // qu'une seule fois, au moment de la création du compte (rien n'est stocké en clair à l'écran ensuite).
+      genererMotDePasseTemporaire() {
+        return String(Math.floor(100000 + Math.random() * 900000));
+      },
+
+      // Crée un compte "agent" (lecture seule, lié par ID) pour chaque fiche de la liste fournie
+      // qui n'a pas encore de compte associé. Retourne la liste des identifiants/mots de passe générés,
+      // à afficher une seule fois dans la modale d'identifiants pour transmission à l'agent concerné.
+      async genererComptesAgentsPourAgents(agentsList) {
+        const rows = [];
+        for (const agent of (agentsList || [])) {
+          if (!agent || agent.id == null) continue;
+          const dejaLie = this.usersList.some(u => u.role === 'agent' && String(u.agent_id) === String(agent.id));
+          if (dejaLie) continue;
+          const password = this.genererMotDePasseTemporaire();
+          let username = (agent.matricule && agent.matricule.trim()) ? agent.matricule.trim() : ('agent' + String(agent.id).slice(0, 8));
+          let { error } = await supabaseClient.from('utilisateurs').insert([{
+            username, password_clair: password, role: 'agent',
+            permissions: { ...this.DEFAULT_PERMISSIONS, lecture: false },
+            agent_id: agent.id
+          }]);
+          if (error) {
+            // Identifiant déjà pris (ex: matricule déjà utilisé comme identifiant ailleurs, ou collision sur
+            // les 8 premiers caractères de l'UUID) : on retente avec l'UUID complet, garanti unique.
+            username = 'agent' + agent.id;
+            ({ error } = await supabaseClient.from('utilisateurs').insert([{
+              username, password_clair: password, role: 'agent',
+              permissions: { ...this.DEFAULT_PERMISSIONS, lecture: false },
+              agent_id: agent.id
+            }]));
+          }
+          if (error) {
+            console.error('Échec création du compte agent pour la fiche', agent.id, error);
+            continue;
+          }
+          this.usersList.push({ id: null, username, role: 'agent', agent_id: agent.id, permissions: { ...this.DEFAULT_PERMISSIONS, lecture: false } });
+          rows.push({ nom: agent.nom_prenom || '—', matricule: agent.matricule || '—', username, password });
+        }
+        return rows;
+      },
+
+      // Bouton "Générer les comptes agents manquants" (Outils administrateur) : couvre à la fois
+      // les fiches déjà existantes avant la mise en place de ce système, et un rattrapage ponctuel si besoin.
+      async genererComptesAgentsManquants() {
+        if (!this.hasPerm('gestion_agents')) { this.showToast('error', "Vous n'avez pas l'autorisation de gérer les comptes."); return; }
+        this.isLoading = true;
+        const rows = await this.genererComptesAgentsPourAgents(this.agents);
+        this.isLoading = false;
+        if (!rows.length) { this.showToast('success', 'Tous les agents ont déjà un compte associé.'); return; }
+        this.credentialsModal = { show: true, rows };
+      },
+
       async createUser() {
         if (!this.hasPerm('gestion_agents')) {
           this.showToast('error', "Vous n'avez pas l'autorisation de créer/inviter un utilisateur.");
           return;
         }
         if (!this.newUser.username.trim() || !this.newUser.password.trim()) return;
-        const { error } = await supabaseClient.from('utilisateurs').insert([{ username: this.newUser.username, password_clair: this.newUser.password, role: this.newUser.role, permissions: this.newUser.permissions }]);
+        if (this.newUser.role === 'agent' && !this.newUser.agent_id) {
+          this.showToast('error', "Veuillez sélectionner la fiche agent à lier à ce compte.");
+          return;
+        }
+        // Un compte "agent" n'a jamais de permissions génériques : son accès est limité
+        // à sa propre fiche (cf. loadAllData / monAgent), en lecture seule uniquement.
+        const permsAEnvoyer = this.newUser.role === 'agent' ? { ...this.DEFAULT_PERMISSIONS, lecture: false } : this.newUser.permissions;
+
+        // [SÉCURISATION MDP - étape 2] Le mot de passe saisi est haché avec bcrypt (coût = 12) et stocké dans
+        // `password_hash`. `password_clair` reste renseigné en parallèle, temporairement, le temps de la phase
+        // de migration (règle demandée : ne pas encore couper l'ancien mécanisme). Si le hachage échoue
+        // (bibliothèque bcrypt non chargée), on continue quand même avec `password_clair` seul, pour ne
+        // jamais bloquer la création d'un compte ; le compte sera haché automatiquement à sa prochaine
+        // connexion réussie (cf. login()).
+        const motDePasseHache = this.hashPasswordBcrypt(this.newUser.password);
+        const nouvelUtilisateur = {
+          username: this.newUser.username,
+          role: this.newUser.role,
+          permissions: permsAEnvoyer,
+          agent_id: this.newUser.role === 'agent' ? this.newUser.agent_id : null,
+          password_hash: motDePasseHache || null,
+          password_clair: this.newUser.password
+        };
+        const { error } = await supabaseClient.from('utilisateurs').insert([nouvelUtilisateur]);
         if (error) { this.showToast('error', 'Échec création utilisateur: ' + error.message); return; }
-        this.newUser = { username: '', password: '', role: 'consultation', permissions: { ...this.DEFAULT_PERMISSIONS } };
+        this.newUser = { username: '', password: '', role: 'consultation', agent_id: '', permissions: { ...this.DEFAULT_PERMISSIONS } };
         await this.loadAllData();
         this.showToast('success', 'Utilisateur créé avec succès.');
       },
@@ -3307,7 +3506,12 @@
           this.showToast('error', "Vous n'avez pas l'autorisation de gérer les comptes utilisateurs.");
           return;
         }
-        const { error } = await supabaseClient.from('utilisateurs').update({ role: u.role, permissions: u.permissions }).eq('id', u.id);
+        const permsAEnvoyer = u.role === 'agent' ? { ...this.DEFAULT_PERMISSIONS, lecture: false } : u.permissions;
+        const { error } = await supabaseClient.from('utilisateurs').update({
+          role: u.role,
+          permissions: permsAEnvoyer,
+          agent_id: u.role === 'agent' ? (u.agent_id || null) : null
+        }).eq('id', u.id);
         if (error) { this.showToast('error', 'Échec mise à jour des droits: ' + error.message); return; }
         this.showToast('success', "Droits d'accès mis à jour pour " + u.username + '.');
       },
@@ -3890,7 +4094,7 @@
 
       // Libellé lisible pour le type d'action journalisée.
       journalActionLabel(action) {
-        const labels = { creation: 'Création', modification: 'Modification', suppression: 'Suppression', statut: 'Changement de statut' };
+        const labels = { creation: 'Création', modification: 'Modification', suppression: 'Suppression', statut: 'Changement de statut', demande_modification: 'Demande agent' };
         return labels[action] || action;
       },
       journalActionClass(action) {
@@ -3898,9 +4102,44 @@
           creation: 'bg-emerald-100 text-emerald-800',
           modification: 'bg-sky-100 text-sky-800',
           suppression: 'bg-rose-100 text-rose-800',
-          statut: 'bg-amber-100 text-amber-800'
+          statut: 'bg-amber-100 text-amber-800',
+          demande_modification: 'bg-violet-100 text-violet-800'
         };
         return classes[action] || 'bg-slate-100 text-slate-700';
+      },
+
+      // Libellé / couleur du statut d'une demande de modification envoyée par un agent.
+      // Une entrée sans statut_demande (créée avant la mise en place de ce suivi) est traitée comme "en attente".
+      demandeStatutLabel(statut) {
+        const labels = { en_attente: 'En attente', traitee: 'Traitée', rejetee: 'Rejetée' };
+        return labels[statut || 'en_attente'] || statut;
+      },
+      demandeStatutClass(statut) {
+        const classes = {
+          en_attente: 'bg-amber-100 text-amber-800',
+          traitee: 'bg-emerald-100 text-emerald-800',
+          rejetee: 'bg-rose-100 text-rose-800'
+        };
+        return classes[statut || 'en_attente'] || 'bg-slate-100 text-slate-700';
+      },
+
+      // Ouvre la modale de réponse à une demande de modification (service RH / admin).
+      openRepondreDemande(entry) {
+        if (!this.hasPerm('modification')) { this.showToast('error', "Vous n'avez pas l'autorisation de traiter les demandes."); return; }
+        this.reponseDemandeBox = { show: true, entryId: entry.id, reponse: entry.reponse || '', decision: 'traitee' };
+        this.refreshIcons();
+      },
+      async submitReponseDemande() {
+        if (!this.hasPerm('modification')) { this.showToast('error', "Vous n'avez pas l'autorisation de traiter les demandes."); return; }
+        const { error } = await supabaseClient.from('journal_activite').update({
+          statut_demande: this.reponseDemandeBox.decision,
+          reponse: this.reponseDemandeBox.reponse.trim() || null
+        }).eq('id', this.reponseDemandeBox.entryId);
+        if (error) { this.showToast('error', 'Échec: ' + error.message); return; }
+        this.reponseDemandeBox.show = false;
+        this.showToast('success', "Réponse enregistrée, l'agent pourra la consulter sur sa fiche.");
+        await this.loadJournal(this.journalPage);
+        await this.loadAllData();
       },
 
       // Applique la recherche et le filtre par type d'action sur le journal chargé.
@@ -3955,6 +4194,12 @@
           agentMatricule: agentCree.matricule,
           details: 'Création de la fiche agent'
         });
+        // Le rôle "agent" (accès en lecture seule à sa propre fiche) est activé automatiquement
+        // pour chaque nouvel agent, y compris ceux sans matricule (lien fait via l'ID auto-incrémenté).
+        let comptesGeneres = [];
+        if (agentCree.id != null) {
+          comptesGeneres = await this.genererComptesAgentsPourAgents([agentCree]);
+        }
         this.newAgent = {
           nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
           date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
@@ -3972,7 +4217,11 @@
         this.agentFormServiceId = '';
         await this.loadAllData();
         this.currentTab = 'agents';
-        this.showToast('success', 'Fiche agent enregistrée avec succès.');
+        if (comptesGeneres.length) {
+          this.credentialsModal = { show: true, rows: comptesGeneres };
+        } else {
+          this.showToast('success', 'Fiche agent enregistrée avec succès.');
+        }
       },
       deleteAgent(id) {
         if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
@@ -4262,19 +4511,26 @@
           return agent;
         });
         const chunkSize = 200;
+        const agentsInseres = [];
         for (let i = 0; i < payload.length; i += chunkSize) {
           const chunk = payload.slice(i, i + chunkSize);
-          const { error } = await supabaseClient.from('agents').insert(chunk);
+          const { data: insertedChunk, error } = await supabaseClient.from('agents').insert(chunk).select();
           if (error) {
             this.agentImporting = false;
             this.showToast('error', "Échec de l'import (lot à partir de la ligne " + (i + 1) + ") : " + error.message);
             return;
           }
+          if (insertedChunk) agentsInseres.push(...insertedChunk);
         }
         this.agentImporting = false;
         const total = payload.length;
         this.closeAgentImport();
         await this.loadAllData();
+        // Active automatiquement le rôle "agent" (lecture seule de sa propre fiche) pour chaque fiche importée.
+        const comptesGeneres = await this.genererComptesAgentsPourAgents(agentsInseres);
+        if (comptesGeneres.length) {
+          this.credentialsModal = { show: true, rows: comptesGeneres };
+        }
         this.showToast('success', total + ' agent(s) importé(s) avec succès.');
       },
 
