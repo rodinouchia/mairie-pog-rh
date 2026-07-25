@@ -4335,21 +4335,22 @@
       async deleteAgent(id) {
         if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
         const agentAvantSuppression = this.agents.find(a => a.id === id) || this.selectedAgent;
-        // Un compte "agent" (accès en lecture seule à sa propre fiche) peut être lié à cette fiche via
-        // utilisateurs.agent_id (contrainte de clé étrangère) : il faut le supprimer avant de pouvoir
-        // supprimer la fiche, sinon Postgres refuse la suppression (violation de contrainte).
-        // On interroge la base directement (plutôt que usersList, pas toujours chargée selon les permissions).
+        // N'IMPORTE QUEL compte utilisateur peut être lié à cette fiche via utilisateurs.agent_id
+        // (contrainte de clé étrangère), pas seulement les comptes de rôle "agent" (ex: un compte relié
+        // puis dont le rôle a changé depuis, ou plusieurs comptes liés à la même fiche par erreur).
+        // On les recherche TOUS, sans filtrer sur le rôle, et on les supprime TOUS avant la fiche.
         const { data: comptesLies, error: errRecherche } = await supabaseClient
-          .from('utilisateurs').select('id, username').eq('role', 'agent').eq('agent_id', id);
-        if (errRecherche) { console.error('Erreur recherche compte lié:', errRecherche); }
-        const compteLie = (comptesLies && comptesLies[0]) || null;
+          .from('utilisateurs').select('id, username').eq('agent_id', id);
+        if (errRecherche) { console.error('Erreur recherche des comptes liés:', errRecherche); }
+        const listeComptesLies = comptesLies || [];
         const message = "Supprimer définitivement cet agent ? Cette action est irréversible."
-          + (compteLie ? ' Son compte de connexion ("' + compteLie.username + '") sera également supprimé.' : '');
+          + (listeComptesLies.length ? ' Le(s) compte(s) de connexion lié(s) (' + listeComptesLies.map(c => c.username).join(', ') + ') sera(seront) également supprimé(s).' : '');
         this.openConfirm(message, async () => {
-          if (compteLie) {
-            const { error: errCompte } = await supabaseClient.from('utilisateurs').delete().eq('id', compteLie.id);
-            if (errCompte) { this.showToast('error', 'Échec suppression du compte lié: ' + errCompte.message); return; }
-          }
+          // Suppression inconditionnelle (même si la recherche ci-dessus n'a rien remonté ou a échoué) :
+          // supprimer 0 ligne ne provoque aucune erreur, alors que ne pas le faire provoquerait la violation
+          // de contrainte de clé étrangère si un compte est bien lié.
+          const { error: errCompte } = await supabaseClient.from('utilisateurs').delete().eq('agent_id', id);
+          if (errCompte) { this.showToast('error', 'Échec suppression du/des compte(s) lié(s): ' + errCompte.message); return; }
           const { error } = await supabaseClient.from('agents').delete().eq('id', id);
           if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
           this.logJournal({
@@ -4357,7 +4358,7 @@
             agentId: id,
             agentNom: agentAvantSuppression?.nom_prenom,
             agentMatricule: agentAvantSuppression?.matricule,
-            details: 'Suppression définitive de la fiche agent' + (compteLie ? ' (et de son compte de connexion associé)' : '')
+            details: 'Suppression définitive de la fiche agent' + (listeComptesLies.length ? ' (et de ' + listeComptesLies.length + ' compte(s) de connexion associé(s))' : '')
           });
           this.selectedAgent = null;
           await this.loadAllData();
