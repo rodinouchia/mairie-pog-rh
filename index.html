@@ -2561,6 +2561,7 @@
       structures: [],
       journalEntries: [],
       historiqueSorties: [],
+      historiqueCreations: [],
       journalLoading: false,
       journalSearch: '',
       journalFilterAction: '',
@@ -2995,6 +2996,19 @@
           if (sortiesErr) { console.error('Erreur chargement historique des sorties:', sortiesErr); }
           this.historiqueSorties = sorties || [];
 
+          // Historique des créations d'agents (ordre réel d'ajout dans l'application), utilisé pour
+          // déterminer le "dernier agent embauché" du tableau de bord de façon fiable, indépendamment
+          // de la date d'embauche saisie (qui peut être une date passée ou future, non représentative
+          // de l'ordre réel d'ajout dans le système).
+          let { data: creations, error: creationsErr } = await supabaseClient
+            .from('journal_activite')
+            .select('created_at, agent_id')
+            .eq('action', 'creation')
+            .order('created_at', { ascending: false })
+            .limit(30);
+          if (creationsErr) { console.error('Erreur chargement historique des créations:', creationsErr); }
+          this.historiqueCreations = creations || [];
+
           // Compteur d'alerte : demandes de modification (envoyées par les agents) en attente de traitement.
           if (this.hasPerm('voir_journal')) {
             const { count, error: countErr } = await supabaseClient
@@ -3082,8 +3096,17 @@
       },
 
       // --- STATISTIQUES SUPPLÉMENTAIRES DU TABLEAU DE BORD ---
-      // Agent le plus récemment embauché (toutes dates d'embauche renseignées confondues).
+      // Dernier agent réellement ajouté dans l'application (ordre chronologique d'ajout, via le journal
+      // d'activité), et non la date d'embauche saisie sur la fiche : cette dernière peut être une date
+      // passée ou future qui ne reflète pas l'ordre réel dans lequel les fiches ont été créées, ce qui
+      // faisait paraître la carte "figée" après l'ajout d'un nouvel agent.
       dernierAgentEmbauche() {
+        for (const c of (this.historiqueCreations || [])) {
+          const agent = this.agents.find(a => String(a.id) === String(c.agent_id));
+          if (agent) return agent;
+        }
+        // Repli (fiches créées avant la mise en place de ce suivi, sans entrée de création dans le journal) :
+        // on retombe sur l'ancienne méthode, basée sur la date d'embauche la plus récente.
         const avecDate = this.agents.filter(a => a.date_embauche);
         if (!avecDate.length) return null;
         return [...avecDate].sort((a, b) => new Date(b.date_embauche) - new Date(a.date_embauche))[0];
