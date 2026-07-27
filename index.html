@@ -733,7 +733,7 @@
               <template x-for="[nom, total] in repartitionDirections()" :key="nom">
                 <div>
                   <div class="flex items-center justify-between text-xs mb-1">
-                    <span class="font-medium text-slate-600" x-text="directionLabel(nom)"></span>
+                    <span class="font-medium text-slate-600" x-text="nom"></span>
                     <span class="font-bold text-navy-900" x-text="total"></span>
                   </div>
                   <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -804,7 +804,7 @@
                 </div>
                 <template x-for="[nom, h, f] in repartitionSexeParDirection()" :key="'dir-sexe-' + nom">
                   <div class="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-slate-50">
-                    <span class="font-medium text-slate-600" x-text="directionLabel(nom)"></span>
+                    <span class="font-medium text-slate-600" x-text="nom"></span>
                     <span class="flex items-center gap-4">
                       <span class="font-bold text-sky-700" x-text="h"></span>
                       <span class="font-bold text-pink-700" x-text="f"></span>
@@ -888,7 +888,7 @@
                 <select x-model="filterDirection" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
                   <option value="">Toutes les directions</option>
                   <template x-for="d in directions()" :key="'filtre-dir-' + d.id">
-                    <option :value="d.nom" x-text="directionLabel(d.nom)"></option>
+                    <option :value="d.id" x-text="directionLabel(d.id)"></option>
                   </template>
                 </select>
               </div>
@@ -896,8 +896,8 @@
                 <i data-lucide="badge-check" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 <select x-model="filterPoste" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
                   <option value="">Tous les postes</option>
-                  <template x-for="p in uniquePostes()" :key="'filtre-poste-' + p">
-                    <option :value="p" x-text="p"></option>
+                  <template x-for="p in postes()" :key="'filtre-poste-' + p.id">
+                    <option :value="p.id" x-text="p.nom"></option>
                   </template>
                 </select>
               </div>
@@ -905,8 +905,8 @@
                 <i data-lucide="briefcase" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 <select x-model="filterService" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white appearance-none focus:ring-2 focus:ring-navy-500 focus:outline-none">
                   <option value="">Tous les services</option>
-                  <template x-for="s in uniqueServices()" :key="'filtre-svc-' + s">
-                    <option :value="s" x-text="s"></option>
+                  <template x-for="s in servicesList" :key="'filtre-svc-' + s.id">
+                    <option :value="s.id" x-text="s.nom"></option>
                   </template>
                 </select>
               </div>
@@ -958,9 +958,9 @@
                           <span class="font-semibold" x-text="agent.nom_prenom"></span>
                         </div>
                       </td>
-                      <td class="p-3 text-xs" x-text="directionAcronym(agent.direction) || '—'"></td>
+                      <td class="p-3 text-xs" x-text="directionAcronym(agent.direction_id) || '—'"></td>
                       <td class="p-3 text-xs text-slate-500" x-text="agent.effectif || '—'"></td>
-                      <td class="p-3 text-xs text-slate-500" x-text="agent.poste || '—'"></td>
+                      <td class="p-3 text-xs text-slate-500" x-text="posteLabel(agent.poste_id)"></td>
                       <td class="p-3 text-xs text-slate-500" x-text="statutProfessionnelLabel(agent.statut_professionnel_id)"></td>
                       <td class="p-3">
                         <span :class="getBadgeClass(agent.statut)" class="text-xs px-2 py-0.5 rounded-full font-medium" x-text="agent.statut"></span>
@@ -990,7 +990,7 @@
                   <div class="min-w-0 flex-1">
                     <p class="text-[10px] font-mono font-bold text-navy-700 truncate" x-text="agent.matricule || '—'"></p>
                     <p class="font-semibold text-sm truncate" x-text="agent.nom_prenom"></p>
-                    <p class="text-xs text-slate-500 truncate" x-text="(agent.poste || '—') + ' · ' + directionLabel(agent.direction)"></p>
+                    <p class="text-xs text-slate-500 truncate" x-text="posteLabel(agent.poste_id) + ' · ' + directionLabel(agent.direction_id)"></p>
                     <p class="text-[10px] text-slate-400 truncate" x-text="statutProfessionnelLabel(agent.statut_professionnel_id)"></p>
                     <span :class="getBadgeClass(agent.statut)" class="text-[10px] px-2 py-0.5 rounded-full font-medium inline-block mt-1" x-text="agent.statut"></span>
                   </div>
@@ -1112,32 +1112,32 @@
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Direction <span class="text-rose-500">*</span></label>
-                  <select x-model="agentFormDirId" @change="onFormDirectionChange()" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <select x-model="newAgent.direction_id" @change="onFormDirectionChange()" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">Sélectionner</option>
                     <template x-for="d in directions()" :key="d.id">
-                      <option :value="d.id" x-text="directionLabel(d.nom)"></option>
+                      <option :value="d.id" x-text="directionLabel(d.id)"></option>
                     </template>
                   </select>
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Service <span class="text-rose-500">*</span></label>
-                  <select x-model="agentFormServiceId" @change="onFormServiceChange()" :disabled="!agentFormDirId" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                  <select x-model="newAgent.service_id" @change="onFormServiceChange()" :disabled="!newAgent.direction_id" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
                     <option value="">Sélectionner</option>
-                    <template x-for="s in servicesForForm()" :key="s.id">
+                    <template x-for="s in servicesOf(newAgent.direction_id)" :key="s.id">
                       <option :value="s.id" x-text="s.nom"></option>
                     </template>
                   </select>
-                  <p x-show="agentFormDirId && !servicesForForm().length" class="text-[10px] text-slate-400 mt-1">Aucun service configuré pour cette direction.</p>
+                  <p x-show="newAgent.direction_id && !servicesOf(newAgent.direction_id).length" class="text-[10px] text-slate-400 mt-1">Aucun service configuré pour cette direction.</p>
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Section</label>
-                  <select x-model="newAgent.section" :disabled="!agentFormServiceId" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                  <select x-model="newAgent.section_id" :disabled="!newAgent.service_id" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
                     <option value="">Sélectionner</option>
-                    <template x-for="s in sectionsForForm()" :key="s.id">
-                      <option :value="s.nom" x-text="s.nom"></option>
+                    <template x-for="s in sectionsOf(newAgent.service_id)" :key="s.id">
+                      <option :value="s.id" x-text="s.nom"></option>
                     </template>
                   </select>
-                  <p x-show="agentFormServiceId && !sectionsForForm().length" class="text-[10px] text-slate-400 mt-1">Aucune section configurée pour ce service.</p>
+                  <p x-show="newAgent.service_id && !sectionsOf(newAgent.service_id).length" class="text-[10px] text-slate-400 mt-1">Aucune section configurée pour ce service.</p>
                 </div>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
@@ -1147,10 +1147,10 @@
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste <span class="text-rose-500">*</span></label>
-                  <select x-model="newAgent.poste" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <select x-model="newAgent.poste_id" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">— Sélectionner un poste —</option>
                     <template x-for="p in postes()" :key="p.id">
-                      <option :value="p.nom" x-text="p.nom"></option>
+                      <option :value="p.id" x-text="p.nom"></option>
                     </template>
                   </select>
                   <p class="text-[10px] text-slate-400 mt-1">Sera aussi enregistré comme « poste à l'embauche », figé dans la fiche de l'agent. Gérez la liste des postes depuis Outils Admin.</p>
@@ -1176,10 +1176,10 @@
                 </div>
                 <div>
                   <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Imputation <span class="text-rose-500">*</span></label>
-                  <select x-model="newAgent.imputation" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <select x-model="newAgent.imputation_id" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                     <option value="">— Sélectionner une imputation —</option>
                     <template x-for="imp in imputations()" :key="imp.id">
-                      <option :value="imp.nom" x-text="imp.nom"></option>
+                      <option :value="imp.id" x-text="imp.nom"></option>
                     </template>
                   </select>
                 </div>
@@ -1532,9 +1532,9 @@
                       </button>
                     </div>
 
-                    <!-- FORMULAIRE D'ÉDITION DE L'ACRONYME DE LA DIRECTION -->
+                    <!-- FORMULAIRE D'ÉDITION DE LA DIRECTION (nom complet + acronyme) -->
                     <form x-show="editingDirId === dir.id" x-cloak @submit.prevent="saveEditDirection()" class="flex flex-col sm:flex-row sm:items-center gap-2 bg-navy-50/60 px-3 py-2.5">
-                      <span class="text-xs text-slate-500 flex-1 truncate" x-text="dir.nom"></span>
+                      <input type="text" x-model="editDirForm.nom" placeholder="Nom complet" required class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
                       <input type="text" x-model="editDirForm.acronyme" placeholder="Acronyme" required maxlength="15" class="sm:w-32 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs uppercase focus:ring-2 focus:ring-navy-500 focus:outline-none">
                       <div class="flex gap-1.5 shrink-0">
                         <button type="submit" class="inline-flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 transition text-white px-2.5 py-1.5 rounded-lg text-xs font-bold">
@@ -1545,7 +1545,6 @@
                         </button>
                       </div>
                     </form>
-                    <p x-show="editingDirId === dir.id" x-cloak class="text-[10px] text-slate-400 px-3 pb-2 bg-navy-50/60">Seul l'acronyme est modifiable ici : renommer le nom complet casserait le lien avec les agents déjà affectés à cette direction.</p>
 
                     <!-- NIVEAU 2 : SERVICES -->
                     <div x-show="expandedDirs.includes(dir.id)" x-cloak class="pl-6 pr-3 py-3 space-y-2 bg-white">
@@ -1560,17 +1559,25 @@
 
                       <template x-for="svc in servicesOf(dir.id)" :key="svc.id">
                         <div class="border border-slate-100 rounded-lg overflow-hidden">
-                          <div class="flex items-center justify-between gap-2 bg-slate-50 px-2.5 py-2">
+                          <div class="flex items-center justify-between gap-2 bg-slate-50 px-2.5 py-2" x-show="editingServiceId !== svc.id">
                             <button type="button" @click="toggleService(svc.id)" class="flex items-center gap-2 text-left flex-1 min-w-0">
                               <i :data-lucide="expandedServices.includes(svc.id) ? 'chevron-down' : 'chevron-right'" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
                               <i data-lucide="briefcase" class="w-3 h-3 text-slate-500 shrink-0"></i>
                               <span class="font-semibold text-slate-700 text-xs truncate" x-text="svc.nom"></span>
                               <span class="text-[10px] text-slate-400 shrink-0" x-text="'(' + sectionsOf(svc.id).length + ' section(s))'"></span>
                             </button>
+                            <button type="button" x-show="hasPerm('ecriture')" @click="startEditService(svc)" title="Renommer" class="text-navy-500 hover:text-navy-700 shrink-0">
+                              <i data-lucide="pencil" class="w-3 h-3"></i>
+                            </button>
                             <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(svc.id, 'service')" class="text-rose-500 hover:text-rose-700 shrink-0">
                               <i data-lucide="trash-2" class="w-3 h-3"></i>
                             </button>
                           </div>
+                          <form x-show="editingServiceId === svc.id" x-cloak @submit.prevent="saveEditService()" class="flex items-center gap-2 bg-slate-50 px-2.5 py-2">
+                            <input type="text" x-model="editServiceForm.nom" required class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                            <button type="submit" class="inline-flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 transition text-white px-2 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
+                            <button type="button" @click="cancelEditService()" class="inline-flex items-center gap-1 bg-slate-200 hover:bg-slate-300 transition text-slate-700 px-2 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                          </form>
 
                           <!-- NIVEAU 3 : SECTIONS -->
                           <div x-show="expandedServices.includes(svc.id)" x-cloak class="pl-6 pr-2.5 py-2.5 space-y-2 bg-white">
@@ -1582,11 +1589,19 @@
                             </form>
                             <p x-show="!sectionsOf(svc.id).length" class="text-[11px] text-slate-400 py-1">Aucune section dans ce service.</p>
                             <template x-for="sec in sectionsOf(svc.id)" :key="sec.id">
-                              <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 text-[11px]">
-                                <span class="flex items-center gap-1.5 text-slate-600"><i data-lucide="layers" class="w-3 h-3 text-slate-400"></i><span x-text="sec.nom"></span></span>
-                                <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(sec.id, 'section')" class="text-rose-500 hover:text-rose-700">
-                                  <i data-lucide="trash-2" class="w-3 h-3"></i>
-                                </button>
+                              <div>
+                                <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 text-[11px]" x-show="editingSectionId !== sec.id">
+                                  <span class="flex items-center gap-1.5 text-slate-600"><i data-lucide="layers" class="w-3 h-3 text-slate-400"></i><span x-text="sec.nom"></span></span>
+                                  <span class="flex items-center gap-2 shrink-0">
+                                    <button type="button" x-show="hasPerm('ecriture')" @click="startEditSection(sec)" title="Renommer" class="text-navy-500 hover:text-navy-700"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+                                    <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(sec.id, 'section')" class="text-rose-500 hover:text-rose-700"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                                  </span>
+                                </div>
+                                <form x-show="editingSectionId === sec.id" x-cloak @submit.prevent="saveEditSection()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 text-[11px]">
+                                  <input type="text" x-model="editSectionForm.nom" required class="flex-1 px-2 py-1 border border-slate-200 rounded-lg text-[11px] focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                                  <button type="submit" class="inline-flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 transition text-white px-1.5 py-1 rounded-lg text-[10px] font-bold"><i data-lucide="check" class="w-3 h-3"></i></button>
+                                  <button type="button" @click="cancelEditSection()" class="inline-flex items-center gap-1 bg-slate-200 hover:bg-slate-300 transition text-slate-700 px-1.5 py-1 rounded-lg text-[10px] font-bold"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                </form>
                               </div>
                             </template>
                           </div>
@@ -1630,14 +1645,24 @@
                 </div>
                 <div class="max-h-48 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-1 content-start">
                   <template x-for="p in filteredPostes()" :key="p.id">
-                    <span class="inline-flex items-center justify-between gap-1.5 bg-slate-50 border border-slate-100 rounded-lg pl-2.5 pr-1 py-1 text-xs text-slate-700">
+                    <span x-show="editingPosteId !== p.id" class="inline-flex items-center justify-between gap-1.5 bg-slate-50 border border-slate-100 rounded-lg pl-2.5 pr-1 py-1 text-xs text-slate-700">
                       <span class="truncate" x-text="p.nom"></span>
-                      <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(p.id, 'poste')" class="text-rose-500 hover:text-rose-700 shrink-0">
-                        <i data-lucide="x" class="w-3 h-3"></i>
-                      </button>
+                      <span class="flex items-center gap-1 shrink-0">
+                        <button type="button" x-show="hasPerm('ecriture')" @click="startEditPoste(p)" title="Renommer" class="text-navy-500 hover:text-navy-700">
+                          <i data-lucide="pencil" class="w-3 h-3"></i>
+                        </button>
+                        <button type="button" x-show="hasPerm('suppression')" @click="deletePoste(p)" class="text-rose-500 hover:text-rose-700">
+                          <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                      </span>
                     </span>
                   </template>
                 </div>
+                <form x-show="editingPosteId" x-cloak @submit.prevent="saveEditPoste()" class="flex items-center gap-2 mt-2">
+                  <input type="text" x-model="editPosteForm.nom" required class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <button type="submit" class="inline-flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 transition text-white px-2.5 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
+                  <button type="button" @click="cancelEditPoste()" class="inline-flex items-center gap-1 bg-slate-200 hover:bg-slate-300 transition text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                </form>
                 <p x-show="postes().length && !filteredPostes().length" class="text-center text-slate-400 py-3 text-xs">Aucun poste ne correspond à ce filtre.</p>
               </div>
               <p x-show="!postesExpanded && postes().length" class="text-xs text-slate-400">Cliquez sur l'en-tête pour afficher / masquer la liste.</p>
@@ -1675,18 +1700,66 @@
                 </div>
                 <div class="max-h-48 overflow-y-auto pr-1 grid grid-cols-2 sm:grid-cols-3 gap-1 content-start">
                   <template x-for="imp in filteredImputations()" :key="imp.id">
-                    <span class="inline-flex items-center justify-between gap-1.5 bg-slate-50 border border-slate-100 rounded-lg pl-2.5 pr-1 py-1 text-xs font-mono text-slate-700">
+                    <span x-show="editingImputationId !== imp.id" class="inline-flex items-center justify-between gap-1.5 bg-slate-50 border border-slate-100 rounded-lg pl-2.5 pr-1 py-1 text-xs font-mono text-slate-700">
                       <span class="truncate" x-text="imp.nom"></span>
-                      <button type="button" x-show="hasPerm('suppression')" @click="deleteStructure(imp.id, 'imputation')" class="text-rose-500 hover:text-rose-700 shrink-0">
+                      <span class="flex items-center gap-1 shrink-0">
+                        <button type="button" x-show="hasPerm('ecriture')" @click="startEditImputation(imp)" title="Renommer" class="text-navy-500 hover:text-navy-700">
+                          <i data-lucide="pencil" class="w-3 h-3"></i>
+                        </button>
+                        <button type="button" x-show="hasPerm('suppression')" @click="deleteImputation(imp)" class="text-rose-500 hover:text-rose-700">
+                          <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                      </span>
+                    </span>
+                  </template>
+                </div>
+                <form x-show="editingImputationId" x-cloak @submit.prevent="saveEditImputation()" class="flex items-center gap-2 mt-2">
+                  <input type="text" x-model="editImputationForm.nom" required class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                  <button type="submit" class="inline-flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 transition text-white px-2.5 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
+                  <button type="button" @click="cancelEditImputation()" class="inline-flex items-center gap-1 bg-slate-200 hover:bg-slate-300 transition text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                </form>
+                <p x-show="imputations().length && !filteredImputations().length" class="text-center text-slate-400 py-3 text-xs">Aucune imputation ne correspond à ce filtre.</p>
+              </div>
+              <p x-show="!imputationsExpanded && imputations().length" class="text-xs text-slate-400">Cliquez sur l'en-tête pour afficher / masquer la liste.</p>
+              <p x-show="!imputations().length" class="text-center text-slate-400 py-6 text-xs">Aucune imputation configurée.</p>
+            </div>
+
+            <!-- GESTION DES STATUTS PROFESSIONNELS -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-card">
+              <button type="button" @click="statutsProfessionnelsExpanded = !statutsProfessionnelsExpanded" class="w-full flex items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-4">
+                <h3 class="font-display font-bold text-sm text-navy-900 uppercase flex items-center gap-2">
+                  <i data-lucide="id-card" class="w-4 h-4 text-navy-500"></i> Liste des statuts professionnels
+                  <span class="text-[10px] font-bold bg-navy-50 text-navy-700 rounded-full px-2 py-0.5 normal-case" x-text="statutsProfessionnels.length"></span>
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform" :class="statutsProfessionnelsExpanded ? 'rotate-180' : ''"></i>
+              </button>
+
+              <form x-show="hasPerm('ecriture')" @submit.prevent="addStatutProfessionnel()" class="flex gap-2 mb-3">
+                <input type="text" x-model="newStatutProfessionnelName" placeholder="Nouveau statut professionnel, ex : Chef de bureau" required class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                <button type="submit" class="inline-flex items-center gap-1 bg-navy-900 hover:bg-navy-800 transition text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter
+                </button>
+              </form>
+
+              <div x-show="statutsProfessionnelsExpanded" x-cloak>
+                <div class="relative mb-2" x-show="statutsProfessionnels.length">
+                  <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+                  <input type="text" x-model="statutProfessionnelSearch" placeholder="Filtrer les statuts professionnels..." class="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-navy-500 focus:outline-none">
+                </div>
+                <div class="max-h-48 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-1 content-start">
+                  <template x-for="sp in filteredStatutsProfessionnels()" :key="sp.id">
+                    <span class="inline-flex items-center justify-between gap-1.5 bg-slate-50 border border-slate-100 rounded-lg pl-2.5 pr-1 py-1 text-xs text-slate-700">
+                      <span class="truncate"><span class="font-mono text-slate-400 mr-1" x-text="sp.code"></span><span x-text="sp.libelle"></span></span>
+                      <button type="button" x-show="hasPerm('suppression')" @click="deleteStatutProfessionnel(sp)" class="text-rose-500 hover:text-rose-700 shrink-0">
                         <i data-lucide="x" class="w-3 h-3"></i>
                       </button>
                     </span>
                   </template>
                 </div>
-                <p x-show="imputations().length && !filteredImputations().length" class="text-center text-slate-400 py-3 text-xs">Aucune imputation ne correspond à ce filtre.</p>
+                <p x-show="statutsProfessionnels.length && !filteredStatutsProfessionnels().length" class="text-center text-slate-400 py-3 text-xs">Aucun statut professionnel ne correspond à ce filtre.</p>
               </div>
-              <p x-show="!imputationsExpanded && imputations().length" class="text-xs text-slate-400">Cliquez sur l'en-tête pour afficher / masquer la liste.</p>
-              <p x-show="!imputations().length" class="text-center text-slate-400 py-6 text-xs">Aucune imputation configurée.</p>
+              <p x-show="!statutsProfessionnelsExpanded && statutsProfessionnels.length" class="text-xs text-slate-400">Cliquez sur l'en-tête pour afficher / masquer la liste.</p>
+              <p x-show="!statutsProfessionnels.length" class="text-center text-slate-400 py-6 text-xs">Aucun statut professionnel configuré.</p>
             </div>
 
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-card">
@@ -1905,15 +1978,15 @@
                   </div>
                   <div class="flex items-start gap-2">
                     <i data-lucide="building-2" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-                    <div><span class="text-slate-400 block">Direction</span><strong x-text="directionLabel(monAgent().direction)"></strong></div>
+                    <div><span class="text-slate-400 block">Direction</span><strong x-text="directionLabel(monAgent().direction_id)"></strong></div>
                   </div>
                   <div class="flex items-start gap-2">
                     <i data-lucide="briefcase" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-                    <div><span class="text-slate-400 block">Service</span><strong x-text="monAgent().service || '—'"></strong></div>
+                    <div><span class="text-slate-400 block">Service</span><strong x-text="serviceLabel(monAgent().service_id)"></strong></div>
                   </div>
                   <div class="flex items-start gap-2">
                     <i data-lucide="layers" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-                    <div><span class="text-slate-400 block">Section</span><strong x-text="monAgent().section || '—'"></strong></div>
+                    <div><span class="text-slate-400 block">Section</span><strong x-text="sectionLabel(monAgent().section_id)"></strong></div>
                   </div>
                   <div class="flex items-start gap-2">
                     <i data-lucide="map" class="w-5 h-5 text-navy-400 mt-0.5"></i>
@@ -1921,7 +1994,7 @@
                   </div>
                   <div class="flex items-start gap-2">
                     <i data-lucide="badge-check" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-                    <div><span class="text-slate-400 block">Poste actuel</span><strong x-text="monAgent().poste || '—'"></strong></div>
+                    <div><span class="text-slate-400 block">Poste actuel</span><strong x-text="posteLabel(monAgent().poste_id)"></strong></div>
                   </div>
                   <div class="flex items-start gap-2">
                     <i data-lucide="lock" class="w-5 h-5 text-navy-400 mt-0.5"></i>
@@ -1933,7 +2006,7 @@
                   </div>
                   <div class="flex items-start gap-2">
                     <i data-lucide="clipboard-list" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-                    <div><span class="text-slate-400 block">Imputation</span><strong x-text="monAgent().imputation || '—'"></strong></div>
+                    <div><span class="text-slate-400 block">Imputation</span><strong x-text="imputationLabel(monAgent().imputation_id)"></strong></div>
                   </div>
                 </div>
 
@@ -2167,19 +2240,19 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm mt-3">
         <div class="flex items-start gap-2">
           <i data-lucide="building-2" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Direction affectée</span><strong x-text="directionLabel(selectedAgent?.direction)"></strong></div>
+          <div><span class="text-slate-400 block">Direction affectée</span><strong x-text="directionLabel(selectedAgent?.direction_id)"></strong></div>
         </div>
         <div class="flex items-start gap-2">
           <i data-lucide="briefcase" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Service</span><strong x-text="selectedAgent?.service || '—'"></strong></div>
+          <div><span class="text-slate-400 block">Service</span><strong x-text="serviceLabel(selectedAgent?.service_id)"></strong></div>
         </div>
         <div class="flex items-start gap-2">
           <i data-lucide="layers" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Section</span><strong x-text="selectedAgent?.section || '—'"></strong></div>
+          <div><span class="text-slate-400 block">Section</span><strong x-text="sectionLabel(selectedAgent?.section_id)"></strong></div>
         </div>
         <div class="flex items-start gap-2">
           <i data-lucide="badge-check" class="w-5 h-5 text-navy-400 mt-0.5"></i>
-          <div><span class="text-slate-400 block">Poste actuel</span><strong x-text="selectedAgent?.poste || '—'"></strong></div>
+          <div><span class="text-slate-400 block">Poste actuel</span><strong x-text="posteLabel(selectedAgent?.poste_id)"></strong></div>
         </div>
         <div class="flex items-start gap-2">
           <i data-lucide="users" class="w-5 h-5 text-navy-400 mt-0.5"></i>
@@ -2339,28 +2412,28 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Direction</label>
-              <select x-model="editFormDirId" @change="onEditFormDirectionChange()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+              <select x-model="editingAgent.direction_id" @change="onEditFormDirectionChange()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 <option value="">Sélectionner</option>
                 <template x-for="d in directions()" :key="d.id">
-                  <option :value="d.id" x-text="directionLabel(d.nom)"></option>
+                  <option :value="d.id" x-text="directionLabel(d.id)"></option>
                 </template>
               </select>
             </div>
             <div>
               <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Service</label>
-              <select x-model="editFormServiceId" @change="onEditFormServiceChange()" :disabled="!editFormDirId" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
+              <select x-model="editingAgent.service_id" @change="onEditFormServiceChange()" :disabled="!editingAgent.direction_id" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
                 <option value="">Sélectionner</option>
-                <template x-for="s in servicesForEditForm()" :key="s.id">
+                <template x-for="s in servicesOf(editingAgent.direction_id)" :key="s.id">
                   <option :value="s.id" x-text="s.nom"></option>
                 </template>
               </select>
             </div>
             <div>
               <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Section</label>
-              <select x-model="editingAgent.section" :disabled="!editFormServiceId" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
+              <select x-model="editingAgent.section_id" :disabled="!editingAgent.service_id" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400">
                 <option value="">Sélectionner</option>
-                <template x-for="s in sectionsForEditForm()" :key="s.id">
-                  <option :value="s.nom" x-text="s.nom"></option>
+                <template x-for="s in sectionsOf(editingAgent.service_id)" :key="s.id">
+                  <option :value="s.id" x-text="s.nom"></option>
                 </template>
               </select>
             </div>
@@ -2372,10 +2445,10 @@
             </div>
             <div>
               <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Poste actuel</label>
-              <select x-model="editingAgent.poste" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+              <select x-model="editingAgent.poste_id" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 <option value="">— Sélectionner un poste —</option>
                 <template x-for="p in postes()" :key="p.id">
-                  <option :value="p.nom" x-text="p.nom"></option>
+                  <option :value="p.id" x-text="p.nom"></option>
                 </template>
               </select>
             </div>
@@ -2410,10 +2483,10 @@
             </div>
             <div>
               <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Imputation</label>
-              <select x-model="editingAgent.imputation" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
+              <select x-model="editingAgent.imputation_id" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-navy-500 focus:outline-none">
                 <option value="">— Sélectionner une imputation —</option>
                 <template x-for="imp in imputations()" :key="imp.id">
-                  <option :value="imp.nom" x-text="imp.nom"></option>
+                  <option :value="imp.id" x-text="imp.nom"></option>
                 </template>
               </select>
             </div>
@@ -2610,8 +2683,6 @@
       filterLocalisation: '',
       selectedAgent: null,
       editingAgent: null,
-      editFormDirId: '',
-      editFormServiceId: '',
 
       toast: { show: false, type: 'success', message: '' },
       confirmBox: { show: false, message: '', onConfirm: null },
@@ -2628,7 +2699,11 @@
       weather: { temp: null, description: '', code: null, feelsLike: null, humidity: null, windSpeed: null, windDir: null, uvIndex: null },
 
       agents: [],
-      structures: [],
+      directionsList: [],
+      servicesList: [],
+      sectionsList: [],
+      postesList: [],
+      imputationsList: [],
       statutsProfessionnels: [],
       journalEntries: [],
       historiqueSorties: [],
@@ -2645,25 +2720,33 @@
       newDirectionName: '',
       newDirectionAcronyme: '',
       editingDirId: null,
-      editDirForm: { acronyme: '' },
+      editDirForm: { nom: '', acronyme: '' },
+      editingServiceId: null,
+      editServiceForm: { nom: '' },
+      editingSectionId: null,
+      editSectionForm: { nom: '' },
+      editingPosteId: null,
+      editPosteForm: { nom: '' },
+      editingImputationId: null,
+      editImputationForm: { nom: '' },
       newServiceNameMap: {},
       newSectionNameMap: {},
       expandedDirs: [],
       expandedServices: [],
       newPosteName: '',
       newImputationName: '',
+      newStatutProfessionnelName: '',
       posteSearch: '',
       imputationSearch: '',
+      statutProfessionnelSearch: '',
       postesExpanded: false,
       imputationsExpanded: false,
+      statutsProfessionnelsExpanded: false,
       agentImportOpen: false,
       agentImportRows: [],
       agentImportErrors: [],
       agentImportFileName: '',
       agentImporting: false,
-
-      agentFormDirId: '',
-      agentFormServiceId: '',
 
       classeOptions: ['1ère', '2ème', '3ème', 'classe unique'],
       echelonOptions: ['1', '2', '3', '4', '5'],
@@ -2705,7 +2788,7 @@
 
       // --- LISTES INITIALES POSTES / IMPUTATIONS (issues du référentiel Excel de la Mairie) ---
       // Utilisées uniquement pour le bouton "Importer la liste initiale" côté Outils Admin.
-      // Une fois importées, ces valeurs vivent en base (table 'structures') et sont gérées via addPoste/addImputation/deleteStructure.
+      // Une fois importées, ces valeurs vivent en base (tables 'postes' / 'imputations') et sont gérées via addPoste/addImputation/deletePoste/deleteImputation.
       DEFAULT_POSTES: ["AGENT ADMINISTRATIF","AGENT AU PROTOCOLE","AGENT COMPTABLE","AGENT DE LIAISON","AGENT DE RECOUVREMENT","AGENT DE SECURITE","AGENT ESPACE VERT","AGENT ESPACES FUNEBRE","AGENT ETAT CIVIL","AGENT HYGIENE","AGENT LOGISTIQUE","AGENT MIS A DISPOSITION","AGENT PERCEPTEUR","AGENT POINT A TEMPS","AGENT SOCIAL","AGENT TECHNIQUE","AGENT TECHNIQUE FONCIER","AIDE DE CAMP","AMBULANCIER","ARCHIVISTE","ASSISTANT TECHNIQUE","CHARGE DE MISSION","CHAUDRONNIER","CHAUFFEUR","CHAUFFEUR POIDS LOURD","CHEF DE QUARTIER","CHEF DE SECTION","CHEF DE SERVICE","CONSEILLER","CONSERVATEUR","CUISINIERE","DELEGUE SPECIAL","DIRECTEUR DE CABINET","DIRECTRICE JARDIN","EBOUEUR","EDUCATRICE PRESCOLAIRE","ELECTRICIEN","GESTIONNAIRE ETAT SPECIAL","GOUVERNANTE","HTM","INFIRMIERE","INFIRMIERE MAJOR","INSPECTEUR GENERAL","JARDINIER","JURISTE","Maçon","MAGASINIER","MECANICIEN","MEDECIN","MENUISIER","MONITRICE PRESCOLAIRE","PEINTRE","PLOMBIER","POLICIER","QHSE","RECEPTIONNISTE","SECRETAIRE","SECRETAIRE COMPTABLE","SOUDEUR","SURVEILLANTE DES PARCS ATTRACTIONS","SURVEILLANTE PRESCOLAIRE","TECHNICIEN FROID ET CLIMATISATION","TECHNICIENNE DE LABORATOIRE","TECHNICIENNE DE SURFACE","VULGANISATEUR","INFORMATICIEN","MAIRE DE LA COMMUNE","PREMIER ADJT AU MAIRE DE LA COMMUNE","DEUXIEME ADJT AU MAIRE DE LA COMMUNE","TROISIEME ADJT AU MAIRE DE LA COMMUNE","QUATRIEME ADJT AU MAIRE DE LA COMMUNE","MAIRE TITULAIRE PREMIER ARRD","MAIRE TITULAIRE DEUXIEME ARRD","MAIRE TITULAIRE TROISIEME ARRD","MAIRE TITULAIRE QUATRIEME ARRD","PREMIER ADJT AU MAIRE 1ER ARRD","DEUXIEME ADJT AU MAIRE 1ER ARRD","PREMIER ADJT AU MAIRE 2EME ARRD","DEUXIEME ADJT AU MAIRE 2EME ARRD","PREMIER ADJT AU MAIRE 3EME ARRD","DEUXIEME ADJT AU MAIRE 3EME ARRD","PREMIER ADJT AU MAIRE 4EME ARRD","DEUXIEME ADJT AU MAIRE 4EME ARRD","DIRECTEUR DE CABINET DU MAIRE DE LA COMMUNE","CHARGE DE MISSION DU MAIRE DE LA COMMUNE","ATTACHE DE CABINET DU MAIRE DE LA COMMUNE","CONSEILLER DU MAIRE DE LA COMMUNE","SECRETAIRE PARTICULIERE DU MAIRE DE LA COMMUNE","CHEF DE CABINET DU MAIRE DE LA COMMUNE","CUISINIER/CUISINIERE"],
       DEFAULT_IMPUTATIONS: ["62.101","62.102","62.103","62.120","62.121","62.122","62.123","62.130","62.131","62.132","62.133","62.134","62.199","62.201","62.202","62.203","62.220","62.221","62.222","62.230","62.231","62.232","62.240","62.241","62.242","62.290","62.291","62.292","62.299","62.301","62.302","62.303","62.320","62.321","62.322","62.399","62.401","62.411","62.413","62.419","62.420","62.421","62.422","62.423","62.424","62.425","62.429","62.440","62.441","62.442","62.443","62.499","62.501","62.502","62.520","62.529","62.599","62.601","62.602","62.603","62.604","62.605","62.606","62.607","62.620","62.621","62.622","62.630","62.640","62.699","62.701","62.799","62.999"],
 
@@ -2730,12 +2813,12 @@
       newAgent: {
         nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
         date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
-        direction: '', service: '', section: '', localisation: '', poste: '', poste_embauche: '', effectif: '',
+        direction_id: null, service_id: null, section_id: null, localisation: '', poste_id: null, poste_embauche: '', effectif: '',
         n_cnss: '', n_cnamgs: '', telephone: '', diplomes: '',
         fin_contrat1: '', debut_contrat2: '', fin_contrat2: '',
         hierarchie: '', categorie: '', classe: '', echelon: '', valeur_indiciaire: null,
         statut_professionnel_id: null,
-        statut: 'En service', imputation: '', salaire_entree: 0, salaire_base_actuel: 0,
+        statut: 'En service', imputation_id: null, salaire_entree: 0, salaire_base_actuel: 0,
         prime_logement: 0, prime_transport: 0, indemnite_fonction: 0, indemnite_sujetion: 0,
         prime_etat_civil: 0, solidarite_nationale: 0, prime_risque: 0, prime_salissure: 0,
         prime_perception: 0, autres_primes: 0,
@@ -3035,9 +3118,21 @@
               this.agents = [];
               this.mesDemandes = [];
             }
-            let { data: strs, error: strsErr } = await supabaseClient.from('structures').select('*');
-            if (strsErr) { console.error('Erreur chargement structures:', strsErr); }
-            this.structures = strs || [];
+            let { data: dirs, error: dirsErr } = await supabaseClient.from('directions').select('*').order('nom', { ascending: true });
+            if (dirsErr) { console.error('Erreur chargement directions:', dirsErr); }
+            this.directionsList = dirs || [];
+            let { data: svcs, error: svcsErr } = await supabaseClient.from('services').select('*').order('nom', { ascending: true });
+            if (svcsErr) { console.error('Erreur chargement services:', svcsErr); }
+            this.servicesList = svcs || [];
+            let { data: secs, error: secsErr } = await supabaseClient.from('sections').select('*').order('nom', { ascending: true });
+            if (secsErr) { console.error('Erreur chargement sections:', secsErr); }
+            this.sectionsList = secs || [];
+            let { data: pts, error: ptsErr } = await supabaseClient.from('postes').select('*').order('nom', { ascending: true });
+            if (ptsErr) { console.error('Erreur chargement postes:', ptsErr); }
+            this.postesList = pts || [];
+            let { data: imps, error: impsErr } = await supabaseClient.from('imputations').select('*').order('nom', { ascending: true });
+            if (impsErr) { console.error('Erreur chargement imputations:', impsErr); }
+            this.imputationsList = imps || [];
 
             let { data: sprofs, error: sprofsErr } = await supabaseClient.from('statuts_professionnels').select('*').order('code', { ascending: true });
             if (sprofsErr) { console.error('Erreur chargement statuts professionnels:', sprofsErr); }
@@ -3051,9 +3146,21 @@
           if (agsErr) { console.error('Erreur chargement agents:', agsErr); this.showToast('error', 'Chargement agents: ' + agsErr.message); }
           this.agents = ags || [];
 
-          let { data: strs, error: strsErr } = await supabaseClient.from('structures').select('*');
-          if (strsErr) { console.error('Erreur chargement structures:', strsErr); this.showToast('error', 'Chargement structure: ' + strsErr.message); }
-          this.structures = strs || [];
+          let { data: dirs, error: dirsErr } = await supabaseClient.from('directions').select('*').order('nom', { ascending: true });
+          if (dirsErr) { console.error('Erreur chargement directions:', dirsErr); this.showToast('error', 'Chargement directions: ' + dirsErr.message); }
+          this.directionsList = dirs || [];
+          let { data: svcs, error: svcsErr } = await supabaseClient.from('services').select('*').order('nom', { ascending: true });
+          if (svcsErr) { console.error('Erreur chargement services:', svcsErr); this.showToast('error', 'Chargement services: ' + svcsErr.message); }
+          this.servicesList = svcs || [];
+          let { data: secs, error: secsErr } = await supabaseClient.from('sections').select('*').order('nom', { ascending: true });
+          if (secsErr) { console.error('Erreur chargement sections:', secsErr); this.showToast('error', 'Chargement sections: ' + secsErr.message); }
+          this.sectionsList = secs || [];
+          let { data: pts, error: ptsErr } = await supabaseClient.from('postes').select('*').order('nom', { ascending: true });
+          if (ptsErr) { console.error('Erreur chargement postes:', ptsErr); this.showToast('error', 'Chargement postes: ' + ptsErr.message); }
+          this.postesList = pts || [];
+          let { data: imps, error: impsErr } = await supabaseClient.from('imputations').select('*').order('nom', { ascending: true });
+          if (impsErr) { console.error('Erreur chargement imputations:', impsErr); this.showToast('error', 'Chargement imputations: ' + impsErr.message); }
+          this.imputationsList = imps || [];
 
           let { data: sprofs, error: sprofsErr } = await supabaseClient.from('statuts_professionnels').select('*').order('code', { ascending: true });
           if (sprofsErr) { console.error('Erreur chargement statuts professionnels:', sprofsErr); this.showToast('error', 'Chargement statuts professionnels: ' + sprofsErr.message); }
@@ -3171,7 +3278,7 @@
       repartitionDirections() {
         const map = {};
         this.kpiAgents().forEach(a => {
-          const d = a.direction || 'Non affecté';
+          const d = a.direction_id ? this.directionLabel(a.direction_id) : 'Non affecté';
           map[d] = (map[d] || 0) + 1;
         });
         return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8);
@@ -3225,7 +3332,7 @@
       repartitionSexeParDirection() {
         const map = {};
         this.kpiAgents().forEach(a => {
-          const d = a.direction || 'Non affecté';
+          const d = a.direction_id ? this.directionLabel(a.direction_id) : 'Non affecté';
           if (!map[d]) map[d] = { M: 0, F: 0 };
           if (a.sexe === 'M') map[d].M++;
           else if (a.sexe === 'F') map[d].F++;
@@ -3742,20 +3849,25 @@
         });
       },
       // --- ORGANIGRAMME : DIRECTION > SERVICE > SECTION ---
+      // Chacun de ces trois niveaux vit désormais dans sa propre table Supabase
+      // (directions / services / sections), reliée par direction_id / service_id,
+      // et les agents s'y rattachent par identifiant (agent.direction_id, etc.)
+      // plutôt que par un texte libre recopié — un renommage ne casse donc plus rien.
       directions() {
-        return this.structures.filter(s => s.type === 'direction');
+        return this.directionsList;
       },
-      // Renvoie "ACRONYME (Nom complet)" pour une direction donnée (par son nom complet stocké sur l'agent).
+      // Renvoie "ACRONYME (Nom complet)" pour une direction donnée par son identifiant.
       // Si aucun acronyme n'est encore renseigné pour cette direction, retombe simplement sur le nom complet.
-      directionLabel(nomComplet) {
-        if (!nomComplet) return '—';
-        const dir = this.directions().find(d => d.nom === nomComplet);
-        return dir && dir.acronyme ? (dir.acronyme + ' (' + nomComplet + ')') : nomComplet;
+      directionLabel(dirId) {
+        if (dirId === null || dirId === undefined || dirId === '') return '—';
+        const dir = this.directionsList.find(d => String(d.id) === String(dirId));
+        if (!dir) return typeof dirId === 'string' ? dirId : '—';
+        return dir.acronyme ? (dir.acronyme + ' (' + dir.nom + ')') : dir.nom;
       },
       // Renvoie uniquement l'acronyme d'une direction (chaîne vide si non renseigné), utile pour la recherche.
-      directionAcronym(nomComplet) {
-        if (!nomComplet) return '';
-        const dir = this.directions().find(d => d.nom === nomComplet);
+      directionAcronym(dirId) {
+        if (dirId === null || dirId === undefined || dirId === '') return '';
+        const dir = this.directionsList.find(d => String(d.id) === String(dirId));
         return dir ? (dir.acronyme || '') : '';
       },
       // Renvoie le libellé du statut professionnel d'un agent à partir de son identifiant
@@ -3765,11 +3877,32 @@
         const sp = this.statutsProfessionnels.find(s => String(s.id) === String(id));
         return sp ? sp.libelle : '—';
       },
+      // Libellé d'un poste / d'une imputation / d'un service / d'une section à partir de son identifiant.
+      posteLabel(id) {
+        if (id === null || id === undefined || id === '') return '—';
+        const p = this.postesList.find(x => String(x.id) === String(id));
+        return p ? p.nom : '—';
+      },
+      imputationLabel(id) {
+        if (id === null || id === undefined || id === '') return '—';
+        const i = this.imputationsList.find(x => String(x.id) === String(id));
+        return i ? i.nom : '—';
+      },
+      serviceLabel(id) {
+        if (id === null || id === undefined || id === '') return '—';
+        const s = this.servicesList.find(x => String(x.id) === String(id));
+        return s ? s.nom : '—';
+      },
+      sectionLabel(id) {
+        if (id === null || id === undefined || id === '') return '—';
+        const s = this.sectionsList.find(x => String(x.id) === String(id));
+        return s ? s.nom : '—';
+      },
       servicesOf(dirId) {
-        return this.structures.filter(s => s.type === 'service' && String(s.parent_id) === String(dirId));
+        return this.servicesList.filter(s => String(s.direction_id) === String(dirId));
       },
       sectionsOf(serviceId) {
-        return this.structures.filter(s => s.type === 'section' && String(s.parent_id) === String(serviceId));
+        return this.sectionsList.filter(s => String(s.service_id) === String(serviceId));
       },
 
       // --- MISE EN VEILLE / PAUSE D'UNE DIRECTION ---
@@ -3779,23 +3912,23 @@
         if (!this.hasPerm('modification')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
         const miseEnVeille = !dir.en_veille;
         const message = miseEnVeille
-          ? `Mettre la direction "${this.directionLabel(dir.nom)}" en veille ? Elle ne comptera plus dans les statistiques du tableau de bord.`
-          : `Réactiver la direction "${this.directionLabel(dir.nom)}" ? Elle sera à nouveau comptabilisée dans les statistiques du tableau de bord.`;
+          ? `Mettre la direction "${this.directionLabel(dir.id)}" en veille ? Elle ne comptera plus dans les statistiques du tableau de bord.`
+          : `Réactiver la direction "${this.directionLabel(dir.id)}" ? Elle sera à nouveau comptabilisée dans les statistiques du tableau de bord.`;
         this.openConfirm(message, async () => {
-          const { error } = await supabaseClient.from('structures').update({ en_veille: miseEnVeille }).eq('id', dir.id);
+          const { error } = await supabaseClient.from('directions').update({ en_veille: miseEnVeille }).eq('id', dir.id);
           if (error) { this.showToast('error', 'Échec: ' + error.message); return; }
           await this.loadAllData();
           this.showToast('success', miseEnVeille ? 'Direction mise en veille.' : 'Direction réactivée.');
         });
       },
-      // Indique si une direction (par son nom complet) est actuellement en veille.
-      isDirectionEnVeille(nomDirection) {
-        const dir = this.directions().find(d => d.nom === nomDirection);
+      // Indique si une direction (par son identifiant) est actuellement en veille.
+      isDirectionEnVeille(dirId) {
+        const dir = this.directionsList.find(d => String(d.id) === String(dirId));
         return !!(dir && dir.en_veille);
       },
       // Retire d'une liste d'agents ceux rattachés à une direction actuellement en veille.
       excludeVeille(liste) {
-        return liste.filter(a => !this.isDirectionEnVeille(a.direction));
+        return liste.filter(a => !this.isDirectionEnVeille(a.direction_id));
       },
       // Agents à prendre en compte dans les statistiques du tableau de bord :
       // actifs (statut != Inactif) et non rattachés à une direction en veille.
@@ -3815,11 +3948,9 @@
           this.showToast('error', "Le nom complet et l'acronyme de la direction sont obligatoires.");
           return;
         }
-        const { error } = await supabaseClient.from('structures').insert([{
-          type: 'direction',
+        const { error } = await supabaseClient.from('directions').insert([{
           nom: this.newDirectionName.toUpperCase(),
           acronyme: this.newDirectionAcronyme.trim().toUpperCase(),
-          parent_id: null,
           en_veille: false
         }]);
         if (error) { this.showToast('error', 'Échec ajout direction: ' + error.message); return; }
@@ -3829,84 +3960,115 @@
         this.showToast('success', 'Direction ajoutée.');
       },
 
-      // --- MODIFICATION DE L'ACRONYME D'UNE DIRECTION EXISTANTE ---
+      // --- MODIFICATION D'UNE DIRECTION EXISTANTE (nom complet + acronyme) ---
+      // Les agents étant désormais reliés par identifiant (direction_id) et non par texte,
+      // renommer une direction ne casse plus le lien avec les fiches agents déjà affectées.
       startEditDirection(dir) {
         if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
         this.editingDirId = dir.id;
-        this.editDirForm = { acronyme: dir.acronyme || '' };
+        this.editDirForm = { nom: dir.nom || '', acronyme: dir.acronyme || '' };
       },
       cancelEditDirection() {
         this.editingDirId = null;
-        this.editDirForm = { acronyme: '' };
+        this.editDirForm = { nom: '', acronyme: '' };
       },
       async saveEditDirection() {
         if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
-        if (!this.editDirForm.acronyme.trim()) {
-          this.showToast('error', "L'acronyme ne peut pas être vide.");
+        if (!this.editDirForm.nom.trim() || !this.editDirForm.acronyme.trim()) {
+          this.showToast('error', "Le nom complet et l'acronyme sont obligatoires.");
           return;
         }
-        const { error } = await supabaseClient.from('structures')
-          .update({ acronyme: this.editDirForm.acronyme.trim().toUpperCase() })
+        const { error } = await supabaseClient.from('directions')
+          .update({ nom: this.editDirForm.nom.trim().toUpperCase(), acronyme: this.editDirForm.acronyme.trim().toUpperCase() })
           .eq('id', this.editingDirId);
-        if (error) { this.showToast('error', "Échec de la mise à jour de l'acronyme : " + error.message); return; }
+        if (error) { this.showToast('error', "Échec de la mise à jour de la direction : " + error.message); return; }
         this.editingDirId = null;
-        this.editDirForm = { acronyme: '' };
+        this.editDirForm = { nom: '', acronyme: '' };
         await this.loadAllData();
-        this.showToast('success', "Acronyme de la direction mis à jour.");
+        this.showToast('success', "Direction mise à jour.");
       },
       async addService(dirId) {
         if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
         const name = (this.newServiceNameMap[dirId] || '').trim();
         if (!name) return;
-        const { error } = await supabaseClient.from('structures').insert([{ type: 'service', nom: name, parent_id: dirId }]);
+        const { error } = await supabaseClient.from('services').insert([{ nom: name, direction_id: dirId }]);
         if (error) { this.showToast('error', 'Échec ajout service: ' + error.message); return; }
         this.newServiceNameMap[dirId] = '';
         if (!this.expandedDirs.includes(dirId)) this.expandedDirs.push(dirId);
         await this.loadAllData();
         this.showToast('success', 'Service ajouté.');
       },
+      startEditService(svc) {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
+        this.editingServiceId = svc.id;
+        this.editServiceForm = { nom: svc.nom || '' };
+      },
+      cancelEditService() {
+        this.editingServiceId = null;
+        this.editServiceForm = { nom: '' };
+      },
+      async saveEditService() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
+        if (!this.editServiceForm.nom.trim()) { this.showToast('error', 'Le nom du service ne peut pas être vide.'); return; }
+        const { error } = await supabaseClient.from('services').update({ nom: this.editServiceForm.nom.trim() }).eq('id', this.editingServiceId);
+        if (error) { this.showToast('error', 'Échec de la mise à jour du service : ' + error.message); return; }
+        this.editingServiceId = null;
+        this.editServiceForm = { nom: '' };
+        await this.loadAllData();
+        this.showToast('success', 'Service mis à jour.');
+      },
       async addSection(serviceId) {
         if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
         const name = (this.newSectionNameMap[serviceId] || '').trim();
         if (!name) return;
-        const { error } = await supabaseClient.from('structures').insert([{ type: 'section', nom: name, parent_id: serviceId }]);
+        const { error } = await supabaseClient.from('sections').insert([{ nom: name, service_id: serviceId }]);
         if (error) { this.showToast('error', 'Échec ajout section: ' + error.message); return; }
         this.newSectionNameMap[serviceId] = '';
         if (!this.expandedServices.includes(serviceId)) this.expandedServices.push(serviceId);
         await this.loadAllData();
         this.showToast('success', 'Section ajoutée.');
       },
+      startEditSection(sec) {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
+        this.editingSectionId = sec.id;
+        this.editSectionForm = { nom: sec.nom || '' };
+      },
+      cancelEditSection() {
+        this.editingSectionId = null;
+        this.editSectionForm = { nom: '' };
+      },
+      async saveEditSection() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier l'organigramme."); return; }
+        if (!this.editSectionForm.nom.trim()) { this.showToast('error', 'Le nom de la section ne peut pas être vide.'); return; }
+        const { error } = await supabaseClient.from('sections').update({ nom: this.editSectionForm.nom.trim() }).eq('id', this.editingSectionId);
+        if (error) { this.showToast('error', 'Échec de la mise à jour de la section : ' + error.message); return; }
+        this.editingSectionId = null;
+        this.editSectionForm = { nom: '' };
+        await this.loadAllData();
+        this.showToast('success', 'Section mise à jour.');
+      },
+      // Suppression d'une direction, d'un service ou d'une section. Les tables 'services' et 'sections'
+      // ont des clés étrangères ON DELETE CASCADE vers leur parent (cf. migration SQL), donc supprimer une
+      // direction supprime automatiquement ses services et les sections de ceux-ci ; les agents qui y étaient
+      // rattachés voient leur direction_id / service_id / section_id repassés à NULL (ON DELETE SET NULL).
       deleteStructure(id, type) {
         if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
-        const labels = { direction: 'cette direction (et tous ses services/sections)', service: 'ce service (et toutes ses sections)', section: 'cette section', poste: 'ce poste', imputation: 'cette imputation' };
-        this.openConfirm(`Supprimer ${labels[type] || 'cet élément'} ?`, async () => {
-          let lastError = null;
-          if (type === 'direction') {
-            const services = this.servicesOf(id);
-            for (const svc of services) {
-              let r = await supabaseClient.from('structures').delete().eq('parent_id', svc.id);
-              if (r.error) lastError = r.error;
-              r = await supabaseClient.from('structures').delete().eq('id', svc.id);
-              if (r.error) lastError = r.error;
-            }
-          } else if (type === 'service') {
-            const r = await supabaseClient.from('structures').delete().eq('parent_id', id);
-            if (r.error) lastError = r.error;
-          }
-          const { error } = await supabaseClient.from('structures').delete().eq('id', id);
-          if (error) lastError = error;
-          if (lastError) { this.showToast('error', 'Échec suppression: ' + lastError.message); return; }
+        const labels = { direction: 'cette direction (et tous ses services/sections)', service: 'ce service (et toutes ses sections)', section: 'cette section' };
+        const tables = { direction: 'directions', service: 'services', section: 'sections' };
+        this.openConfirm(`Supprimer ${labels[type] || 'cet élément'} ? Les agents concernés se retrouveront sans affectation à ce niveau.`, async () => {
+          const { error } = await supabaseClient.from(tables[type]).delete().eq('id', id);
+          if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
           await this.loadAllData();
           this.showToast('success', 'Suppression effectuée.');
         });
       },
 
       // --- POSTES & IMPUTATIONS (listes déroulantes de la fiche agent) ---
-      // Réutilise la table 'structures' (type = 'poste' / 'imputation', parent_id = null),
-      // exactement comme pour les directions/services/sections : gérable en ajout/suppression
-      // depuis Outils Admin, sans toucher au schéma de la base.
+      // Chacun vit dans sa propre table Supabase ('postes' / 'imputations'), reliée aux
+      // agents par poste_id / imputation_id : gérable en ajout / modification / suppression
+      // depuis Outils Admin, sans jamais casser le lien avec les fiches déjà affectées.
       postes() {
-        return this.structures.filter(s => s.type === 'poste').sort((a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr'));
+        return this.postesList.slice().sort((a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr'));
       },
       filteredPostes() {
         const q = this.posteSearch.trim().toLowerCase();
@@ -3914,7 +4076,7 @@
         return q ? list.filter(p => (p.nom || '').toLowerCase().includes(q)) : list;
       },
       imputations() {
-        return this.structures.filter(s => s.type === 'imputation').sort((a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr'));
+        return this.imputationsList.slice().sort((a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr'));
       },
       filteredImputations() {
         const q = this.imputationSearch.trim().toLowerCase();
@@ -3926,29 +4088,121 @@
         const name = this.newPosteName.trim();
         if (!name) return;
         if (this.postes().some(p => p.nom.toLowerCase() === name.toLowerCase())) { this.showToast('error', 'Ce poste existe déjà.'); return; }
-        const { error } = await supabaseClient.from('structures').insert([{ type: 'poste', nom: name, parent_id: null }]);
+        const { error } = await supabaseClient.from('postes').insert([{ nom: name }]);
         if (error) { this.showToast('error', 'Échec ajout poste: ' + error.message); return; }
         this.newPosteName = '';
         await this.loadAllData();
         this.showToast('success', 'Poste ajouté.');
+      },
+      startEditPoste(p) {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier."); return; }
+        this.editingPosteId = p.id;
+        this.editPosteForm = { nom: p.nom || '' };
+      },
+      cancelEditPoste() {
+        this.editingPosteId = null;
+        this.editPosteForm = { nom: '' };
+      },
+      async saveEditPoste() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier."); return; }
+        if (!this.editPosteForm.nom.trim()) { this.showToast('error', 'Le nom du poste ne peut pas être vide.'); return; }
+        const { error } = await supabaseClient.from('postes').update({ nom: this.editPosteForm.nom.trim() }).eq('id', this.editingPosteId);
+        if (error) { this.showToast('error', 'Échec de la mise à jour du poste : ' + error.message); return; }
+        this.editingPosteId = null;
+        this.editPosteForm = { nom: '' };
+        await this.loadAllData();
+        this.showToast('success', 'Poste mis à jour.');
+      },
+      deletePoste(p) {
+        if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
+        const nbAgents = this.agents.filter(a => String(a.poste_id) === String(p.id)).length;
+        const avertissement = nbAgents ? ` ${nbAgents} agent(s) occupent actuellement ce poste et se retrouveront sans poste renseigné.` : '';
+        this.openConfirm(`Supprimer le poste « ${p.nom} » ?${avertissement}`, async () => {
+          const { error } = await supabaseClient.from('postes').delete().eq('id', p.id);
+          if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          await this.loadAllData();
+          this.showToast('success', 'Poste supprimé.');
+        });
       },
       async addImputation() {
         if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
         const name = this.newImputationName.trim();
         if (!name) return;
         if (this.imputations().some(i => i.nom.toLowerCase() === name.toLowerCase())) { this.showToast('error', 'Cette imputation existe déjà.'); return; }
-        const { error } = await supabaseClient.from('structures').insert([{ type: 'imputation', nom: name, parent_id: null }]);
+        const { error } = await supabaseClient.from('imputations').insert([{ nom: name }]);
         if (error) { this.showToast('error', "Échec ajout imputation: " + error.message); return; }
         this.newImputationName = '';
         await this.loadAllData();
         this.showToast('success', 'Imputation ajoutée.');
       },
+      startEditImputation(imp) {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier."); return; }
+        this.editingImputationId = imp.id;
+        this.editImputationForm = { nom: imp.nom || '' };
+      },
+      cancelEditImputation() {
+        this.editingImputationId = null;
+        this.editImputationForm = { nom: '' };
+      },
+      async saveEditImputation() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation de modifier."); return; }
+        if (!this.editImputationForm.nom.trim()) { this.showToast('error', "L'imputation ne peut pas être vide."); return; }
+        const { error } = await supabaseClient.from('imputations').update({ nom: this.editImputationForm.nom.trim() }).eq('id', this.editingImputationId);
+        if (error) { this.showToast('error', "Échec de la mise à jour de l'imputation : " + error.message); return; }
+        this.editingImputationId = null;
+        this.editImputationForm = { nom: '' };
+        await this.loadAllData();
+        this.showToast('success', 'Imputation mise à jour.');
+      },
+      deleteImputation(imp) {
+        if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
+        const nbAgents = this.agents.filter(a => String(a.imputation_id) === String(imp.id)).length;
+        const avertissement = nbAgents ? ` ${nbAgents} agent(s) ont actuellement cette imputation et se retrouveront sans imputation renseignée.` : '';
+        this.openConfirm(`Supprimer l'imputation « ${imp.nom} » ?${avertissement}`, async () => {
+          const { error } = await supabaseClient.from('imputations').delete().eq('id', imp.id);
+          if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          await this.loadAllData();
+          this.showToast('success', 'Imputation supprimée.');
+        });
+      },
+
+      // --- STATUTS PROFESSIONNELS (liste déroulante de la fiche agent) ---
+      // Contrairement aux postes/imputations, ce référentiel vit dans sa propre table
+      // 'statuts_professionnels' (id, code, libelle), reliée à agents.statut_professionnel_id.
+      filteredStatutsProfessionnels() {
+        const q = this.statutProfessionnelSearch.trim().toLowerCase();
+        const list = this.statutsProfessionnels;
+        return q ? list.filter(sp => (sp.libelle || '').toLowerCase().includes(q) || String(sp.code).includes(q)) : list;
+      },
+      async addStatutProfessionnel() {
+        if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
+        const name = this.newStatutProfessionnelName.trim();
+        if (!name) return;
+        if (this.statutsProfessionnels.some(sp => (sp.libelle || '').toLowerCase() === name.toLowerCase())) { this.showToast('error', 'Ce statut professionnel existe déjà.'); return; }
+        const nextCode = this.statutsProfessionnels.reduce((max, sp) => Math.max(max, Number(sp.code) || 0), 0) + 1;
+        const { error } = await supabaseClient.from('statuts_professionnels').insert([{ code: nextCode, libelle: name }]);
+        if (error) { this.showToast('error', 'Échec ajout statut professionnel: ' + error.message); return; }
+        this.newStatutProfessionnelName = '';
+        await this.loadAllData();
+        this.showToast('success', 'Statut professionnel ajouté.');
+      },
+      deleteStatutProfessionnel(sp) {
+        if (!this.hasPerm('suppression')) { this.showToast('error', "Vous n'avez pas l'autorisation de supprimer."); return; }
+        const nbAgents = this.agents.filter(a => String(a.statut_professionnel_id) === String(sp.id)).length;
+        const avertissement = nbAgents ? ` ${nbAgents} agent(s) ont actuellement ce statut et se retrouveront sans statut professionnel renseigné.` : '';
+        this.openConfirm(`Supprimer le statut professionnel « ${sp.libelle} » ?${avertissement}`, async () => {
+          const { error } = await supabaseClient.from('statuts_professionnels').delete().eq('id', sp.id);
+          if (error) { this.showToast('error', 'Échec suppression: ' + error.message); return; }
+          await this.loadAllData();
+          this.showToast('success', 'Statut professionnel supprimé.');
+        });
+      },
       async importDefaultPostes() {
         if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
         const existing = new Set(this.postes().map(p => p.nom.toLowerCase()));
-        const rows = this.DEFAULT_POSTES.filter(n => !existing.has(n.toLowerCase())).map(n => ({ type: 'poste', nom: n, parent_id: null }));
+        const rows = this.DEFAULT_POSTES.filter(n => !existing.has(n.toLowerCase())).map(n => ({ nom: n }));
         if (!rows.length) { this.showToast('success', 'Liste des postes déjà à jour.'); return; }
-        const { error } = await supabaseClient.from('structures').insert(rows);
+        const { error } = await supabaseClient.from('postes').insert(rows);
         if (error) { this.showToast('error', 'Échec import postes: ' + error.message); return; }
         await this.loadAllData();
         this.showToast('success', rows.length + ' poste(s) importé(s).');
@@ -3956,32 +4210,23 @@
       async importDefaultImputations() {
         if (!this.hasPerm('ecriture')) { this.showToast('error', "Vous n'avez pas l'autorisation d'ajouter du contenu."); return; }
         const existing = new Set(this.imputations().map(i => i.nom.toLowerCase()));
-        const rows = this.DEFAULT_IMPUTATIONS.filter(n => !existing.has(n.toLowerCase())).map(n => ({ type: 'imputation', nom: n, parent_id: null }));
+        const rows = this.DEFAULT_IMPUTATIONS.filter(n => !existing.has(n.toLowerCase())).map(n => ({ nom: n }));
         if (!rows.length) { this.showToast('success', 'Liste des imputations déjà à jour.'); return; }
-        const { error } = await supabaseClient.from('structures').insert(rows);
+        const { error } = await supabaseClient.from('imputations').insert(rows);
         if (error) { this.showToast('error', 'Échec import imputations: ' + error.message); return; }
         await this.loadAllData();
         this.showToast('success', rows.length + ' imputation(s) importée(s).');
       },
 
       // --- CASCADE POUR LE FORMULAIRE DE SAISIE AGENT ---
-      servicesForForm() {
-        return this.servicesOf(this.agentFormDirId);
-      },
-      sectionsForForm() {
-        return this.sectionsOf(this.agentFormServiceId);
-      },
+      // Direction / service / section sont désormais liés par identifiant : on se contente
+      // de réinitialiser les niveaux dépendants quand un niveau parent change.
       onFormDirectionChange() {
-        const dir = this.directions().find(d => String(d.id) === String(this.agentFormDirId));
-        this.newAgent.direction = dir ? dir.nom : '';
-        this.agentFormServiceId = '';
-        this.newAgent.service = '';
-        this.newAgent.section = '';
+        this.newAgent.service_id = '';
+        this.newAgent.section_id = '';
       },
       onFormServiceChange() {
-        const svc = this.servicesForForm().find(s => String(s.id) === String(this.agentFormServiceId));
-        this.newAgent.service = svc ? svc.nom : '';
-        this.newAgent.section = '';
+        this.newAgent.section_id = '';
       },
       categorieOptions() {
         const map = { A: ['A6', 'A5'], B: ['B4', 'B3'], C: ['C2', 'C1'] };
@@ -4067,12 +4312,12 @@
         sexe: 'Sexe', situation_familiale: 'Situation familiale', nbr_enfants: "Nombre d'enfants",
         date_naissance: 'Date de naissance', lieu_naissance: 'Lieu de naissance',
         date_embauche: "Date d'embauche", date_retraite: 'Date de retraite',
-        direction: 'Direction', service: 'Service', section: 'Section', localisation: 'Localisation',
-        poste: 'Poste', poste_embauche: "Poste à l'embauche", effectif: 'Effectif',
+        direction_id: 'Direction', service_id: 'Service', section_id: 'Section', localisation: 'Localisation',
+        poste_id: 'Poste', poste_embauche: "Poste à l'embauche", effectif: 'Effectif',
         n_cnss: 'N° CNSS', n_cnamgs: 'N° CNAMGS', telephone: 'Téléphone', diplomes: 'Diplômes',
         fin_contrat1: 'Fin de contrat 1', debut_contrat2: 'Début de contrat 2', fin_contrat2: 'Fin de contrat 2',
         hierarchie: 'Hiérarchie', categorie: 'Catégorie', classe: 'Classe', echelon: 'Échelon',
-        valeur_indiciaire: 'Valeur indiciaire', statut: 'Statut', imputation: 'Imputation',
+        valeur_indiciaire: 'Valeur indiciaire', statut: 'Statut', imputation_id: 'Imputation',
         salaire_entree: "Salaire d'entrée", salaire_base_actuel: 'Salaire de base actuel',
         prime_logement: 'Prime logement', prime_transport: 'Prime transport',
         indemnite_fonction: 'Indemnité de fonction', indemnite_sujetion: 'Indemnité de sujétion',
@@ -4189,6 +4434,23 @@
         }
       },
 
+      // Résout un identifiant de référentiel (direction/service/section/poste/imputation) vers son
+      // libellé, pour que le journal d'activité reste lisible au lieu d'afficher des identifiants bruts.
+      resolveLoggedValue(champ, valeur) {
+        if (valeur === undefined || valeur === null || valeur === '') return valeur;
+        const resolveurs = {
+          direction_id: id => this.directionLabel(id),
+          service_id: id => this.serviceLabel(id),
+          section_id: id => this.sectionLabel(id),
+          poste_id: id => this.posteLabel(id),
+          imputation_id: id => this.imputationLabel(id),
+          statut_professionnel_id: id => this.statutProfessionnelLabel(id)
+        };
+        const r = resolveurs[champ];
+        if (!r) return valeur;
+        const label = r(valeur);
+        return label === '—' ? valeur : label;
+      },
       // Compare la fiche originale (avant modification) et les champs soumis, et journalise
       // une entrée distincte pour chaque champ réellement modifié.
       async logModificationsAgent(original, updated) {
@@ -4205,8 +4467,8 @@
               agentNom: updated.nom_prenom || (original && original.nom_prenom),
               agentMatricule: updated.matricule || (original && original.matricule),
               champ: this.FIELD_LABELS[champ] || champ,
-              ancienne: avant,
-              nouvelle: apres
+              ancienne: this.resolveLoggedValue(champ, avant),
+              nouvelle: this.resolveLoggedValue(champ, apres)
             }));
           }
         });
@@ -4374,11 +4636,11 @@
         if (!this.newAgent.nom_prenom.trim()) manquants.push('Nom et Prénom');
         if (!this.newAgent.sexe) manquants.push('Sexe');
         if (!this.newAgent.date_naissance) manquants.push('Date de naissance');
-        if (!this.agentFormDirId) manquants.push('Direction');
-        if (!this.agentFormServiceId) manquants.push('Service');
+        if (!this.newAgent.direction_id) manquants.push('Direction');
+        if (!this.newAgent.service_id) manquants.push('Service');
         if (!this.newAgent.date_embauche) manquants.push("Date d'embauche");
-        if (!this.newAgent.imputation) manquants.push('Imputation');
-        if (!this.newAgent.poste) manquants.push('Poste');
+        if (!this.newAgent.imputation_id) manquants.push('Imputation');
+        if (!this.newAgent.poste_id) manquants.push('Poste');
         if (!this.newAgent.effectif) manquants.push('Effectif');
         if (!this.newAgent.statut) manquants.push('Statut initial');
         if (manquants.length) {
@@ -4387,7 +4649,7 @@
         }
         this.updateRetraite();
         this.updateIndiciaire();
-        this.newAgent.poste_embauche = this.newAgent.poste;
+        this.newAgent.poste_embauche = this.posteLabel(this.newAgent.poste_id);
         // Le salaire d'entrée n'est plus saisi manuellement : il est figé, à la création,
         // sur la valeur du salaire de base actuel (calculé depuis la valeur indiciaire).
         this.newAgent.salaire_entree = this.newAgent.salaire_base_actuel;
@@ -4424,18 +4686,16 @@
         this.newAgent = {
           nom_prenom: '', matricule: '', nationalite: '', sexe: '', situation_familiale: '', nbr_enfants: 0,
           date_naissance: '', lieu_naissance: '', date_embauche: '', date_retraite: '',
-          direction: '', service: '', section: '', localisation: '', poste: '', poste_embauche: '', effectif: '',
+          direction_id: null, service_id: null, section_id: null, localisation: '', poste_id: null, poste_embauche: '', effectif: '',
           n_cnss: '', n_cnamgs: '', telephone: '', diplomes: '',
           fin_contrat1: '', debut_contrat2: '', fin_contrat2: '',
           hierarchie: '', categorie: '', classe: '', echelon: '', valeur_indiciaire: null,
-          statut: 'En service', imputation: '', salaire_entree: 0, salaire_base_actuel: 0,
+          statut: 'En service', imputation_id: null, salaire_entree: 0, salaire_base_actuel: 0,
           prime_logement: 0, prime_transport: 0, indemnite_fonction: 0, indemnite_sujetion: 0,
           prime_etat_civil: 0, solidarite_nationale: 0, prime_risque: 0, prime_salissure: 0,
           prime_perception: 0, autres_primes: 0,
           photo_url: '', motif_inactif: ''
         };
-        this.agentFormDirId = '';
-        this.agentFormServiceId = '';
         await this.loadAllData();
         this.currentTab = 'agents';
         if (comptesGeneres.length) {
@@ -4483,25 +4743,20 @@
         return this.agents.filter(a => {
           const matchSearch = (a.nom_prenom || '').toLowerCase().includes(q)
             || (a.matricule || '').toLowerCase().includes(q)
-            || (a.poste || '').toLowerCase().includes(q)
-            || this.directionAcronym(a.direction).toLowerCase().includes(q);
+            || this.posteLabel(a.poste_id).toLowerCase().includes(q)
+            || this.directionAcronym(a.direction_id).toLowerCase().includes(q);
           const matchStatut = this.filterStatut ? a.statut === this.filterStatut : true;
           const matchStatutPro = this.filterStatutProfessionnel ? String(a.statut_professionnel_id) === String(this.filterStatutProfessionnel) : true;
           const matchEffectif = this.filterEffectif ? a.effectif === this.filterEffectif : true;
-          const matchDirection = this.filterDirection ? a.direction === this.filterDirection : true;
-          const matchPoste = this.filterPoste ? a.poste === this.filterPoste : true;
-          const matchService = this.filterService ? a.service === this.filterService : true;
+          const matchDirection = this.filterDirection ? String(a.direction_id) === String(this.filterDirection) : true;
+          const matchPoste = this.filterPoste ? String(a.poste_id) === String(this.filterPoste) : true;
+          const matchService = this.filterService ? String(a.service_id) === String(this.filterService) : true;
           const matchLocalisation = this.filterLocalisation ? a.localisation === this.filterLocalisation : true;
           return matchSearch && matchStatut && matchStatutPro && matchEffectif && matchDirection && matchPoste && matchService && matchLocalisation;
         });
       },
-      // Listes déroulantes générées dynamiquement à partir des valeurs réellement présentes chez les agents.
-      uniquePostes() {
-        return [...new Set(this.agents.map(a => a.poste).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-      },
-      uniqueServices() {
-        return [...new Set(this.agents.map(a => a.service).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-      },
+      // Liste déroulante générée dynamiquement à partir des localisations réellement présentes chez les agents
+      // (la localisation reste un champ texte libre, non rattachée à une table de référence dédiée).
       uniqueLocalisations() {
         return [...new Set(this.agents.map(a => a.localisation).filter(Boolean))].sort((a, b) => a.localeCompare(b));
       },
@@ -4513,8 +4768,8 @@
         if (this.filterStatutProfessionnel) chips.push({ key: 'filterStatutProfessionnel', label: 'Statut professionnel : ' + this.statutProfessionnelLabel(this.filterStatutProfessionnel) });
         if (this.filterEffectif) chips.push({ key: 'filterEffectif', label: 'Effectif : ' + this.filterEffectif });
         if (this.filterDirection) chips.push({ key: 'filterDirection', label: 'Direction : ' + this.directionLabel(this.filterDirection) });
-        if (this.filterPoste) chips.push({ key: 'filterPoste', label: 'Poste : ' + this.filterPoste });
-        if (this.filterService) chips.push({ key: 'filterService', label: 'Service : ' + this.filterService });
+        if (this.filterPoste) chips.push({ key: 'filterPoste', label: 'Poste : ' + this.posteLabel(this.filterPoste) });
+        if (this.filterService) chips.push({ key: 'filterService', label: 'Service : ' + this.serviceLabel(this.filterService) });
         if (this.filterLocalisation) chips.push({ key: 'filterLocalisation', label: 'Localisation : ' + this.filterLocalisation });
         if (this.search) chips.push({ key: 'search', label: 'Recherche : "' + this.search + '"' });
         return chips;
@@ -4546,11 +4801,11 @@
           'Date de Naissance': a.date_naissance || '',
           'Lieu de Naissance': a.lieu_naissance || '',
           'Date Embauche': a.date_embauche || '',
-          'Direction': a.direction || '',
-          'Service': a.service || '',
-          'Section': a.section || '',
+          'Direction': this.directionsList.find(d => String(d.id) === String(a.direction_id))?.nom || '',
+          'Service': this.serviceLabel(a.service_id) !== '—' ? this.serviceLabel(a.service_id) : '',
+          'Section': this.sectionLabel(a.section_id) !== '—' ? this.sectionLabel(a.section_id) : '',
           'Localisation': a.localisation || '',
-          'Poste': a.poste || '',
+          'Poste': this.posteLabel(a.poste_id) !== '—' ? this.posteLabel(a.poste_id) : '',
           "Poste à l'embauche": a.poste_embauche || '',
           'N° CNSS': a.n_cnss || '',
           'N° CNAMGS': a.n_cnamgs || '',
@@ -4566,7 +4821,7 @@
           'Valeur Indiciaire': a.valeur_indiciaire || '',
           'Statut': a.statut || '',
           'Motif Inactif': a.motif_inactif || '',
-          'Imputation': a.imputation || '',
+          'Imputation': this.imputationLabel(a.imputation_id) !== '—' ? this.imputationLabel(a.imputation_id) : '',
           'Effectif': a.effectif || '',
           'Salaire Entrée (FCFA)': a.salaire_entree || 0,
           'Salaire de Base Actuel (FCFA)': a.salaire_base_actuel || 0,
@@ -4740,15 +4995,55 @@
         const validRows = this.agentImportRows.filter(r => !r._error);
         if (!validRows.length) { this.showToast('error', 'Aucune ligne valide à importer.'); return; }
         this.agentImporting = true;
-        const payload = validRows.map(r => {
-          const { _error, _rowNum, ...agent } = r;
+
+        // Résolution des colonnes texte (Direction, Service, Section, Poste, Imputation) vers les
+        // identifiants des tables de référence correspondantes. Les postes et imputations inconnus
+        // sont créés automatiquement (comme lors d'une saisie manuelle) ; en revanche une direction ou
+        // un service inconnu fait échouer la ligne, l'organigramme devant rester géré depuis Outils Admin.
+        const norm = s => String(s || '').trim().toLowerCase();
+        const resolutionErrors = [];
+        const payload = [];
+        for (const r of validRows) {
+          const { _error, _rowNum, direction, service, section, poste, imputation, ...rest } = r;
+          const dir = this.directionsList.find(d => norm(d.nom) === norm(direction));
+          if (!dir) { resolutionErrors.push(`Ligne ${_rowNum} : direction inconnue « ${direction} ».`); continue; }
+          const svc = this.servicesList.find(s => norm(s.nom) === norm(service) && String(s.direction_id) === String(dir.id));
+          if (!svc) { resolutionErrors.push(`Ligne ${_rowNum} : service inconnu « ${service} » pour la direction « ${dir.nom} ».`); continue; }
+          let sectionId = null;
+          if (section) {
+            const sec = this.sectionsList.find(s => norm(s.nom) === norm(section) && String(s.service_id) === String(svc.id));
+            if (!sec) { resolutionErrors.push(`Ligne ${_rowNum} : section inconnue « ${section} » pour le service « ${svc.nom} ».`); continue; }
+            sectionId = sec.id;
+          }
+          let posteEntry = this.postesList.find(p => norm(p.nom) === norm(poste));
+          if (!posteEntry && poste) {
+            const { data, error } = await supabaseClient.from('postes').insert([{ nom: poste }]).select().single();
+            if (error) { resolutionErrors.push(`Ligne ${_rowNum} : échec de création du poste « ${poste} ».`); continue; }
+            posteEntry = data;
+            this.postesList.push(posteEntry);
+          }
+          let impEntry = this.imputationsList.find(i => norm(i.nom) === norm(imputation));
+          if (!impEntry && imputation) {
+            const { data, error } = await supabaseClient.from('imputations').insert([{ nom: imputation }]).select().single();
+            if (error) { resolutionErrors.push(`Ligne ${_rowNum} : échec de création de l'imputation « ${imputation} ».`); continue; }
+            impEntry = data;
+            this.imputationsList.push(impEntry);
+          }
+          const agent = { ...rest, direction_id: dir.id, service_id: svc.id, section_id: sectionId,
+            poste_id: posteEntry ? posteEntry.id : null, poste_embauche: posteEntry ? posteEntry.nom : (rest.poste_embauche || ''),
+            imputation_id: impEntry ? impEntry.id : null };
           // Les champs de date laissés vides valent "" après lecture du fichier Excel/CSV,
           // mais Postgres exige null (et non "") pour une colonne de type date.
           ['date_naissance', 'date_embauche', 'fin_contrat1', 'debut_contrat2', 'fin_contrat2'].forEach(champ => {
             if (agent[champ] === '') agent[champ] = null;
           });
-          return agent;
-        });
+          payload.push(agent);
+        }
+        if (resolutionErrors.length) {
+          this.showToast('error', resolutionErrors.length + ' ligne(s) non importée(s) : ' + resolutionErrors.slice(0, 3).join(' '));
+        }
+        if (!payload.length) { this.agentImporting = false; return; }
+
         const chunkSize = 200;
         const agentsInseres = [];
         for (let i = 0; i < payload.length; i += chunkSize) {
@@ -4792,30 +5087,17 @@
         // Instantané figé de la fiche AVANT modification, conservé pour le journal d'activité
         // (permet de savoir précisément quels champs ont changé lors de l'enregistrement).
         this._editingAgentOriginal = JSON.parse(JSON.stringify(agent));
-        const dir = this.directions().find(d => d.nom === agent.direction);
-        this.editFormDirId = dir ? dir.id : '';
-        const svc = dir ? this.servicesOf(dir.id).find(s => s.nom === agent.service) : null;
-        this.editFormServiceId = svc ? svc.id : '';
         this.refreshIcons();
       },
 
-      servicesForEditForm() {
-        return this.servicesOf(this.editFormDirId);
-      },
-      sectionsForEditForm() {
-        return this.sectionsOf(this.editFormServiceId);
-      },
+      // Direction / service / section de la fiche en cours d'édition sont liés par identifiant
+      // (agent.direction_id, etc.) : on se contente de réinitialiser les niveaux dépendants.
       onEditFormDirectionChange() {
-        const dir = this.directions().find(d => String(d.id) === String(this.editFormDirId));
-        this.editingAgent.direction = dir ? dir.nom : '';
-        this.editFormServiceId = '';
-        this.editingAgent.service = '';
-        this.editingAgent.section = '';
+        this.editingAgent.service_id = '';
+        this.editingAgent.section_id = '';
       },
       onEditFormServiceChange() {
-        const svc = this.servicesForEditForm().find(s => String(s.id) === String(this.editFormServiceId));
-        this.editingAgent.service = svc ? svc.nom : '';
-        this.editingAgent.section = '';
+        this.editingAgent.section_id = '';
       },
       categorieOptionsEdit() {
         const map = { A: ['A6', 'A5'], B: ['B4', 'B3'], C: ['C2', 'C1'] };
@@ -4871,8 +5153,6 @@
         this._editingAgentOriginal = null;
         this.editingAgent = null;
         this.selectedAgent = null;
-        this.editFormDirId = '';
-        this.editFormServiceId = '';
         await this.loadAllData();
         this.showToast('success', 'Fiche agent mise à jour avec succès.');
       }
