@@ -668,8 +668,322 @@
         </div>
       </template>
 
+      <!-- ================= CARRIÈRE ================= -->
+      <template x-if="currentView === 'carriere'">
+        <div x-data="carriereModule()" x-init="loadAgents()">
+
+          <!-- Recherche d'agent -->
+          <template x-if="!selectedAgent">
+            <div class="space-y-4">
+              <div class="relative max-w-sm">
+                <i data-lucide="search" class="w-4 h-4 text-navy-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" x-model.debounce.400ms="search" @input="loadAgents()"
+                       placeholder="Rechercher un agent (nom, matricule…)"
+                       class="w-full pl-9 pr-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+              </div>
+
+              <div class="card overflow-hidden">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Matricule</th>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Grade</th>
+                      <th class="text-left font-medium px-4 py-3">Indice</th>
+                      <th class="text-right font-medium px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="loadingAgents">
+                      <tr><td colspan="5" class="px-4 py-8 text-center text-navy-400">Chargement…</td></tr>
+                    </template>
+                    <template x-if="!loadingAgents && agents.length === 0">
+                      <tr><td colspan="5" class="px-4 py-8 text-center text-navy-400">Aucun agent trouvé.</td></tr>
+                    </template>
+                    <template x-for="a in agents" :key="a.id">
+                      <tr class="hover:bg-navy-50/60 cursor-pointer transition" @click="openAgent(a)">
+                        <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="a.matricule"></td>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="a.nom + ' ' + a.prenoms"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="a.grades?.libelle || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="a.echelons?.valeur_indiciaire ?? '—'"></td>
+                        <td class="px-4 py-3 text-right">
+                          <i data-lucide="chevron-right" class="w-4 h-4 text-navy-300 inline-block"></i>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+
+          <!-- Fiche carrière de l'agent -->
+          <template x-if="selectedAgent">
+            <div class="space-y-4">
+              <button @click="selectedAgent = null" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Retour à la recherche
+              </button>
+
+              <div class="card p-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-12 h-12 rounded-full bg-navy-800 text-white flex items-center justify-center font-display font-bold">
+                    <span x-text="(selectedAgent.nom?.[0] || '') + (selectedAgent.prenoms?.[0] || '')"></span>
+                  </div>
+                  <div>
+                    <h3 class="font-display font-bold text-navy-900" x-text="selectedAgent.nom + ' ' + selectedAgent.prenoms"></h3>
+                    <p class="text-xs text-navy-400 font-mono" x-text="selectedAgent.matricule"></p>
+                  </div>
+                  <div class="ml-auto text-right">
+                    <p class="text-xs text-navy-400">Position actuelle</p>
+                    <p class="text-sm font-semibold text-navy-800" x-text="positionLabel"></p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 border-b border-navy-100">
+                <template x-for="tab in tabs" :key="tab.id">
+                  <button @click="switchTab(tab.id)"
+                          :class="activeTab === tab.id ? 'border-navy-800 text-navy-900' : 'border-transparent text-navy-400 hover:text-navy-700'"
+                          class="px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px">
+                    <span x-text="tab.label"></span>
+                  </button>
+                </template>
+              </div>
+
+              <template x-if="!showForm">
+                <div class="space-y-3">
+                  <div class="flex justify-end">
+                    <button @click="openCreate()"
+                            class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                      <i data-lucide="plus" class="w-4 h-4"></i>
+                      <span x-text="'Nouvelle ' + tabLabelSingular"></span>
+                    </button>
+                  </div>
+
+                  <!-- Affectations -->
+                  <div class="card overflow-hidden" x-show="activeTab === 'affectations'">
+                    <table class="w-full text-sm">
+                      <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                        <tr>
+                          <th class="text-left font-medium px-4 py-3">Fonction</th>
+                          <th class="text-left font-medium px-4 py-3">Direction / Service</th>
+                          <th class="text-left font-medium px-4 py-3">Début</th>
+                          <th class="text-left font-medium px-4 py-3">Fin</th>
+                          <th class="text-left font-medium px-4 py-3">Statut</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-navy-50">
+                        <template x-if="!loadingItems && items.length === 0">
+                          <tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucune affectation.</td></tr>
+                        </template>
+                        <template x-for="it in items" :key="it.id">
+                          <tr>
+                            <td class="px-4 py-3 text-navy-700" x-text="it.fonction || '—'"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="[it.directions?.nom, it.services?.nom].filter(Boolean).join(' / ') || '—'"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_debut)"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="it.date_fin ? formatDate(it.date_fin) : 'en cours'"></td>
+                            <td class="px-4 py-3">
+                              <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="it.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'"
+                                    x-text="it.actif ? 'Active' : 'Terminée'"></span>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Mouvements de carrière -->
+                  <div class="card overflow-hidden" x-show="activeTab === 'mouvements'">
+                    <table class="w-full text-sm">
+                      <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                        <tr>
+                          <th class="text-left font-medium px-4 py-3">Type</th>
+                          <th class="text-left font-medium px-4 py-3">Ancien indice</th>
+                          <th class="text-left font-medium px-4 py-3">Nouvel indice</th>
+                          <th class="text-left font-medium px-4 py-3">Date d'effet</th>
+                          <th class="text-left font-medium px-4 py-3">Acte</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-navy-50">
+                        <template x-if="!loadingItems && items.length === 0">
+                          <tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucun mouvement enregistré.</td></tr>
+                        </template>
+                        <template x-for="it in items" :key="it.id">
+                          <tr>
+                            <td class="px-4 py-3 text-navy-700" x-text="typeMouvementLabel(it.type_mouvement)"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="it.ancien?.valeur_indiciaire ?? '—'"></td>
+                            <td class="px-4 py-3 font-medium text-navy-800" x-text="it.nouvel?.valeur_indiciaire ?? '—'"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_effet)"></td>
+                            <td class="px-4 py-3 text-navy-500 text-xs" x-text="it.numero_acte || '—'"></td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Contrats -->
+                  <div class="card overflow-hidden" x-show="activeTab === 'contrats'">
+                    <table class="w-full text-sm">
+                      <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                        <tr>
+                          <th class="text-left font-medium px-4 py-3">Type</th>
+                          <th class="text-left font-medium px-4 py-3">Début</th>
+                          <th class="text-left font-medium px-4 py-3">Fin</th>
+                          <th class="text-left font-medium px-4 py-3">Statut</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-navy-50">
+                        <template x-if="!loadingItems && items.length === 0">
+                          <tr><td colspan="4" class="px-4 py-6 text-center text-navy-400">Aucun contrat.</td></tr>
+                        </template>
+                        <template x-for="it in items" :key="it.id">
+                          <tr>
+                            <td class="px-4 py-3 text-navy-700 capitalize" x-text="it.type_contrat"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_debut)"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="it.date_fin ? formatDate(it.date_fin) : 'en cours'"></td>
+                            <td class="px-4 py-3">
+                              <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-navy-100 text-navy-600" x-text="it.statut"></span>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Formulaire création (adapté à l'onglet actif) -->
+              <template x-if="showForm">
+                <div class="space-y-3 max-w-xl">
+                  <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler
+                  </button>
+                  <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
+                    <h3 class="font-display font-semibold text-navy-800" x-text="'Nouvelle ' + tabLabelSingular"></h3>
+
+                    <!-- Champs Affectation -->
+                    <template x-if="activeTab === 'affectations'">
+                      <div class="grid sm:grid-cols-2 gap-4">
+                        <div class="sm:col-span-2">
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Fonction</label>
+                          <input x-model="form.fonction" placeholder="Ex : Chef de section"
+                                 class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Direction</label>
+                          <select x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="d in referentiels.directions" :key="d.id"><option :value="d.id" x-text="d.nom"></option></template>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Service</label>
+                          <select x-model="form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Date de début *</label>
+                          <input type="date" required x-model="form.date_debut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Motif</label>
+                          <input x-model="form.motif" placeholder="Nomination, mutation…" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        </div>
+                        <div class="sm:col-span-2">
+                          <label class="block text-xs font-medium text-navy-500 mb-1">N° d'acte</label>
+                          <input x-model="form.numero_acte" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Champs Mouvement de carrière -->
+                    <template x-if="activeTab === 'mouvements'">
+                      <div class="grid sm:grid-cols-2 gap-4">
+                        <div class="sm:col-span-2">
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Type de mouvement *</label>
+                          <select required x-model="form.type_mouvement" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <option value="avancement_echelon">Avancement d'échelon</option>
+                            <option value="changement_classe">Changement de classe</option>
+                            <option value="changement_categorie">Changement de catégorie</option>
+                            <option value="changement_hierarchie">Changement de hiérarchie</option>
+                            <option value="changement_grade">Changement de grade (promotion)</option>
+                          </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Nouvel échelon *</label>
+                          <select required x-model="form.nouvel_echelon_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="e in referentiels.echelons" :key="e.id"><option :value="e.id" x-text="e.label"></option></template>
+                          </select>
+                        </div>
+                        <div class="sm:col-span-2" x-show="form.type_mouvement === 'changement_grade'">
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Nouveau grade</label>
+                          <select x-model="form.nouveau_grade_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="g in referentiels.grades" :key="g.id"><option :value="g.id" x-text="g.libelle"></option></template>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Date d'effet *</label>
+                          <input type="date" required x-model="form.date_effet" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">N° d'acte</label>
+                          <input x-model="form.numero_acte" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Champs Contrat -->
+                    <template x-if="activeTab === 'contrats'">
+                      <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Type de contrat *</label>
+                          <select required x-model="form.type_contrat" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <option value="titulaire">Titulaire</option>
+                            <option value="stagiaire">Stagiaire</option>
+                            <option value="contractuel">Contractuel</option>
+                            <option value="journalier">Journalier</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Date de début *</label>
+                          <input type="date" required x-model="form.date_debut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">Date de fin</label>
+                          <input type="date" x-model="form.date_fin" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-navy-500 mb-1">N° d'acte</label>
+                          <input x-model="form.numero_acte" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        </div>
+                      </div>
+                    </template>
+
+                    <p x-show="formError" x-text="formError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
+
+                    <div class="flex justify-end gap-3 pt-2">
+                      <button type="button" @click="showForm = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
+                      <button type="submit" :disabled="formLoading"
+                              class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                        <span x-text="formLoading ? 'Enregistrement…' : 'Créer'"></span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </template>
+
       <!-- ================= MODULES EN CONSTRUCTION ================= -->
-      <template x-if="!['dashboard','agents','organisation'].includes(currentView)">
+      <template x-if="!['dashboard','agents','organisation','carriere'].includes(currentView)">
         <div class="flex flex-col items-center justify-center py-24 text-center">
           <div class="w-14 h-14 rounded-2xl bg-navy-100 flex items-center justify-center mb-4">
             <i data-lucide="hammer" class="w-6 h-6 text-navy-400"></i>
@@ -973,6 +1287,175 @@
         a.download = `suivi_effectifs_${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+      },
+    };
+  }
+
+  // ============================================================
+  // MODULE : Carrière
+  // ============================================================
+  function carriereModule() {
+    return {
+      search: '', agents: [], loadingAgents: true,
+      selectedAgent: null,
+      tabs: [
+        { id: 'affectations', label: 'Affectations' },
+        { id: 'mouvements', label: 'Mouvements de carrière' },
+        { id: 'contrats', label: 'Contrats' },
+      ],
+      activeTab: 'affectations',
+      items: [], loadingItems: false,
+      showForm: false, formLoading: false, formError: '',
+      form: {},
+      referentiels: { directions: [], services: [], echelons: [], grades: [] },
+
+      get tabLabelSingular() {
+        return { affectations: 'affectation', mouvements: 'mouvement de carrière', contrats: 'contrat' }[this.activeTab];
+      },
+      get positionLabel() {
+        const g = this.selectedAgent?.grades?.libelle;
+        const e = this.selectedAgent?.echelons;
+        if (!e) return 'Non renseignée';
+        const h = e.classes?.categories?.hierarchies?.code;
+        const c = e.classes?.categories?.numero;
+        const cl = e.classes?.libelle;
+        return `${g ? g + ' — ' : ''}${h}-${c}-${cl}-${e.numero} (indice ${e.valeur_indiciaire})`;
+      },
+
+      async loadAgents() {
+        this.loadingAgents = true;
+        let query = supa
+          .from('agents')
+          .select('id, matricule, nom, prenoms, grade_id, echelon_id, grades(libelle), echelons(valeur_indiciaire)')
+          .order('nom')
+          .limit(50);
+        if (this.search) {
+          query = query.or(`nom.ilike.%${this.search}%,prenoms.ilike.%${this.search}%,matricule.ilike.%${this.search}%`);
+        }
+        const { data, error } = await query;
+        if (error) console.error(error);
+        this.agents = data || [];
+        this.loadingAgents = false;
+      },
+
+      async openAgent(agent) {
+        const { data } = await supa
+          .from('agents')
+          .select('*, grades(libelle), echelons(numero, valeur_indiciaire, classes(libelle, categories(numero, hierarchies(code))))')
+          .eq('id', agent.id)
+          .single();
+        this.selectedAgent = data || agent;
+        this.activeTab = 'affectations';
+        this.loadItems();
+      },
+
+      switchTab(tab) {
+        this.activeTab = tab;
+        this.showForm = false;
+        this.loadItems();
+      },
+
+      async loadItems() {
+        this.loadingItems = true;
+        const agentId = this.selectedAgent.id;
+        let data = [];
+
+        if (this.activeTab === 'affectations') {
+          const r = await supa.from('affectations')
+            .select('*, directions(nom), services(nom)')
+            .eq('agent_id', agentId)
+            .order('date_debut', { ascending: false });
+          data = r.data || [];
+        } else if (this.activeTab === 'mouvements') {
+          const r = await supa.from('mouvements_carriere')
+            .select('*, ancien:ancien_echelon_id(valeur_indiciaire), nouvel:nouvel_echelon_id(valeur_indiciaire)')
+            .eq('agent_id', agentId)
+            .order('date_effet', { ascending: false });
+          data = r.data || [];
+        } else if (this.activeTab === 'contrats') {
+          const r = await supa.from('contrats')
+            .select('*')
+            .eq('agent_id', agentId)
+            .order('date_debut', { ascending: false });
+          data = r.data || [];
+        }
+
+        this.items = data;
+        this.loadingItems = false;
+      },
+
+      async openCreate() {
+        this.showForm = true;
+        this.formError = '';
+        this.form = { agent_id: this.selectedAgent.id };
+
+        if (this.activeTab === 'affectations' && this.referentiels.directions.length === 0) {
+          const [{ data: d }, { data: s }] = await Promise.all([
+            supa.from('directions').select('id, nom').eq('actif', true).order('nom'),
+            supa.from('services').select('id, nom').eq('actif', true).order('nom'),
+          ]);
+          this.referentiels.directions = d || [];
+          this.referentiels.services = s || [];
+        }
+
+        if (this.activeTab === 'mouvements' && this.referentiels.echelons.length === 0) {
+          const [{ data: ech }, { data: gr }] = await Promise.all([
+            supa.from('echelons').select('id, numero, valeur_indiciaire, classes(libelle, categories(numero, hierarchies(code)))').order('valeur_indiciaire'),
+            supa.from('grades').select('id, libelle').order('libelle'),
+          ]);
+          this.referentiels.echelons = (ech || []).map(e => ({
+            id: e.id,
+            label: `${e.classes?.categories?.hierarchies?.code}-${e.classes?.categories?.numero}-${e.classes?.libelle}-${e.numero} (indice ${e.valeur_indiciaire})`,
+          }));
+          this.referentiels.grades = gr || [];
+        }
+      },
+
+      async submitCreate() {
+        this.formLoading = true;
+        this.formError = '';
+
+        let payload = { agent_id: this.selectedAgent.id };
+        let table = this.activeTab;
+
+        if (this.activeTab === 'affectations') {
+          payload = { ...payload, fonction: this.form.fonction || null, direction_id: this.form.direction_id || null,
+                       service_id: this.form.service_id || null, date_debut: this.form.date_debut,
+                       motif: this.form.motif || null, numero_acte: this.form.numero_acte || null };
+        } else if (this.activeTab === 'mouvements') {
+          table = 'mouvements_carriere';
+          payload = { ...payload, ancien_echelon_id: this.selectedAgent.echelon_id, nouvel_echelon_id: this.form.nouvel_echelon_id,
+                       nouveau_grade_id: this.form.type_mouvement === 'changement_grade' ? (this.form.nouveau_grade_id || null) : null,
+                       type_mouvement: this.form.type_mouvement, date_effet: this.form.date_effet,
+                       numero_acte: this.form.numero_acte || null };
+        } else if (this.activeTab === 'contrats') {
+          payload = { ...payload, type_contrat: this.form.type_contrat, date_debut: this.form.date_debut,
+                       date_fin: this.form.date_fin || null, statut: 'actif', numero_acte: this.form.numero_acte || null };
+        }
+
+        const { error } = await supa.from(table).insert(payload);
+        this.formLoading = false;
+
+        if (error) { this.formError = error.message; return; }
+        this.showForm = false;
+
+        // Un mouvement de carrière met à jour l'échelon/grade de l'agent via trigger : on recharge sa fiche
+        if (this.activeTab === 'mouvements') await this.openAgent(this.selectedAgent);
+        this.loadItems();
+      },
+
+      typeMouvementLabel(t) {
+        const map = {
+          avancement_echelon: "Avancement d'échelon", changement_classe: 'Changement de classe',
+          changement_categorie: 'Changement de catégorie', changement_hierarchie: 'Changement de hiérarchie',
+          changement_grade: 'Changement de grade',
+        };
+        return map[t] || t;
+      },
+
+      formatDate(d) {
+        if (!d) return '—';
+        return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
       },
     };
   }
