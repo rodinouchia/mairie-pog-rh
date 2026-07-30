@@ -1359,8 +1359,311 @@
         </div>
       </template>
 
+      <!-- ================= TEMPS DE TRAVAIL ================= -->
+      <template x-if="currentView === 'temps'">
+        <div x-data="tempsModule()" x-init="load()" class="space-y-4">
+
+          <div class="flex items-center gap-2 border-b border-navy-100 overflow-x-auto">
+            <template x-for="tab in tabs" :key="tab.id">
+              <button @click="switchTab(tab.id)"
+                      :class="activeTab === tab.id ? 'border-navy-800 text-navy-900' : 'border-transparent text-navy-400 hover:text-navy-700'"
+                      class="px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px whitespace-nowrap">
+                <span x-text="tab.label"></span>
+              </button>
+            </template>
+          </div>
+
+          <template x-if="!showForm">
+            <div class="space-y-3">
+              <div class="flex justify-end">
+                <button @click="openCreate()"
+                        class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span x-text="'Nouvelle ' + tabLabelSingular"></span>
+                </button>
+              </div>
+
+              <!-- Congés -->
+              <div class="card overflow-hidden" x-show="activeTab === 'conges'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Type</th>
+                      <th class="text-left font-medium px-4 py-3">Période</th>
+                      <th class="text-left font-medium px-4 py-3">Jours</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucune demande de congé.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(it.agents?.nom || '') + ' ' + (it.agents?.prenoms || '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.types_conges?.libelle || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_debut) + ' → ' + formatDate(it.date_fin)"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.nombre_jours"></td>
+                        <td class="px-4 py-3">
+                          <select @change="changerStatut('conges', it, $event.target.value)"
+                                  class="text-xs px-2 py-1 rounded-lg border border-navy-100 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <template x-for="s in ['en_attente','valide','refuse','annule']" :key="s">
+                              <option :value="s" :selected="s === it.statut" x-text="s"></option>
+                            </template>
+                          </select>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Absences -->
+              <div class="card overflow-hidden" x-show="activeTab === 'absences'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Type</th>
+                      <th class="text-left font-medium px-4 py-3">Période</th>
+                      <th class="text-left font-medium px-4 py-3">Justifiée</th>
+                      <th class="text-left font-medium px-4 py-3">Commentaire</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucune absence enregistrée.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(it.agents?.nom || '') + ' ' + (it.agents?.prenoms || '')"></td>
+                        <td class="px-4 py-3 text-navy-600 capitalize" x-text="it.type_absence"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_debut) + (it.date_fin ? ' → ' + formatDate(it.date_fin) : '')"></td>
+                        <td class="px-4 py-3">
+                          <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="it.justifiee ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-amber-500/10 text-amber-700'"
+                                x-text="it.justifiee ? 'Oui' : 'Non'"></span>
+                        </td>
+                        <td class="px-4 py-3 text-navy-500 text-xs" x-text="it.commentaire || '—'"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Autorisations d'absence -->
+              <div class="card overflow-hidden" x-show="activeTab === 'autorisations'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Date</th>
+                      <th class="text-left font-medium px-4 py-3">Horaires</th>
+                      <th class="text-left font-medium px-4 py-3">Motif</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucune autorisation.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(it.agents?.nom || '') + ' ' + (it.agents?.prenoms || '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_jour)"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="(it.heure_debut || '—') + ' - ' + (it.heure_fin || '—')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.motif"></td>
+                        <td class="px-4 py-3">
+                          <select @change="changerStatut('autorisations_absence', it, $event.target.value)"
+                                  class="text-xs px-2 py-1 rounded-lg border border-navy-100 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <template x-for="s in ['en_attente','valide','refuse']" :key="s">
+                              <option :value="s" :selected="s === it.statut" x-text="s"></option>
+                            </template>
+                          </select>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Astreintes -->
+              <div class="card overflow-hidden" x-show="activeTab === 'astreintes'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Période</th>
+                      <th class="text-left font-medium px-4 py-3">Type</th>
+                      <th class="text-left font-medium px-4 py-3">Lieu</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucune astreinte planifiée.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(it.agents?.nom || '') + ' ' + (it.agents?.prenoms || '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="formatDateTime(it.date_debut) + ' → ' + formatDateTime(it.date_fin)"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.type_astreinte || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.lieu || '—'"></td>
+                        <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full font-medium bg-navy-100 text-navy-600" x-text="it.statut"></span></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Heures supplémentaires -->
+              <div class="card overflow-hidden" x-show="activeTab === 'heures_sup'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Date</th>
+                      <th class="text-left font-medium px-4 py-3">Heures</th>
+                      <th class="text-left font-medium px-4 py-3">Majoration</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucune heure supplémentaire.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(it.agents?.nom || '') + ' ' + (it.agents?.prenoms || '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_jour)"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.nombre_heures + ' h'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="(it.taux_majoration * 100) + '%'"></td>
+                        <td class="px-4 py-3">
+                          <select @change="changerStatut('heures_supplementaires', it, $event.target.value)"
+                                  class="text-xs px-2 py-1 rounded-lg border border-navy-100 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <template x-for="s in ['en_attente','validee','refusee','payee']" :key="s">
+                              <option :value="s" :selected="s === it.statut" x-text="s"></option>
+                            </template>
+                          </select>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+
+          <!-- Formulaire création -->
+          <template x-if="showForm">
+            <div class="space-y-3 max-w-xl">
+              <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler
+              </button>
+              <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
+                <h3 class="font-display font-semibold text-navy-800" x-text="'Nouvelle ' + tabLabelSingular"></h3>
+
+                <div>
+                  <label class="block text-xs font-medium text-navy-500 mb-1">Agent *</label>
+                  <select required x-model="form.agent_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                    <option value="">—</option>
+                    <template x-for="a in referentiels.agents" :key="a.id"><option :value="a.id" x-text="(a.matricule ? a.matricule + ' — ' : '') + a.nom + ' ' + a.prenoms"></option></template>
+                  </select>
+                </div>
+
+                <!-- Congé -->
+                <template x-if="activeTab === 'conges'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Type de congé *</label>
+                      <select required x-model="form.type_conge_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="t in referentiels.typesConges" :key="t.id"><option :value="t.id" x-text="t.libelle"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de début *</label>
+                      <input type="date" required x-model="form.date_debut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de fin *</label>
+                      <input type="date" required x-model="form.date_fin" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Nombre de jours *</label>
+                      <input type="number" step="0.5" required x-model.number="form.nombre_jours" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Motif</label>
+                      <input x-model="form.motif" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <!-- Absence -->
+                <template x-if="activeTab === 'absences'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Type *</label>
+                      <select required x-model="form.type_absence" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option><option value="maladie">Maladie</option><option value="injustifiee">Injustifiée</option>
+                        <option value="accident_travail">Accident de travail</option><option value="deces_proche">Décès d'un proche</option><option value="autre">Autre</option>
+                      </select></div>
+                    <div class="flex items-end gap-2">
+                      <input type="checkbox" id="justifiee" x-model="form.justifiee" class="w-4 h-4">
+                      <label for="justifiee" class="text-sm text-navy-600">Absence justifiée</label>
+                    </div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de début *</label>
+                      <input type="date" required x-model="form.date_debut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de fin</label>
+                      <input type="date" x-model="form.date_fin" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Commentaire</label>
+                      <textarea x-model="form.commentaire" rows="2" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></textarea></div>
+                  </div>
+                </template>
+
+                <!-- Autorisation d'absence -->
+                <template x-if="activeTab === 'autorisations'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Motif *</label>
+                      <input required x-model="form.motif" placeholder="Rendez-vous médical, démarche administrative…" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date *</label>
+                      <input type="date" required x-model="form.date_jour" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">De</label>
+                        <input type="time" x-model="form.heure_debut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">À</label>
+                        <input type="time" x-model="form.heure_fin" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- Astreinte -->
+                <template x-if="activeTab === 'astreintes'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Début *</label>
+                      <input type="datetime-local" required x-model="form.date_debut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Fin *</label>
+                      <input type="datetime-local" required x-model="form.date_fin" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Type</label>
+                      <input x-model="form.type_astreinte" placeholder="Technique, sécurité…" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Lieu</label>
+                      <input x-model="form.lieu" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <!-- Heures supplémentaires -->
+                <template x-if="activeTab === 'heures_sup'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date *</label>
+                      <input type="date" required x-model="form.date_jour" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Nombre d'heures *</label>
+                      <input type="number" step="0.5" required x-model.number="form.nombre_heures" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Taux de majoration</label>
+                      <select x-model.number="form.taux_majoration" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="1.25">125 %</option><option value="1.5">150 %</option><option value="2">200 %</option>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Motif</label>
+                      <input x-model="form.motif" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <p x-show="formError" x-text="formError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
+
+                <div class="flex justify-end gap-3 pt-2">
+                  <button type="button" @click="showForm = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
+                  <button type="submit" :disabled="formLoading"
+                          class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                    <span x-text="formLoading ? 'Enregistrement…' : 'Créer'"></span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </template>
+        </div>
+      </template>
+
       <!-- ================= MODULES EN CONSTRUCTION ================= -->
-      <template x-if="!['dashboard','agents','organisation','carriere','recrutement'].includes(currentView)">
+      <template x-if="!['dashboard','agents','organisation','carriere','recrutement','temps'].includes(currentView)">
         <div class="flex flex-col items-center justify-center py-24 text-center">
           <div class="w-14 h-14 rounded-2xl bg-navy-100 flex items-center justify-center mb-4">
             <i data-lucide="hammer" class="w-6 h-6 text-navy-400"></i>
@@ -2001,6 +2304,116 @@
       formatDate(d) {
         if (!d) return '—';
         return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
+    };
+  }
+
+  // ============================================================
+  // MODULE : Temps de travail
+  // ============================================================
+  function tempsModule() {
+    return {
+      tabs: [
+        { id: 'conges', label: 'Congés' },
+        { id: 'absences', label: 'Absences' },
+        { id: 'autorisations', label: "Autorisations d'absence" },
+        { id: 'astreintes', label: 'Astreintes' },
+        { id: 'heures_sup', label: 'Heures supplémentaires' },
+      ],
+      activeTab: 'conges',
+      items: [], loading: true,
+      showForm: false, formLoading: false, formError: '',
+      form: {},
+      referentiels: { agents: [], typesConges: [] },
+
+      get tabLabelSingular() {
+        return {
+          conges: 'demande de congé', absences: 'absence', autorisations: "autorisation d'absence",
+          astreintes: 'astreinte', heures_sup: 'heure supplémentaire',
+        }[this.activeTab];
+      },
+
+      switchTab(tab) {
+        this.activeTab = tab;
+        this.showForm = false;
+        this.load();
+      },
+
+      tableFor(tab) {
+        return { conges: 'conges', absences: 'absences', autorisations: 'autorisations_absence', astreintes: 'astreintes', heures_sup: 'heures_supplementaires' }[tab];
+      },
+
+      async load() {
+        this.loading = true;
+        const table = this.tableFor(this.activeTab);
+        let select = '*, agents(nom, prenoms)';
+        if (this.activeTab === 'conges') select = '*, agents(nom, prenoms), types_conges(libelle)';
+
+        const { data, error } = await supa.from(table).select(select).order('created_at', { ascending: false }).limit(200);
+        if (error) console.error(error);
+        this.items = data || [];
+        this.loading = false;
+      },
+
+      async openCreate() {
+        this.showForm = true;
+        this.formError = '';
+        this.form = { justifiee: false, taux_majoration: 1.25 };
+
+        if (this.referentiels.agents.length === 0) {
+          const { data } = await supa.from('agents').select('id, matricule, nom, prenoms').eq('statut', 'actif').order('nom').limit(300);
+          this.referentiels.agents = data || [];
+        }
+        if (this.activeTab === 'conges' && this.referentiels.typesConges.length === 0) {
+          const { data } = await supa.from('types_conges').select('id, libelle').order('libelle');
+          this.referentiels.typesConges = data || [];
+        }
+      },
+
+      async submitCreate() {
+        this.formLoading = true;
+        this.formError = '';
+        const table = this.tableFor(this.activeTab);
+        let payload = { agent_id: this.form.agent_id };
+
+        if (this.activeTab === 'conges') {
+          payload = { ...payload, type_conge_id: this.form.type_conge_id, date_debut: this.form.date_debut,
+                       date_fin: this.form.date_fin, nombre_jours: this.form.nombre_jours, motif: this.form.motif || null };
+        } else if (this.activeTab === 'absences') {
+          payload = { ...payload, type_absence: this.form.type_absence, date_debut: this.form.date_debut,
+                       date_fin: this.form.date_fin || null, justifiee: !!this.form.justifiee, commentaire: this.form.commentaire || null };
+        } else if (this.activeTab === 'autorisations') {
+          payload = { ...payload, motif: this.form.motif, date_jour: this.form.date_jour,
+                       heure_debut: this.form.heure_debut || null, heure_fin: this.form.heure_fin || null };
+        } else if (this.activeTab === 'astreintes') {
+          payload = { ...payload, date_debut: this.form.date_debut, date_fin: this.form.date_fin,
+                       type_astreinte: this.form.type_astreinte || null, lieu: this.form.lieu || null };
+        } else if (this.activeTab === 'heures_sup') {
+          payload = { ...payload, date_jour: this.form.date_jour, nombre_heures: this.form.nombre_heures,
+                       taux_majoration: this.form.taux_majoration, motif: this.form.motif || null };
+        }
+
+        const { error } = await supa.from(table).insert(payload);
+        this.formLoading = false;
+
+        if (error) { this.formError = error.message; return; }
+        this.showForm = false;
+        this.load();
+      },
+
+      async changerStatut(table, item, statut) {
+        const { error } = await supa.from(table).update({ statut }).eq('id', item.id);
+        if (error) { console.error(error); return; }
+        item.statut = statut;
+      },
+
+      formatDate(d) {
+        if (!d) return '—';
+        return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
+      formatDateTime(d) {
+        if (!d) return '—';
+        return new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
       },
     };
   }
