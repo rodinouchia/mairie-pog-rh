@@ -1662,8 +1662,857 @@
         </div>
       </template>
 
+      <!-- ================= PAIE ================= -->
+      <template x-if="currentView === 'paie'">
+        <div x-data="paieModule()" x-init="load()" class="space-y-4">
+
+          <div class="flex items-center gap-2 border-b border-navy-100 overflow-x-auto">
+            <template x-for="tab in tabs" :key="tab.id">
+              <button @click="switchTab(tab.id)"
+                      :class="activeTab === tab.id ? 'border-navy-800 text-navy-900' : 'border-transparent text-navy-400 hover:text-navy-700'"
+                      class="px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px whitespace-nowrap">
+                <span x-text="tab.label"></span>
+              </button>
+            </template>
+          </div>
+
+          <!-- Rubriques -->
+          <template x-if="activeTab === 'rubriques'">
+            <div class="space-y-3">
+              <template x-if="!showForm">
+                <div class="space-y-3">
+                  <div class="flex justify-end">
+                    <button @click="openCreateRubrique()" class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                      <i data-lucide="plus" class="w-4 h-4"></i> Nouvelle rubrique
+                    </button>
+                  </div>
+                  <div class="card overflow-hidden">
+                    <table class="w-full text-sm">
+                      <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                        <tr>
+                          <th class="text-left font-medium px-4 py-3">Code</th>
+                          <th class="text-left font-medium px-4 py-3">Libellé</th>
+                          <th class="text-left font-medium px-4 py-3">Type</th>
+                          <th class="text-left font-medium px-4 py-3">Mode de calcul</th>
+                          <th class="text-left font-medium px-4 py-3">Valeur</th>
+                          <th class="text-left font-medium px-4 py-3">Statut</th>
+                          <th class="text-right font-medium px-4 py-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-navy-50">
+                        <template x-if="!loading && rubriques.length === 0"><tr><td colspan="7" class="px-4 py-6 text-center text-navy-400">Aucune rubrique.</td></tr></template>
+                        <template x-for="r in rubriques" :key="r.id">
+                          <tr>
+                            <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="r.code"></td>
+                            <td class="px-4 py-3 font-medium text-navy-800" x-text="r.libelle"></td>
+                            <td class="px-4 py-3">
+                              <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="r.type_rubrique === 'gain' ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-red-500/10 text-red-700'" x-text="r.type_rubrique"></span>
+                            </td>
+                            <td class="px-4 py-3 text-navy-600 text-xs" x-text="r.mode_calcul"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="r.valeur_defaut ?? '—'"></td>
+                            <td class="px-4 py-3">
+                              <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="r.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="r.actif ? 'Active' : 'Inactive'"></span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                              <button @click="toggleActifRubrique(r)" class="text-xs font-medium text-navy-500 hover:text-navy-800">
+                                <span x-text="r.actif ? 'Désactiver' : 'Activer'"></span>
+                              </button>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </template>
+
+              <template x-if="showForm">
+                <div class="max-w-2xl space-y-3">
+                  <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler</button>
+                  <form @submit.prevent="submitRubrique()" class="card p-6 space-y-4">
+                    <h3 class="font-display font-semibold text-navy-800">Nouvelle rubrique de paie</h3>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
+                        <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
+                        <input required x-model="form.libelle" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Type *</label>
+                        <select required x-model="form.type_rubrique" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                          <option value="">—</option><option value="gain">Gain</option><option value="retenue">Retenue</option>
+                        </select></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie *</label>
+                        <input required x-model="form.categorie" placeholder="prime, indemnite, cotisation_sociale…" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Mode de calcul *</label>
+                        <select required x-model="form.mode_calcul" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                          <option value="">—</option><option value="montant_fixe">Montant fixe</option>
+                          <option value="pourcentage_indice">% de l'indice</option><option value="pourcentage_salaire_base">% du salaire de base</option>
+                          <option value="formule">Formule (calculée par le système)</option>
+                        </select></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Valeur par défaut</label>
+                        <input type="number" step="0.01" x-model.number="form.valeur_defaut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <div class="flex items-center gap-2 pt-5"><input type="checkbox" x-model="form.imposable" id="imp" class="w-4 h-4"><label for="imp" class="text-sm text-navy-600">Imposable</label></div>
+                      <div class="flex items-center gap-4 pt-5">
+                        <label class="flex items-center gap-2 text-sm text-navy-600"><input type="checkbox" x-model="form.soumis_cnss" class="w-4 h-4"> CNSS</label>
+                        <label class="flex items-center gap-2 text-sm text-navy-600"><input type="checkbox" x-model="form.soumis_cnamgs" class="w-4 h-4"> CNAMGS</label>
+                      </div>
+                    </div>
+                    <p x-show="formError" x-text="formError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
+                    <div class="flex justify-end gap-3 pt-2">
+                      <button type="button" @click="showForm = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
+                      <button type="submit" :disabled="formLoading" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                        <span x-text="formLoading ? 'Enregistrement…' : 'Créer'"></span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Éléments de paie par agent -->
+          <template x-if="activeTab === 'elements'">
+            <div class="space-y-3">
+              <template x-if="!showForm">
+                <div class="space-y-3">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="relative max-w-xs flex-1">
+                      <i data-lucide="search" class="w-4 h-4 text-navy-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                      <input type="text" x-model.debounce.300ms="rechercheAgent" placeholder="Filtrer par agent…"
+                             class="w-full pl-9 pr-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                    </div>
+                    <button @click="openCreateElement()" class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                      <i data-lucide="plus" class="w-4 h-4"></i> Nouvel élément
+                    </button>
+                  </div>
+                  <div class="card overflow-hidden">
+                    <table class="w-full text-sm">
+                      <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                        <tr>
+                          <th class="text-left font-medium px-4 py-3">Agent</th>
+                          <th class="text-left font-medium px-4 py-3">Rubrique</th>
+                          <th class="text-left font-medium px-4 py-3">Montant / Taux</th>
+                          <th class="text-left font-medium px-4 py-3">Période</th>
+                          <th class="text-left font-medium px-4 py-3">Statut</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-navy-50">
+                        <template x-if="elementsFiltres.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucun élément.</td></tr></template>
+                        <template x-for="e in elementsFiltres" :key="e.id">
+                          <tr>
+                            <td class="px-4 py-3 font-medium text-navy-800" x-text="(e.agents?.nom || '') + ' ' + (e.agents?.prenoms || '')"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="e.rubriques_paie?.libelle || '—'"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="e.montant ? e.montant + ' F' : (e.taux ? e.taux + ' %' : '—')"></td>
+                            <td class="px-4 py-3 text-navy-600" x-text="formatDate(e.date_debut) + (e.date_fin ? ' → ' + formatDate(e.date_fin) : ' (permanent)')"></td>
+                            <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="e.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="e.actif ? 'Actif' : 'Inactif'"></span></td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </template>
+
+              <template x-if="showForm">
+                <div class="max-w-xl space-y-3">
+                  <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler</button>
+                  <form @submit.prevent="submitElement()" class="card p-6 space-y-4">
+                    <h3 class="font-display font-semibold text-navy-800">Nouvel élément de paie</h3>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                      <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Agent *</label>
+                        <select required x-model="form.agent_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                          <option value="">—</option>
+                          <template x-for="a in referentiels.agents" :key="a.id"><option :value="a.id" x-text="(a.matricule ? a.matricule + ' — ' : '') + a.nom + ' ' + a.prenoms"></option></template>
+                        </select></div>
+                      <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Rubrique *</label>
+                        <select required x-model="form.rubrique_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                          <option value="">—</option>
+                          <template x-for="r in rubriques" :key="r.id"><option :value="r.id" x-text="r.libelle"></option></template>
+                        </select></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Montant (si fixe)</label>
+                        <input type="number" step="0.01" x-model.number="form.montant" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Taux % (si applicable)</label>
+                        <input type="number" step="0.01" x-model.number="form.taux" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de début *</label>
+                        <input type="date" required x-model="form.date_debut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de fin</label>
+                        <input type="date" x-model="form.date_fin" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    </div>
+                    <p x-show="formError" x-text="formError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
+                    <div class="flex justify-end gap-3 pt-2">
+                      <button type="button" @click="showForm = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
+                      <button type="submit" :disabled="formLoading" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                        <span x-text="formLoading ? 'Enregistrement…' : 'Créer'"></span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Bulletins -->
+          <template x-if="activeTab === 'bulletins'">
+            <div class="space-y-3">
+              <div class="card p-5">
+                <h3 class="font-display font-semibold text-navy-800 text-sm mb-3">Générer un bulletin</h3>
+                <form @submit.prevent="genererBulletin()" class="flex flex-wrap items-end gap-3">
+                  <div>
+                    <label class="block text-xs font-medium text-navy-500 mb-1">Agent *</label>
+                    <select required x-model="generationForm.agent_id" class="px-3 py-2 rounded-lg border border-navy-100 text-sm min-w-[220px] focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                      <option value="">—</option>
+                      <template x-for="a in referentiels.agents" :key="a.id"><option :value="a.id" x-text="(a.matricule ? a.matricule + ' — ' : '') + a.nom + ' ' + a.prenoms"></option></template>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-navy-500 mb-1">Période *</label>
+                    <input type="month" required x-model="generationForm.periode" class="px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                  </div>
+                  <button type="submit" :disabled="generationLoading" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                    <span x-text="generationLoading ? 'Génération…' : 'Générer le bulletin'"></span>
+                  </button>
+                </form>
+                <p x-show="generationError" x-text="generationError" class="text-sm text-red-600 mt-2"></p>
+                <p x-show="generationSuccess" x-text="generationSuccess" class="text-sm text-lagoon-700 mt-2"></p>
+              </div>
+
+              <div class="card overflow-hidden">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Période</th>
+                      <th class="text-left font-medium px-4 py-3">Salaire de base</th>
+                      <th class="text-left font-medium px-4 py-3">Net à payer</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                      <th class="text-right font-medium px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && bulletins.length === 0"><tr><td colspan="6" class="px-4 py-6 text-center text-navy-400">Aucun bulletin généré.</td></tr></template>
+                    <template x-for="b in bulletins" :key="b.id">
+                      <template x-if="true">
+                        <tr>
+                          <td colspan="6" class="p-0">
+                            <div class="flex items-center px-4 py-3 hover:bg-navy-50/60 cursor-pointer" @click="toggleDetail(b)">
+                              <span class="w-[20%] font-medium text-navy-800" x-text="(b.agents?.nom || '') + ' ' + (b.agents?.prenoms || '')"></span>
+                              <span class="w-[15%] text-navy-600" x-text="formatMonth(b.periode)"></span>
+                              <span class="w-[20%] text-navy-600" x-text="Number(b.salaire_base).toLocaleString('fr-FR') + ' F'"></span>
+                              <span class="w-[20%] font-semibold text-navy-900" x-text="Number(b.net_a_payer).toLocaleString('fr-FR') + ' F'"></span>
+                              <span class="w-[15%]">
+                                <select @click.stop @change="changerStatutBulletin(b, $event.target.value)"
+                                        class="text-xs px-2 py-1 rounded-lg border border-navy-100 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                                  <template x-for="s in ['brouillon','valide','paye','annule']" :key="s">
+                                    <option :value="s" :selected="s === b.statut" x-text="s"></option>
+                                  </template>
+                                </select>
+                              </span>
+                              <i data-lucide="chevron-down" class="w-4 h-4 text-navy-300 ml-auto" :class="detailOuvert === b.id ? 'rotate-180' : ''"></i>
+                            </div>
+                            <div x-show="detailOuvert === b.id" x-cloak class="bg-navy-50/50 px-4 py-3">
+                              <table class="w-full text-xs">
+                                <template x-for="l in lignesDetail" :key="l.id">
+                                  <tr class="border-b border-navy-100/60">
+                                    <td class="py-1.5 text-navy-600" x-text="l.libelle"></td>
+                                    <td class="py-1.5 text-right" :class="l.type_ligne === 'gain' ? 'text-lagoon-700' : 'text-red-600'"
+                                        x-text="(l.type_ligne === 'gain' ? '+ ' : '- ') + Number(l.montant).toLocaleString('fr-FR') + ' F'"></td>
+                                  </tr>
+                                </template>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      </template>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- ================= ÉVALUATION ================= -->
+      <template x-if="currentView === 'evaluation'">
+        <div x-data="evaluationModule()" x-init="load()" class="space-y-4">
+
+          <div class="flex items-center gap-2 border-b border-navy-100">
+            <template x-for="tab in tabs" :key="tab.id">
+              <button @click="switchTab(tab.id)"
+                      :class="activeTab === tab.id ? 'border-navy-800 text-navy-900' : 'border-transparent text-navy-400 hover:text-navy-700'"
+                      class="px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px">
+                <span x-text="tab.label"></span>
+              </button>
+            </template>
+          </div>
+
+          <template x-if="!showForm">
+            <div class="space-y-3">
+              <div class="flex justify-end">
+                <button @click="openCreate()" class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span x-text="'Nouvelle ' + tabLabelSingular"></span>
+                </button>
+              </div>
+
+              <!-- Campagnes -->
+              <div class="card overflow-hidden" x-show="activeTab === 'campagnes'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Intitulé</th>
+                      <th class="text-left font-medium px-4 py-3">Année</th>
+                      <th class="text-left font-medium px-4 py-3">Période</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="4" class="px-4 py-6 text-center text-navy-400">Aucune campagne.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="it.intitule"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.annee"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_debut) + ' → ' + formatDate(it.date_fin)"></td>
+                        <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full font-medium bg-navy-100 text-navy-600" x-text="it.statut"></span></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Compétences -->
+              <div class="card overflow-hidden" x-show="activeTab === 'competences'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Code</th>
+                      <th class="text-left font-medium px-4 py-3">Libellé</th>
+                      <th class="text-left font-medium px-4 py-3">Catégorie</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="3" class="px-4 py-6 text-center text-navy-400">Aucune compétence.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="it.code"></td>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="it.libelle"></td>
+                        <td class="px-4 py-3 text-navy-600 capitalize" x-text="it.categorie || '—'"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Évaluations -->
+              <div class="card overflow-hidden" x-show="activeTab === 'evaluations'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Campagne</th>
+                      <th class="text-left font-medium px-4 py-3">Évaluateur</th>
+                      <th class="text-left font-medium px-4 py-3">Note globale</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucune évaluation.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(it.agent?.nom || '') + ' ' + (it.agent?.prenoms || '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.campagnes_evaluation?.intitule || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="(it.evaluateur?.nom || '—') + (it.evaluateur ? ' ' + it.evaluateur.prenoms : '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.note_globale ?? '—'"></td>
+                        <td class="px-4 py-3">
+                          <select @change="changerStatut(it, $event.target.value)"
+                                  class="text-xs px-2 py-1 rounded-lg border border-navy-100 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <template x-for="s in ['en_cours','soumise','validee']" :key="s">
+                              <option :value="s" :selected="s === it.statut" x-text="s"></option>
+                            </template>
+                          </select>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+
+          <!-- Formulaire création -->
+          <template x-if="showForm">
+            <div class="space-y-3 max-w-xl">
+              <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler</button>
+              <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
+                <h3 class="font-display font-semibold text-navy-800" x-text="'Nouvelle ' + tabLabelSingular"></h3>
+
+                <!-- Campagne -->
+                <template x-if="activeTab === 'campagnes'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Intitulé *</label>
+                      <input required x-model="form.intitule" placeholder="Ex : Évaluation annuelle 2026" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Année *</label>
+                      <input type="number" required x-model.number="form.annee" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de début *</label>
+                      <input type="date" required x-model="form.date_debut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de fin *</label>
+                      <input type="date" required x-model="form.date_fin" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <!-- Compétence -->
+                <template x-if="activeTab === 'competences'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
+                      <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
+                      <input required x-model="form.libelle" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie</label>
+                      <select x-model="form.categorie" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option><option value="technique">Technique</option>
+                        <option value="comportementale">Comportementale</option><option value="manageriale">Managériale</option>
+                      </select></div>
+                  </div>
+                </template>
+
+                <!-- Évaluation -->
+                <template x-if="activeTab === 'evaluations'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Campagne *</label>
+                      <select required x-model="form.campagne_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="c in referentiels.campagnes" :key="c.id"><option :value="c.id" x-text="c.intitule"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Agent *</label>
+                      <select required x-model="form.agent_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="a in referentiels.agents" :key="a.id"><option :value="a.id" x-text="a.nom + ' ' + a.prenoms"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Évaluateur</label>
+                      <select x-model="form.evaluateur_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="a in referentiels.agents" :key="a.id"><option :value="a.id" x-text="a.nom + ' ' + a.prenoms"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Note globale</label>
+                      <input type="number" step="0.1" x-model.number="form.note_globale" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date d'entretien</label>
+                      <input type="date" x-model="form.date_entretien" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Appréciation générale</label>
+                      <textarea x-model="form.appreciation_generale" rows="3" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></textarea></div>
+                  </div>
+                </template>
+
+                <p x-show="formError" x-text="formError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
+                <div class="flex justify-end gap-3 pt-2">
+                  <button type="button" @click="showForm = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
+                  <button type="submit" :disabled="formLoading" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                    <span x-text="formLoading ? 'Enregistrement…' : 'Créer'"></span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- ================= FORMATION ================= -->
+      <template x-if="currentView === 'formation'">
+        <div x-data="formationModule()" x-init="load()" class="space-y-4">
+
+          <div class="flex items-center gap-2 border-b border-navy-100 overflow-x-auto">
+            <template x-for="tab in tabs" :key="tab.id">
+              <button @click="switchTab(tab.id)"
+                      :class="activeTab === tab.id ? 'border-navy-800 text-navy-900' : 'border-transparent text-navy-400 hover:text-navy-700'"
+                      class="px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px whitespace-nowrap">
+                <span x-text="tab.label"></span>
+              </button>
+            </template>
+          </div>
+
+          <template x-if="!showForm">
+            <div class="space-y-3">
+              <div class="flex justify-end">
+                <button @click="openCreate()" class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span x-text="'Nouveau·elle ' + tabLabelSingular"></span>
+                </button>
+              </div>
+
+              <!-- Catalogue -->
+              <div class="card overflow-hidden" x-show="activeTab === 'catalogue'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Code</th>
+                      <th class="text-left font-medium px-4 py-3">Intitulé</th>
+                      <th class="text-left font-medium px-4 py-3">Domaine</th>
+                      <th class="text-left font-medium px-4 py-3">Durée</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                      <th class="text-right font-medium px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="6" class="px-4 py-6 text-center text-navy-400">Aucune formation au catalogue.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="it.code"></td>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="it.intitule"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.domaine || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.duree_heures ? it.duree_heures + ' h' : '—'"></td>
+                        <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="it.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="it.actif ? 'Active' : 'Inactive'"></span></td>
+                        <td class="px-4 py-3 text-right">
+                          <button @click="toggleActifFormation(it)" class="text-xs font-medium text-navy-500 hover:text-navy-800">
+                            <span x-text="it.actif ? 'Désactiver' : 'Activer'"></span>
+                          </button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Sessions -->
+              <div class="card overflow-hidden" x-show="activeTab === 'sessions'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Formation</th>
+                      <th class="text-left font-medium px-4 py-3">Lieu</th>
+                      <th class="text-left font-medium px-4 py-3">Période</th>
+                      <th class="text-left font-medium px-4 py-3">Places</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucune session planifiée.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="it.catalogue_formations?.intitule || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.lieu || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_debut) + ' → ' + formatDate(it.date_fin)"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.places_disponibles ?? '—'"></td>
+                        <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full font-medium bg-navy-100 text-navy-600" x-text="it.statut"></span></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Inscriptions -->
+              <div class="card overflow-hidden" x-show="activeTab === 'inscriptions'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Session</th>
+                      <th class="text-left font-medium px-4 py-3">Inscrit le</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="4" class="px-4 py-6 text-center text-navy-400">Aucune inscription.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(it.agents?.nom || '') + ' ' + (it.agents?.prenoms || '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.sessions_formation?.catalogue_formations?.intitule || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_inscription)"></td>
+                        <td class="px-4 py-3">
+                          <select @change="changerStatutInscription(it, $event.target.value)"
+                                  class="text-xs px-2 py-1 rounded-lg border border-navy-100 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <template x-for="s in ['inscrit','present','absent','annule']" :key="s">
+                              <option :value="s" :selected="s === it.statut" x-text="s"></option>
+                            </template>
+                          </select>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Certifications -->
+              <div class="card overflow-hidden" x-show="activeTab === 'certifications'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Agent</th>
+                      <th class="text-left font-medium px-4 py-3">Certification</th>
+                      <th class="text-left font-medium px-4 py-3">Organisme</th>
+                      <th class="text-left font-medium px-4 py-3">Obtention</th>
+                      <th class="text-left font-medium px-4 py-3">Expiration</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucune certification.</td></tr></template>
+                    <template x-for="it in items" :key="it.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(it.agents?.nom || '') + ' ' + (it.agents?.prenoms || '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.intitule"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.organisme_certificateur || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="formatDate(it.date_obtention)"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="it.date_expiration ? formatDate(it.date_expiration) : '—'"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+
+          <!-- Formulaire création -->
+          <template x-if="showForm">
+            <div class="space-y-3 max-w-xl">
+              <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler</button>
+              <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
+                <h3 class="font-display font-semibold text-navy-800" x-text="'Nouveau·elle ' + tabLabelSingular"></h3>
+
+                <!-- Catalogue -->
+                <template x-if="activeTab === 'catalogue'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
+                      <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Intitulé *</label>
+                      <input required x-model="form.intitule" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Domaine</label>
+                      <input x-model="form.domaine" placeholder="Bureautique, management…" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Durée (heures)</label>
+                      <input type="number" x-model.number="form.duree_heures" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Organisme</label>
+                      <input x-model="form.organisme" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Coût unitaire</label>
+                      <input type="number" step="0.01" x-model.number="form.cout_unitaire" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <!-- Session -->
+                <template x-if="activeTab === 'sessions'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Formation *</label>
+                      <select required x-model="form.formation_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="f in referentiels.catalogue" :key="f.id"><option :value="f.id" x-text="f.intitule"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Lieu</label>
+                      <input x-model="form.lieu" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Formateur</label>
+                      <input x-model="form.formateur" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de début *</label>
+                      <input type="date" required x-model="form.date_debut" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de fin *</label>
+                      <input type="date" required x-model="form.date_fin" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Places disponibles</label>
+                      <input type="number" x-model.number="form.places_disponibles" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <!-- Inscription -->
+                <template x-if="activeTab === 'inscriptions'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Session *</label>
+                      <select required x-model="form.session_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="s in referentiels.sessions" :key="s.id"><option :value="s.id" x-text="s.label"></option></template>
+                      </select></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Agent *</label>
+                      <select required x-model="form.agent_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="a in referentiels.agents" :key="a.id"><option :value="a.id" x-text="a.nom + ' ' + a.prenoms"></option></template>
+                      </select></div>
+                  </div>
+                </template>
+
+                <!-- Certification -->
+                <template x-if="activeTab === 'certifications'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Agent *</label>
+                      <select required x-model="form.agent_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="a in referentiels.agents" :key="a.id"><option :value="a.id" x-text="a.nom + ' ' + a.prenoms"></option></template>
+                      </select></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Intitulé *</label>
+                      <input required x-model="form.intitule" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Organisme certificateur</label>
+                      <input x-model="form.organisme_certificateur" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date d'obtention *</label>
+                      <input type="date" required x-model="form.date_obtention" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Date d'expiration</label>
+                      <input type="date" x-model="form.date_expiration" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <p x-show="formError" x-text="formError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
+                <div class="flex justify-end gap-3 pt-2">
+                  <button type="button" @click="showForm = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
+                  <button type="submit" :disabled="formLoading" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                    <span x-text="formLoading ? 'Enregistrement…' : 'Créer'"></span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- ================= ADMINISTRATION ================= -->
+      <template x-if="currentView === 'administration'">
+        <div x-data="administrationModule()" x-init="load()" class="space-y-4">
+
+          <div class="flex items-center gap-2 border-b border-navy-100">
+            <template x-for="tab in tabs" :key="tab.id">
+              <button @click="switchTab(tab.id)"
+                      :class="activeTab === tab.id ? 'border-navy-800 text-navy-900' : 'border-transparent text-navy-400 hover:text-navy-700'"
+                      class="px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px">
+                <span x-text="tab.label"></span>
+              </button>
+            </template>
+          </div>
+
+          <!-- Utilisateurs -->
+          <template x-if="activeTab === 'utilisateurs'">
+            <div class="card overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                  <tr>
+                    <th class="text-left font-medium px-4 py-3">E-mail</th>
+                    <th class="text-left font-medium px-4 py-3">Rôles</th>
+                    <th class="text-left font-medium px-4 py-3">Statut</th>
+                    <th class="text-left font-medium px-4 py-3">Attribuer un rôle</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-navy-50">
+                  <template x-if="!loading && utilisateurs.length === 0"><tr><td colspan="4" class="px-4 py-6 text-center text-navy-400">Aucun utilisateur.</td></tr></template>
+                  <template x-for="u in utilisateurs" :key="u.id">
+                    <tr>
+                      <td class="px-4 py-3 font-medium text-navy-800" x-text="u.email"></td>
+                      <td class="px-4 py-3">
+                        <div class="flex flex-wrap gap-1.5">
+                          <template x-for="r in u.rolesActifs" :key="r.role_id">
+                            <span class="text-xs bg-navy-100 text-navy-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <span x-text="r.nom"></span>
+                              <button @click="retirerRole(u, r)" class="text-navy-400 hover:text-red-500">×</button>
+                            </span>
+                          </template>
+                          <span x-show="u.rolesActifs.length === 0" class="text-xs text-navy-400">Aucun rôle</span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3">
+                        <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="u.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="u.actif ? 'Actif' : 'Inactif'"></span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                          <select x-model="u._nouveauRole" class="text-xs px-2 py-1 rounded-lg border border-navy-100 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="r in roles" :key="r.id"><option :value="r.id" x-text="r.nom"></option></template>
+                          </select>
+                          <button @click="assignerRole(u)" class="text-xs font-medium text-navy-600 hover:text-navy-900">Ajouter</button>
+                          <button @click="toggleActifUtilisateur(u)" class="text-xs font-medium text-navy-400 hover:text-navy-700 ml-2">
+                            <span x-text="u.actif ? 'Désactiver' : 'Activer'"></span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <!-- Rôles & Permissions -->
+          <template x-if="activeTab === 'roles'">
+            <div class="grid lg:grid-cols-3 gap-4">
+              <div class="card p-4 lg:col-span-1">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-display font-semibold text-navy-800 text-sm">Rôles</h3>
+                  <button @click="showNouveauRole = true" class="text-xs font-medium text-navy-600 hover:text-navy-900 flex items-center gap-1">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Nouveau
+                  </button>
+                </div>
+                <template x-if="showNouveauRole">
+                  <form @submit.prevent="creerRole()" class="space-y-2 mb-3 p-3 bg-navy-50 rounded-lg">
+                    <input required x-model="nouveauRole.code" placeholder="CODE_ROLE" class="w-full px-2.5 py-1.5 rounded-lg border border-navy-100 text-xs focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                    <input required x-model="nouveauRole.nom" placeholder="Nom du rôle" class="w-full px-2.5 py-1.5 rounded-lg border border-navy-100 text-xs focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                    <div class="flex justify-end gap-2">
+                      <button type="button" @click="showNouveauRole = false" class="text-xs text-navy-500">Annuler</button>
+                      <button type="submit" class="text-xs font-medium text-white bg-navy-800 px-3 py-1 rounded-lg">Créer</button>
+                    </div>
+                  </form>
+                </template>
+                <div class="space-y-1">
+                  <template x-for="r in roles" :key="r.id">
+                    <button @click="selectionnerRole(r)"
+                            :class="roleSelectionne?.id === r.id ? 'bg-navy-800 text-white' : 'hover:bg-navy-50 text-navy-700'"
+                            class="w-full text-left px-3 py-2 rounded-lg text-sm transition">
+                      <span x-text="r.nom"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+
+              <div class="card p-4 lg:col-span-2">
+                <template x-if="!roleSelectionne">
+                  <p class="text-sm text-navy-400 text-center py-8">Sélectionnez un rôle pour gérer ses permissions.</p>
+                </template>
+                <template x-if="roleSelectionne">
+                  <div>
+                    <h3 class="font-display font-semibold text-navy-800 text-sm mb-4" x-text="'Permissions — ' + roleSelectionne.nom"></h3>
+                    <div class="space-y-4 max-h-[420px] overflow-y-auto pr-2">
+                      <template x-for="(perms, module) in permissionsParModule" :key="module">
+                        <div>
+                          <p class="text-xs font-semibold text-navy-500 uppercase mb-2" x-text="module"></p>
+                          <div class="space-y-1.5">
+                            <template x-for="p in perms" :key="p.id">
+                              <label class="flex items-center gap-2 text-sm text-navy-700">
+                                <input type="checkbox" class="w-4 h-4"
+                                       :checked="permissionsDuRole.includes(p.id)"
+                                       @change="togglePermissionRole(p, $event.target.checked)">
+                                <span x-text="p.description || p.code"></span>
+                              </label>
+                            </template>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Journal d'activité -->
+          <template x-if="activeTab === 'journal'">
+            <div class="card overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                  <tr>
+                    <th class="text-left font-medium px-4 py-3">Utilisateur</th>
+                    <th class="text-left font-medium px-4 py-3">Action</th>
+                    <th class="text-left font-medium px-4 py-3">Table</th>
+                    <th class="text-left font-medium px-4 py-3">Date</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-navy-50">
+                  <template x-if="!loading && journal.length === 0">
+                    <tr><td colspan="4" class="px-4 py-8 text-center text-navy-400">
+                      Aucune entrée pour le moment — le journal se remplira automatiquement au fil des actions du système.
+                    </td></tr>
+                  </template>
+                  <template x-for="j in journal" :key="j.id">
+                    <tr>
+                      <td class="px-4 py-3 text-navy-700" x-text="j.utilisateurs?.email || '—'"></td>
+                      <td class="px-4 py-3 text-navy-600" x-text="j.action"></td>
+                      <td class="px-4 py-3 text-navy-500 text-xs" x-text="j.table_cible || '—'"></td>
+                      <td class="px-4 py-3 text-navy-500 text-xs" x-text="formatDateTime(j.created_at)"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </div>
+      </template>
+
       <!-- ================= MODULES EN CONSTRUCTION ================= -->
-      <template x-if="!['dashboard','agents','organisation','carriere','recrutement','temps'].includes(currentView)">
+      <template x-if="!['dashboard','agents','organisation','carriere','recrutement','temps','paie','evaluation','formation','administration'].includes(currentView)">
         <div class="flex flex-col items-center justify-center py-24 text-center">
           <div class="w-14 h-14 rounded-2xl bg-navy-100 flex items-center justify-center mb-4">
             <i data-lucide="hammer" class="w-6 h-6 text-navy-400"></i>
@@ -2414,6 +3263,449 @@
       formatDateTime(d) {
         if (!d) return '—';
         return new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      },
+    };
+  }
+
+  // ============================================================
+  // MODULE : Paie
+  // ============================================================
+  function paieModule() {
+    return {
+      tabs: [
+        { id: 'rubriques', label: 'Rubriques' },
+        { id: 'elements', label: 'Éléments de paie' },
+        { id: 'bulletins', label: 'Bulletins' },
+      ],
+      activeTab: 'rubriques',
+      loading: true,
+      rubriques: [], elements: [], bulletins: [],
+      rechercheAgent: '',
+      showForm: false, formLoading: false, formError: '',
+      form: {},
+      referentiels: { agents: [] },
+      generationForm: { agent_id: '', periode: '' },
+      generationLoading: false, generationError: '', generationSuccess: '',
+      detailOuvert: null, lignesDetail: [],
+
+      get elementsFiltres() {
+        if (!this.rechercheAgent) return this.elements;
+        const q = this.rechercheAgent.toLowerCase();
+        return this.elements.filter(e => `${e.agents?.nom} ${e.agents?.prenoms}`.toLowerCase().includes(q));
+      },
+
+      switchTab(tab) {
+        this.activeTab = tab;
+        this.showForm = false;
+        this.load();
+      },
+
+      async load() {
+        this.loading = true;
+        const { data: agents } = await supa.from('agents').select('id, matricule, nom, prenoms').eq('statut', 'actif').order('nom').limit(300);
+        this.referentiels.agents = agents || [];
+
+        if (this.activeTab === 'rubriques' || this.rubriques.length === 0) {
+          const { data } = await supa.from('rubriques_paie').select('*').order('ordre_affichage');
+          this.rubriques = data || [];
+        }
+        if (this.activeTab === 'elements') {
+          const { data } = await supa.from('elements_paie_agent').select('*, agents(nom, prenoms), rubriques_paie(libelle)').order('date_debut', { ascending: false }).limit(300);
+          this.elements = data || [];
+        }
+        if (this.activeTab === 'bulletins') {
+          const { data } = await supa.from('bulletins_paie').select('*, agents(nom, prenoms)').order('periode', { ascending: false }).limit(300);
+          this.bulletins = data || [];
+        }
+        this.loading = false;
+      },
+
+      // --- Rubriques ---
+      openCreateRubrique() {
+        this.showForm = true;
+        this.formError = '';
+        this.form = { imposable: true, soumis_cnss: true, soumis_cnamgs: true };
+      },
+      async submitRubrique() {
+        this.formLoading = true;
+        this.formError = '';
+        const { error } = await supa.from('rubriques_paie').insert({ ...this.form });
+        this.formLoading = false;
+        if (error) { this.formError = error.message; return; }
+        this.showForm = false;
+        this.load();
+      },
+      async toggleActifRubrique(r) {
+        const { error } = await supa.from('rubriques_paie').update({ actif: !r.actif }).eq('id', r.id);
+        if (error) { console.error(error); return; }
+        r.actif = !r.actif;
+      },
+
+      // --- Éléments de paie ---
+      openCreateElement() {
+        this.showForm = true;
+        this.formError = '';
+        this.form = {};
+      },
+      async submitElement() {
+        this.formLoading = true;
+        this.formError = '';
+        const payload = { agent_id: this.form.agent_id, rubrique_id: this.form.rubrique_id,
+                           montant: this.form.montant || null, taux: this.form.taux || null,
+                           date_debut: this.form.date_debut, date_fin: this.form.date_fin || null };
+        const { error } = await supa.from('elements_paie_agent').insert(payload);
+        this.formLoading = false;
+        if (error) { this.formError = error.message; return; }
+        this.showForm = false;
+        this.load();
+      },
+
+      // --- Bulletins ---
+      async genererBulletin() {
+        this.generationLoading = true;
+        this.generationError = '';
+        this.generationSuccess = '';
+        const periode = this.generationForm.periode ? `${this.generationForm.periode}-01` : null;
+
+        const { error } = await supa.rpc('generer_bulletin_paie', { p_agent_id: this.generationForm.agent_id, p_periode: periode });
+        this.generationLoading = false;
+
+        if (error) { this.generationError = error.message; return; }
+        this.generationSuccess = 'Bulletin généré avec succès.';
+        this.load();
+      },
+
+      async toggleDetail(b) {
+        if (this.detailOuvert === b.id) { this.detailOuvert = null; return; }
+        const { data } = await supa.from('lignes_bulletin').select('*').eq('bulletin_id', b.id);
+        this.lignesDetail = data || [];
+        this.detailOuvert = b.id;
+      },
+
+      async changerStatutBulletin(b, statut) {
+        const { error } = await supa.from('bulletins_paie').update({ statut }).eq('id', b.id);
+        if (error) { console.error(error); return; }
+        b.statut = statut;
+      },
+
+      formatDate(d) {
+        if (!d) return '—';
+        return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
+      formatMonth(d) {
+        if (!d) return '—';
+        return new Date(d).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      },
+    };
+  }
+
+  // ============================================================
+  // MODULE : Évaluation
+  // ============================================================
+  function evaluationModule() {
+    return {
+      tabs: [
+        { id: 'campagnes', label: 'Campagnes' },
+        { id: 'competences', label: 'Compétences' },
+        { id: 'evaluations', label: 'Évaluations' },
+      ],
+      activeTab: 'campagnes',
+      items: [], loading: true,
+      showForm: false, formLoading: false, formError: '',
+      form: {},
+      referentiels: { agents: [], campagnes: [] },
+
+      get tabLabelSingular() {
+        return { campagnes: 'campagne', competences: 'compétence', evaluations: 'évaluation' }[this.activeTab];
+      },
+
+      switchTab(tab) {
+        this.activeTab = tab;
+        this.showForm = false;
+        this.load();
+      },
+
+      async load() {
+        this.loading = true;
+        let data = [];
+        if (this.activeTab === 'campagnes') {
+          const r = await supa.from('campagnes_evaluation').select('*').order('annee', { ascending: false });
+          data = r.data || [];
+        } else if (this.activeTab === 'competences') {
+          const r = await supa.from('competences').select('*').order('libelle');
+          data = r.data || [];
+        } else if (this.activeTab === 'evaluations') {
+          const r = await supa.from('evaluations')
+            .select('*, agent:agent_id(nom, prenoms), evaluateur:evaluateur_id(nom, prenoms), campagnes_evaluation(intitule)')
+            .order('created_at', { ascending: false });
+          data = r.data || [];
+        }
+        this.items = data;
+        this.loading = false;
+      },
+
+      async openCreate() {
+        this.showForm = true;
+        this.formError = '';
+        this.form = {};
+
+        if (this.activeTab === 'evaluations') {
+          const [{ data: a }, { data: c }] = await Promise.all([
+            supa.from('agents').select('id, nom, prenoms').eq('statut', 'actif').order('nom').limit(300),
+            supa.from('campagnes_evaluation').select('id, intitule').order('intitule'),
+          ]);
+          this.referentiels.agents = a || [];
+          this.referentiels.campagnes = c || [];
+        }
+      },
+
+      async submitCreate() {
+        this.formLoading = true;
+        this.formError = '';
+        let table = this.activeTab;
+        let payload = { ...this.form };
+
+        if (this.activeTab === 'campagnes') {
+          table = 'campagnes_evaluation';
+        } else if (this.activeTab === 'evaluations') {
+          payload = { campagne_id: this.form.campagne_id, agent_id: this.form.agent_id,
+                      evaluateur_id: this.form.evaluateur_id || null, note_globale: this.form.note_globale || null,
+                      appreciation_generale: this.form.appreciation_generale || null, date_entretien: this.form.date_entretien || null };
+        }
+
+        const { error } = await supa.from(table).insert(payload);
+        this.formLoading = false;
+        if (error) { this.formError = error.message; return; }
+        this.showForm = false;
+        this.load();
+      },
+
+      async changerStatut(item, statut) {
+        const { error } = await supa.from('evaluations').update({ statut }).eq('id', item.id);
+        if (error) { console.error(error); return; }
+        item.statut = statut;
+      },
+
+      formatDate(d) {
+        if (!d) return '—';
+        return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
+    };
+  }
+
+  // ============================================================
+  // MODULE : Formation
+  // ============================================================
+  function formationModule() {
+    return {
+      tabs: [
+        { id: 'catalogue', label: 'Catalogue' },
+        { id: 'sessions', label: 'Sessions' },
+        { id: 'inscriptions', label: 'Inscriptions' },
+        { id: 'certifications', label: 'Certifications' },
+      ],
+      activeTab: 'catalogue',
+      items: [], loading: true,
+      showForm: false, formLoading: false, formError: '',
+      form: {},
+      referentiels: { agents: [], catalogue: [], sessions: [] },
+
+      get tabLabelSingular() {
+        return { catalogue: 'formation', sessions: 'session', inscriptions: 'inscription', certifications: 'certification' }[this.activeTab];
+      },
+
+      switchTab(tab) {
+        this.activeTab = tab;
+        this.showForm = false;
+        this.load();
+      },
+
+      async load() {
+        this.loading = true;
+        let data = [];
+        if (this.activeTab === 'catalogue') {
+          const r = await supa.from('catalogue_formations').select('*').order('intitule');
+          data = r.data || [];
+        } else if (this.activeTab === 'sessions') {
+          const r = await supa.from('sessions_formation').select('*, catalogue_formations(intitule)').order('date_debut', { ascending: false });
+          data = r.data || [];
+        } else if (this.activeTab === 'inscriptions') {
+          const r = await supa.from('inscriptions_formation')
+            .select('*, agents(nom, prenoms), sessions_formation(catalogue_formations(intitule))')
+            .order('date_inscription', { ascending: false });
+          data = r.data || [];
+        } else if (this.activeTab === 'certifications') {
+          const r = await supa.from('certifications').select('*, agents(nom, prenoms)').order('date_obtention', { ascending: false });
+          data = r.data || [];
+        }
+        this.items = data;
+        this.loading = false;
+      },
+
+      async openCreate() {
+        this.showForm = true;
+        this.formError = '';
+        this.form = {};
+
+        if (this.activeTab === 'sessions' && this.referentiels.catalogue.length === 0) {
+          const { data } = await supa.from('catalogue_formations').select('id, intitule').eq('actif', true).order('intitule');
+          this.referentiels.catalogue = data || [];
+        }
+        if (this.activeTab === 'inscriptions') {
+          const [{ data: s }, { data: a }] = await Promise.all([
+            supa.from('sessions_formation').select('id, date_debut, catalogue_formations(intitule)').order('date_debut', { ascending: false }),
+            supa.from('agents').select('id, nom, prenoms').eq('statut', 'actif').order('nom').limit(300),
+          ]);
+          this.referentiels.sessions = (s || []).map(x => ({ id: x.id, label: `${x.catalogue_formations?.intitule || '—'} (${this.formatDate(x.date_debut)})` }));
+          this.referentiels.agents = a || [];
+        }
+        if (this.activeTab === 'certifications' && this.referentiels.agents.length === 0) {
+          const { data } = await supa.from('agents').select('id, nom, prenoms').eq('statut', 'actif').order('nom').limit(300);
+          this.referentiels.agents = data || [];
+        }
+      },
+
+      async submitCreate() {
+        this.formLoading = true;
+        this.formError = '';
+        let table = { catalogue: 'catalogue_formations', sessions: 'sessions_formation', inscriptions: 'inscriptions_formation', certifications: 'certifications' }[this.activeTab];
+        let payload = { ...this.form };
+
+        const { error } = await supa.from(table).insert(payload);
+        this.formLoading = false;
+        if (error) { this.formError = error.message; return; }
+        this.showForm = false;
+        this.load();
+      },
+
+      async toggleActifFormation(it) {
+        const { error } = await supa.from('catalogue_formations').update({ actif: !it.actif }).eq('id', it.id);
+        if (error) { console.error(error); return; }
+        it.actif = !it.actif;
+      },
+
+      async changerStatutInscription(it, statut) {
+        const { error } = await supa.from('inscriptions_formation').update({ statut }).eq('id', it.id);
+        if (error) { console.error(error); return; }
+        it.statut = statut;
+      },
+
+      formatDate(d) {
+        if (!d) return '—';
+        return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
+    };
+  }
+
+  // ============================================================
+  // MODULE : Administration
+  // ============================================================
+  function administrationModule() {
+    return {
+      tabs: [
+        { id: 'utilisateurs', label: 'Utilisateurs' },
+        { id: 'roles', label: 'Rôles & Permissions' },
+        { id: 'journal', label: "Journal d'activité" },
+      ],
+      activeTab: 'utilisateurs',
+      loading: true,
+      utilisateurs: [], roles: [], permissions: [], journal: [],
+      roleSelectionne: null, permissionsDuRole: [],
+      showNouveauRole: false, nouveauRole: { code: '', nom: '' },
+
+      get permissionsParModule() {
+        const groupes = {};
+        for (const p of this.permissions) {
+          if (!groupes[p.module]) groupes[p.module] = [];
+          groupes[p.module].push(p);
+        }
+        return groupes;
+      },
+
+      switchTab(tab) {
+        this.activeTab = tab;
+        this.load();
+      },
+
+      async load() {
+        this.loading = true;
+
+        if (this.activeTab === 'utilisateurs') {
+          const { data } = await supa.from('utilisateurs').select('*, user_roles(role_id, roles(id, nom))').order('email');
+          this.utilisateurs = (data || []).map(u => ({
+            ...u, _nouveauRole: '',
+            rolesActifs: (u.user_roles || []).map(ur => ({ role_id: ur.role_id, nom: ur.roles?.nom })),
+          }));
+          if (this.roles.length === 0) {
+            const { data: r } = await supa.from('roles').select('*').order('nom');
+            this.roles = r || [];
+          }
+        }
+
+        if (this.activeTab === 'roles') {
+          const [{ data: r }, { data: p }] = await Promise.all([
+            supa.from('roles').select('*').order('nom'),
+            supa.from('permissions').select('*').order('module'),
+          ]);
+          this.roles = r || [];
+          this.permissions = p || [];
+        }
+
+        if (this.activeTab === 'journal') {
+          const { data } = await supa.from('journal_activite').select('*, utilisateurs(email)').order('created_at', { ascending: false }).limit(200);
+          this.journal = data || [];
+        }
+
+        this.loading = false;
+      },
+
+      // --- Utilisateurs ---
+      async assignerRole(u) {
+        if (!u._nouveauRole) return;
+        const { error } = await supa.from('user_roles').insert({ utilisateur_id: u.id, role_id: u._nouveauRole });
+        if (error) { console.error(error); return; }
+        u._nouveauRole = '';
+        this.load();
+      },
+      async retirerRole(u, r) {
+        const { error } = await supa.from('user_roles').delete().eq('utilisateur_id', u.id).eq('role_id', r.role_id);
+        if (error) { console.error(error); return; }
+        u.rolesActifs = u.rolesActifs.filter(x => x.role_id !== r.role_id);
+      },
+      async toggleActifUtilisateur(u) {
+        const { error } = await supa.from('utilisateurs').update({ actif: !u.actif }).eq('id', u.id);
+        if (error) { console.error(error); return; }
+        u.actif = !u.actif;
+      },
+
+      // --- Rôles & Permissions ---
+      async creerRole() {
+        const { error } = await supa.from('roles').insert({ ...this.nouveauRole });
+        if (error) { console.error(error); return; }
+        this.nouveauRole = { code: '', nom: '' };
+        this.showNouveauRole = false;
+        this.load();
+      },
+      async selectionnerRole(r) {
+        this.roleSelectionne = r;
+        const { data } = await supa.from('role_permissions').select('permission_id').eq('role_id', r.id);
+        this.permissionsDuRole = (data || []).map(x => x.permission_id);
+      },
+      async togglePermissionRole(p, coche) {
+        if (coche) {
+          const { error } = await supa.from('role_permissions').insert({ role_id: this.roleSelectionne.id, permission_id: p.id });
+          if (error) { console.error(error); return; }
+          this.permissionsDuRole.push(p.id);
+        } else {
+          const { error } = await supa.from('role_permissions').delete().eq('role_id', this.roleSelectionne.id).eq('permission_id', p.id);
+          if (error) { console.error(error); return; }
+          this.permissionsDuRole = this.permissionsDuRole.filter(id => id !== p.id);
+        }
+      },
+
+      formatDateTime(d) {
+        if (!d) return '—';
+        return new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
       },
     };
   }
