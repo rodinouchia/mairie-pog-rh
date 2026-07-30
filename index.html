@@ -49,6 +49,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
@@ -359,184 +360,280 @@
 
 
       <!-- ================= AGENTS ================= -->
+      <!-- ================= AGENTS ================= -->
       <template x-if="currentView === 'agents'">
-        <div x-data="agentsModule()" x-init="load()">
-          <template x-if="!showForm && !selectedAgent">
-            <div class="space-y-4">
-              <div class="flex flex-wrap items-center gap-3 justify-between">
-                <div class="relative flex-1 min-w-[240px] max-w-sm">
-                  <i data-lucide="search" class="w-4 h-4 text-navy-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                  <input type="text" x-model.debounce.400ms="search" @input="page = 0; load()"
-                         placeholder="Rechercher un agent (nom, matricule…)"
-                         class="w-full pl-9 pr-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                </div>
-                <button @click="openCreate()"
-                        class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
-                  <i data-lucide="user-plus" class="w-4 h-4"></i> Nouvel agent
+        <div x-data="agentsModule()" x-init="init()">
+          <div class="space-y-4">
+
+            <!-- Barre d'actions -->
+            <div class="flex flex-wrap items-center gap-3 justify-between">
+              <div class="relative flex-1 min-w-[220px] max-w-xs">
+                <i data-lucide="search" class="w-4 h-4 text-navy-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" x-model.debounce.400ms="filtres.texte" @input="page = 0; load()"
+                       placeholder="Nom, prénoms, matricule…"
+                       class="w-full pl-9 pr-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+              </div>
+              <div class="flex items-center gap-2 ml-auto">
+                <button @click="showFiltres = !showFiltres"
+                        class="flex items-center gap-2 border border-navy-100 hover:bg-navy-50 text-navy-600 text-sm font-medium px-3.5 py-2 rounded-lg transition">
+                  <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Filtres
+                  <span x-show="nbFiltresActifs > 0" x-text="nbFiltresActifs" class="bg-navy-800 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center"></span>
                 </button>
-              </div>
-
-              <div class="card overflow-hidden">
-                <table class="w-full text-sm">
-                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
-                    <tr>
-                      <th class="text-left font-medium px-4 py-3">Matricule</th>
-                      <th class="text-left font-medium px-4 py-3">Agent</th>
-                      <th class="text-left font-medium px-4 py-3">Direction</th>
-                      <th class="text-left font-medium px-4 py-3">Service</th>
-                      <th class="text-left font-medium px-4 py-3">Statut</th>
-                      <th class="text-right font-medium px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-navy-50">
-                    <template x-if="loading">
-                      <tr><td colspan="6" class="px-4 py-8 text-center text-navy-400">Chargement…</td></tr>
-                    </template>
-                    <template x-if="!loading && agents.length === 0">
-                      <tr><td colspan="6" class="px-4 py-8 text-center text-navy-400">Aucun agent trouvé.</td></tr>
-                    </template>
-                    <template x-for="a in agents" :key="a.id">
-                      <tr class="hover:bg-navy-50/60 cursor-pointer transition" @click="openDetail(a)">
-                        <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="a.matricule"></td>
-                        <td class="px-4 py-3 font-medium text-navy-800" x-text="a.nom + ' ' + a.prenoms"></td>
-                        <td class="px-4 py-3 text-navy-600" x-text="a.directions?.nom || '—'"></td>
-                        <td class="px-4 py-3 text-navy-600" x-text="a.services?.nom || '—'"></td>
-                        <td class="px-4 py-3">
-                          <span class="text-xs px-2 py-0.5 rounded-full font-medium"
-                                :class="statutBadge(a.statut)" x-text="a.statut"></span>
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                          <i data-lucide="chevron-right" class="w-4 h-4 text-navy-300 inline-block"></i>
-                        </td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="flex items-center justify-between text-sm text-navy-500">
-                <span x-text="`${total} agent(s) au total`"></span>
-                <div class="flex items-center gap-2">
-                  <button @click="page > 0 && (page--, load())" :disabled="page === 0"
-                          class="px-3 py-1.5 rounded-lg border border-navy-100 disabled:opacity-40">Précédent</button>
-                  <span x-text="`Page ${page + 1}`"></span>
-                  <button @click="(page + 1) * pageSize < total && (page++, load())" :disabled="(page + 1) * pageSize >= total"
-                          class="px-3 py-1.5 rounded-lg border border-navy-100 disabled:opacity-40">Suivant</button>
+                <button @click="downloadTemplate()"
+                        class="flex items-center gap-2 border border-navy-100 hover:bg-navy-50 text-navy-600 text-sm font-medium px-3.5 py-2 rounded-lg transition">
+                  <i data-lucide="file-down" class="w-4 h-4"></i> Modèle
+                </button>
+                <label class="flex items-center gap-2 border border-navy-100 hover:bg-navy-50 text-navy-600 text-sm font-medium px-3.5 py-2 rounded-lg transition cursor-pointer">
+                  <i data-lucide="upload" class="w-4 h-4"></i>
+                  <span x-text="importLoading ? 'Import en cours…' : 'Importer'"></span>
+                  <input type="file" class="hidden" accept=".csv,.xlsx,.xls" @change="handleImport($event)" :disabled="importLoading">
+                </label>
+                <div class="relative" x-data="{ open: false }">
+                  <button @click="open = !open" @click.outside="open = false"
+                          class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                    <i data-lucide="download" class="w-4 h-4"></i> Exporter
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <div x-show="open" x-cloak @click="open = false"
+                       class="absolute right-0 mt-1 w-40 bg-white border border-navy-100 rounded-lg shadow-lg text-sm overflow-hidden z-20">
+                    <button @click="exporterAgents('csv')" class="w-full text-left px-4 py-2 hover:bg-navy-50 text-navy-700">Format CSV</button>
+                    <button @click="exporterAgents('xlsx')" class="w-full text-left px-4 py-2 hover:bg-navy-50 text-navy-700">Format Excel</button>
+                  </div>
                 </div>
               </div>
             </div>
-          </template>
 
-          <!-- Fiche agent -->
-          <template x-if="selectedAgent && !showForm">
-            <div class="space-y-4">
-              <button @click="selectedAgent = null" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> Retour à la liste
-              </button>
-              <div class="card p-6">
-                <div class="flex items-start justify-between">
-                  <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 rounded-full bg-navy-800 text-white flex items-center justify-center font-display font-bold text-lg">
+            <!-- Panneau de filtres -->
+            <div x-show="showFiltres" x-cloak class="card p-4 grid sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div>
+                <label class="block text-[11px] font-medium text-navy-500 mb-1">Fonction</label>
+                <input type="text" x-model.debounce.400ms="filtres.fonction" @input="page = 0; load()"
+                       class="w-full px-3 py-1.5 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-navy-500 mb-1">Poste budgétaire</label>
+                <select x-model="filtres.poste_budgetaire_id" @change="page = 0; load()"
+                        class="w-full px-3 py-1.5 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                  <option value="">Tous</option>
+                  <template x-for="p in referentiels.postesBudgetaires" :key="p.id"><option :value="p.id" x-text="p.intitule"></option></template>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-navy-500 mb-1">Direction</label>
+                <select x-model="filtres.direction_id" @change="page = 0; load()"
+                        class="w-full px-3 py-1.5 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                  <option value="">Toutes</option>
+                  <template x-for="d in referentiels.directions" :key="d.id"><option :value="d.id" x-text="d.nom"></option></template>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-navy-500 mb-1">Service</label>
+                <select x-model="filtres.service_id" @change="page = 0; load()"
+                        class="w-full px-3 py-1.5 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                  <option value="">Tous</option>
+                  <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-navy-500 mb-1">Section</label>
+                <select x-model="filtres.section_id" @change="page = 0; load()"
+                        class="w-full px-3 py-1.5 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                  <option value="">Toutes</option>
+                  <template x-for="sec in referentiels.sections" :key="sec.id"><option :value="sec.id" x-text="sec.nom"></option></template>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-navy-500 mb-1">Statut</label>
+                <select x-model="filtres.statut" @change="page = 0; load()"
+                        class="w-full px-3 py-1.5 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                  <option value="">Tous</option>
+                  <option value="actif">Actif</option>
+                  <option value="suspendu">Suspendu</option>
+                  <option value="radie">Radié</option>
+                  <option value="retraite">Retraité</option>
+                  <option value="decede">Décédé</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-navy-500 mb-1">Type de contrat</label>
+                <select x-model="filtres.type_contrat" @change="page = 0; load()"
+                        class="w-full px-3 py-1.5 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                  <option value="">Tous</option>
+                  <option value="titulaire">Titulaire</option>
+                  <option value="stagiaire">Stagiaire</option>
+                  <option value="contractuel">Contractuel</option>
+                  <option value="journalier">Journalier</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button @click="reinitialiserFiltres()" class="text-sm text-navy-500 hover:text-navy-800 underline">Réinitialiser les filtres</button>
+              </div>
+            </div>
+
+            <p x-show="importSummary" x-text="importSummary" class="text-sm px-4 py-2 rounded-lg" :class="importError ? 'bg-red-50 text-red-600' : 'bg-lagoon-500/10 text-lagoon-700'"></p>
+
+            <!-- Liste -->
+            <div class="card overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                  <tr>
+                    <th class="text-left font-medium px-4 py-3">Matricule</th>
+                    <th class="text-left font-medium px-4 py-3">Agent</th>
+                    <th class="text-left font-medium px-4 py-3">Fonction</th>
+                    <th class="text-left font-medium px-4 py-3">Direction / Service</th>
+                    <th class="text-left font-medium px-4 py-3">Statut</th>
+                    <th class="text-right font-medium px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-navy-50">
+                  <template x-if="loading">
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-navy-400">Chargement…</td></tr>
+                  </template>
+                  <template x-if="!loading && agents.length === 0">
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-navy-400">Aucun agent trouvé.</td></tr>
+                  </template>
+                  <template x-for="a in agents" :key="a.id">
+                    <tr class="hover:bg-navy-50/60 cursor-pointer transition" @click="openDetail(a)">
+                      <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="a.matricule"></td>
+                      <td class="px-4 py-3 font-medium text-navy-800" x-text="a.nom + ' ' + a.prenoms"></td>
+                      <td class="px-4 py-3 text-navy-600" x-text="a.fonction_actuelle || '—'"></td>
+                      <td class="px-4 py-3 text-navy-600" x-text="[a.direction_nom, a.service_nom].filter(Boolean).join(' / ') || '—'"></td>
+                      <td class="px-4 py-3">
+                        <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="statutBadge(a.statut)" x-text="a.statut"></span>
+                      </td>
+                      <td class="px-4 py-3 text-right">
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-navy-300 inline-block"></i>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="flex items-center justify-between text-sm text-navy-500">
+              <span x-text="`${total} agent(s) au total`"></span>
+              <div class="flex items-center gap-2">
+                <button @click="page > 0 && (page--, load())" :disabled="page === 0"
+                        class="px-3 py-1.5 rounded-lg border border-navy-100 disabled:opacity-40">Précédent</button>
+                <span x-text="`Page ${page + 1}`"></span>
+                <button @click="(page + 1) * pageSize < total && (page++, load())" :disabled="(page + 1) * pageSize >= total"
+                        class="px-3 py-1.5 rounded-lg border border-navy-100 disabled:opacity-40">Suivant</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fiche agent déplaçable -->
+          <template x-if="selectedAgent">
+            <div class="fixed inset-0 z-30" style="background: rgba(11,25,48,.35);" @click.self="closeDetail()">
+              <div class="card absolute w-[560px] max-w-[92vw] shadow-2xl"
+                   :style="`top:${fichePos.y}px; left:${fichePos.x}px;`">
+                <div class="flex items-center justify-between px-5 py-3.5 border-b border-navy-100 cursor-move select-none"
+                     @mousedown="startDrag($event)">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-navy-800 text-white flex items-center justify-center font-display font-bold text-sm shrink-0">
                       <span x-text="(selectedAgent.nom?.[0] || '') + (selectedAgent.prenoms?.[0] || '')"></span>
                     </div>
                     <div>
-                      <h3 class="font-display font-bold text-lg text-navy-900" x-text="selectedAgent.nom + ' ' + selectedAgent.prenoms"></h3>
-                      <p class="text-sm text-navy-400 font-mono" x-text="selectedAgent.matricule"></p>
+                      <p class="font-display font-bold text-navy-900 text-sm" x-text="selectedAgent.nom + ' ' + selectedAgent.prenoms"></p>
+                      <p class="text-[11px] text-navy-400 font-mono" x-text="selectedAgent.matricule"></p>
                     </div>
                   </div>
-                  <span class="text-xs px-2.5 py-1 rounded-full font-medium" :class="statutBadge(selectedAgent.statut)" x-text="selectedAgent.statut"></span>
+                  <button @click="closeDetail()" class="w-7 h-7 rounded-lg hover:bg-navy-50 flex items-center justify-center text-navy-400">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
                 </div>
 
-                <div class="grid sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-navy-100">
+                <div class="p-5 grid sm:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
                   <div>
-                    <p class="text-xs text-navy-400 mb-0.5">Direction</p>
-                    <p class="text-sm text-navy-800" x-text="selectedAgent.directions?.nom || '—'"></p>
+                    <label class="block text-[11px] font-medium text-navy-500 mb-1">Nom</label>
+                    <input x-model="editForm.nom" :disabled="!editing" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 disabled:text-navy-600 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                   </div>
                   <div>
-                    <p class="text-xs text-navy-400 mb-0.5">Service</p>
-                    <p class="text-sm text-navy-800" x-text="selectedAgent.services?.nom || '—'"></p>
+                    <label class="block text-[11px] font-medium text-navy-500 mb-1">Prénoms</label>
+                    <input x-model="editForm.prenoms" :disabled="!editing" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 disabled:text-navy-600 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                   </div>
                   <div>
-                    <p class="text-xs text-navy-400 mb-0.5">Date d'entrée en fonction</p>
-                    <p class="text-sm text-navy-800" x-text="formatDate(selectedAgent.date_entree_fonction)"></p>
-                  </div>
-                  <div>
-                    <p class="text-xs text-navy-400 mb-0.5">Sexe</p>
-                    <p class="text-sm text-navy-800" x-text="selectedAgent.sexe === 'M' ? 'Masculin' : (selectedAgent.sexe === 'F' ? 'Féminin' : '—')"></p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <!-- Formulaire création -->
-          <template x-if="showForm">
-            <div class="space-y-4 max-w-2xl">
-              <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler
-              </button>
-              <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
-                <h3 class="font-display font-semibold text-navy-800">Nouvel agent</h3>
-
-                <div class="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Matricule *</label>
-                    <input required x-model="form.matricule" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Sexe</label>
-                    <select x-model="form.sexe" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                    <label class="block text-[11px] font-medium text-navy-500 mb-1">Sexe</label>
+                    <select x-model="editForm.sexe" :disabled="!editing" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 disabled:text-navy-600 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                       <option value="">—</option>
                       <option value="M">Masculin</option>
                       <option value="F">Féminin</option>
                     </select>
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Nom *</label>
-                    <input required x-model="form.nom" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Prénoms *</label>
-                    <input required x-model="form.prenoms" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Date de naissance</label>
-                    <input type="date" x-model="form.date_naissance" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Date d'entrée en fonction</label>
-                    <input type="date" x-model="form.date_entree_fonction" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Direction</label>
-                    <select x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                      <option value="">—</option>
-                      <template x-for="d in referentiels.directions" :key="d.id">
-                        <option :value="d.id" x-text="d.nom"></option>
-                      </template>
+                    <label class="block text-[11px] font-medium text-navy-500 mb-1">Statut</label>
+                    <select x-model="editForm.statut" :disabled="!editing" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 disabled:text-navy-600 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                      <option value="actif">Actif</option>
+                      <option value="suspendu">Suspendu</option>
+                      <option value="radie">Radié</option>
+                      <option value="retraite">Retraité</option>
+                      <option value="decede">Décédé</option>
                     </select>
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Service</label>
-                    <select x-model="form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                    <label class="block text-[11px] font-medium text-navy-500 mb-1">Direction</label>
+                    <select x-model="editForm.direction_id" :disabled="!editing" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 disabled:text-navy-600 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                       <option value="">—</option>
-                      <template x-for="s in referentiels.services" :key="s.id">
-                        <option :value="s.id" x-text="s.nom"></option>
-                      </template>
+                      <template x-for="d in referentiels.directions" :key="d.id"><option :value="d.id" x-text="d.nom"></option></template>
                     </select>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-medium text-navy-500 mb-1">Service</label>
+                    <select x-model="editForm.service_id" :disabled="!editing" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 disabled:text-navy-600 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                      <option value="">—</option>
+                      <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
+                    </select>
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-[11px] font-medium text-navy-500 mb-1">Poste budgétaire</label>
+                    <select x-model="editForm.poste_budgetaire_id" :disabled="!editing" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 disabled:text-navy-600 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                      <option value="">—</option>
+                      <template x-for="p in referentiels.postesBudgetaires" :key="p.id"><option :value="p.id" x-text="p.intitule"></option></template>
+                    </select>
+                  </div>
+
+                  <div class="sm:col-span-2 border-t border-navy-100 pt-4 grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <p class="text-[11px] font-medium text-navy-400 mb-1">Fonction actuelle</p>
+                      <p class="text-sm text-navy-700" x-text="selectedAgent.fonction_actuelle || '—'"></p>
+                      <p class="text-[10px] text-navy-400 mt-0.5">Modifiable depuis le module Carrière (affectations)</p>
+                    </div>
+                    <div>
+                      <p class="text-[11px] font-medium text-navy-400 mb-1">Grade / Indice</p>
+                      <p class="text-sm text-navy-700" x-text="(selectedAgent.grade_libelle || '—') + (selectedAgent.valeur_indiciaire ? ' — indice ' + selectedAgent.valeur_indiciaire : '')"></p>
+                      <p class="text-[10px] text-navy-400 mt-0.5">Modifiable depuis le module Carrière</p>
+                    </div>
+                    <div>
+                      <p class="text-[11px] font-medium text-navy-400 mb-1">Type de contrat</p>
+                      <p class="text-sm text-navy-700 capitalize" x-text="selectedAgent.type_contrat_actuel || '—'"></p>
+                    </div>
+                    <div>
+                      <p class="text-[11px] font-medium text-navy-400 mb-1">Entrée en fonction</p>
+                      <p class="text-sm text-navy-700" x-text="formatDate(selectedAgent.date_entree_fonction)"></p>
+                    </div>
                   </div>
                 </div>
 
-                <p x-show="formError" x-text="formError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
-
-                <div class="flex justify-end gap-3 pt-2">
-                  <button type="button" @click="showForm = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
-                  <button type="submit" :disabled="formLoading"
-                          class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
-                    <span x-text="formLoading ? 'Enregistrement…' : 'Créer l\'agent'"></span>
-                  </button>
+                <div class="flex items-center justify-between px-5 py-3.5 border-t border-navy-100">
+                  <p x-show="editError" x-text="editError" class="text-xs text-red-600"></p>
+                  <div class="flex gap-2 ml-auto">
+                    <template x-if="!editing">
+                      <button @click="editing = true" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-600 hover:bg-navy-50 flex items-center gap-2">
+                        <i data-lucide="pencil" class="w-4 h-4"></i> Modifier
+                      </button>
+                    </template>
+                    <template x-if="editing">
+                      <button @click="editing = false; resetEditForm()" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
+                    </template>
+                    <template x-if="editing">
+                      <button @click="saveEdit()" :disabled="savingEdit"
+                              class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                        <span x-text="savingEdit ? 'Enregistrement…' : 'Enregistrer'"></span>
+                      </button>
+                    </template>
+                  </div>
                 </div>
-              </form>
+              </div>
             </div>
           </template>
         </div>
@@ -1547,64 +1644,123 @@
   // ============================================================
   // MODULE : Agents
   // ============================================================
+  // ============================================================
+  // MODULE : Agents
+  // ============================================================
   function agentsModule() {
     return {
-      agents: [], total: 0, page: 0, pageSize: 15,
-      search: '', loading: true,
-      selectedAgent: null,
-      showForm: false, formLoading: false, formError: '',
-      form: { matricule: '', nom: '', prenoms: '', sexe: '', date_naissance: '', date_entree_fonction: '', direction_id: '', service_id: '' },
-      referentiels: { directions: [], services: [] },
+      agents: [], total: 0, page: 0, pageSize: 15, loading: true,
+      showFiltres: false,
+      filtres: { texte: '', fonction: '', poste_budgetaire_id: '', direction_id: '', service_id: '', section_id: '', statut: '', type_contrat: '' },
+      referentiels: { directions: [], services: [], sections: [], postesBudgetaires: [] },
+
+      selectedAgent: null, editing: false, savingEdit: false, editError: '',
+      editForm: {},
+      fichePos: { x: 0, y: 0 }, dragging: false, dragOffset: { x: 0, y: 0 },
+
+      importLoading: false, importSummary: '', importError: false,
+
+      get nbFiltresActifs() {
+        return Object.entries(this.filtres).filter(([k, v]) => k !== 'texte' && v).length;
+      },
+
+      async init() {
+        const [{ data: d }, { data: s }, { data: sec }, { data: pb }] = await Promise.all([
+          supa.from('directions').select('id, nom').eq('actif', true).order('nom'),
+          supa.from('services').select('id, nom').eq('actif', true).order('nom'),
+          supa.from('sections').select('id, nom').eq('actif', true).order('nom'),
+          supa.from('postes_budgetaires').select('id, intitule').eq('actif', true).order('intitule'),
+        ]);
+        this.referentiels.directions = d || [];
+        this.referentiels.services = s || [];
+        this.referentiels.sections = sec || [];
+        this.referentiels.postesBudgetaires = pb || [];
+        this.load();
+      },
+
+      buildQuery(forExport = false) {
+        let query = supa.from('vue_agents_complet').select('*', { count: forExport ? undefined : 'exact' });
+
+        if (this.filtres.texte) {
+          query = query.or(`nom.ilike.%${this.filtres.texte}%,prenoms.ilike.%${this.filtres.texte}%,matricule.ilike.%${this.filtres.texte}%`);
+        }
+        if (this.filtres.fonction) query = query.ilike('fonction_actuelle', `%${this.filtres.fonction}%`);
+        if (this.filtres.poste_budgetaire_id) query = query.eq('poste_budgetaire_id', this.filtres.poste_budgetaire_id);
+        if (this.filtres.direction_id) query = query.eq('direction_id', this.filtres.direction_id);
+        if (this.filtres.service_id) query = query.eq('service_id', this.filtres.service_id);
+        if (this.filtres.section_id) query = query.eq('section_id', this.filtres.section_id);
+        if (this.filtres.statut) query = query.eq('statut', this.filtres.statut);
+        if (this.filtres.type_contrat) query = query.eq('type_contrat_actuel', this.filtres.type_contrat);
+
+        return query.order('nom');
+      },
 
       async load() {
         this.loading = true;
-        let query = supa
-          .from('agents')
-          .select('id, matricule, nom, prenoms, statut, sexe, date_entree_fonction, directions(nom), services(nom)', { count: 'exact' })
-          .order('nom', { ascending: true })
+        const { data, count, error } = await this.buildQuery()
           .range(this.page * this.pageSize, this.page * this.pageSize + this.pageSize - 1);
 
-        if (this.search) {
-          query = query.or(`nom.ilike.%${this.search}%,prenoms.ilike.%${this.search}%,matricule.ilike.%${this.search}%`);
-        }
-
-        const { data, count, error } = await query;
         if (error) { console.error(error); this.loading = false; return; }
         this.agents = data || [];
         this.total = count || 0;
         this.loading = false;
       },
 
-      openDetail(agent) { this.selectedAgent = agent; },
-
-      async openCreate() {
-        this.showForm = true;
-        this.formError = '';
-        const [{ data: directions }, { data: services }] = await Promise.all([
-          supa.from('directions').select('id, nom').eq('actif', true).order('nom'),
-          supa.from('services').select('id, nom').eq('actif', true).order('nom'),
-        ]);
-        this.referentiels.directions = directions || [];
-        this.referentiels.services = services || [];
-      },
-
-      async submitCreate() {
-        this.formLoading = true;
-        this.formError = '';
-        const payload = { ...this.form };
-        Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
-
-        const { error } = await supa.from('agents').insert(payload);
-        this.formLoading = false;
-
-        if (error) {
-          this.formError = error.message;
-          return;
-        }
-        this.showForm = false;
-        this.form = { matricule: '', nom: '', prenoms: '', sexe: '', date_naissance: '', date_entree_fonction: '', direction_id: '', service_id: '' };
+      reinitialiserFiltres() {
+        this.filtres = { texte: '', fonction: '', poste_budgetaire_id: '', direction_id: '', service_id: '', section_id: '', statut: '', type_contrat: '' };
         this.page = 0;
         this.load();
+      },
+
+      // --- Fiche déplaçable ---
+      openDetail(agent) {
+        this.selectedAgent = agent;
+        this.editing = false;
+        this.editError = '';
+        this.resetEditForm();
+        this.fichePos = { x: window.innerWidth / 2 - 280, y: 90 };
+      },
+      closeDetail() {
+        this.selectedAgent = null;
+        this.editing = false;
+      },
+      resetEditForm() {
+        const a = this.selectedAgent;
+        this.editForm = {
+          nom: a.nom, prenoms: a.prenoms, sexe: a.sexe, statut: a.statut,
+          direction_id: a.direction_id || '', service_id: a.service_id || '', poste_budgetaire_id: a.poste_budgetaire_id || '',
+        };
+      },
+      startDrag(evt) {
+        this.dragging = true;
+        this.dragOffset = { x: evt.clientX - this.fichePos.x, y: evt.clientY - this.fichePos.y };
+        const move = (e) => {
+          if (!this.dragging) return;
+          this.fichePos = { x: e.clientX - this.dragOffset.x, y: e.clientY - this.dragOffset.y };
+        };
+        const up = () => {
+          this.dragging = false;
+          window.removeEventListener('mousemove', move);
+          window.removeEventListener('mouseup', up);
+        };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+      },
+
+      async saveEdit() {
+        this.savingEdit = true;
+        this.editError = '';
+        const payload = { ...this.editForm };
+        Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
+
+        const { error } = await supa.from('agents').update(payload).eq('id', this.selectedAgent.id);
+        this.savingEdit = false;
+
+        if (error) { this.editError = error.message; return; }
+        this.editing = false;
+        await this.load();
+        const refreshed = this.agents.find(a => a.id === this.selectedAgent.id);
+        if (refreshed) this.selectedAgent = refreshed;
       },
 
       statutBadge(statut) {
@@ -1621,6 +1777,117 @@
       formatDate(d) {
         if (!d) return '—';
         return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+      },
+
+      // --- Export ---
+      async exporterAgents(format) {
+        const { data, error } = await this.buildQuery(true);
+        if (error) { console.error(error); return; }
+
+        const rows = (data || []).map(a => ({
+          'Matricule': a.matricule,
+          'Nom': a.nom,
+          'Prénoms': a.prenoms,
+          'Sexe': a.sexe === 'M' ? 'Masculin' : (a.sexe === 'F' ? 'Féminin' : ''),
+          'Statut': a.statut,
+          'Direction': a.direction_nom || '',
+          'Service': a.service_nom || '',
+          'Section': a.section_nom || '',
+          'Poste budgétaire': a.poste_budgetaire_intitule || '',
+          'Fonction': a.fonction_actuelle || '',
+          'Grade': a.grade_libelle || '',
+          'Indice': a.valeur_indiciaire || '',
+          'Type de contrat': a.type_contrat_actuel || '',
+          "Date d'entrée en fonction": a.date_entree_fonction || '',
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Agents');
+        const nomFichier = `agents_gpm_${new Date().toISOString().slice(0, 10)}.${format}`;
+        XLSX.writeFile(wb, nomFichier, { bookType: format });
+      },
+
+      downloadTemplate() {
+        const ws = XLSX.utils.json_to_sheet([{
+          'Matricule': '', 'Nom': '', 'Prénoms': '', 'Sexe': 'M', 'Date de naissance': '2000-01-31',
+          "Date d'entrée en fonction": '2024-01-01', 'Code Direction': '', 'Code Service': '', 'Statut': 'actif',
+        }]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Modèle');
+        XLSX.writeFile(wb, 'modele_import_agents.xlsx', { bookType: 'xlsx' });
+      },
+
+      // --- Import ---
+      async handleImport(evt) {
+        const file = evt.target.files[0];
+        if (!file) return;
+        this.importLoading = true;
+        this.importSummary = '';
+        this.importError = false;
+
+        try {
+          const buffer = await file.arrayBuffer();
+          const wb = XLSX.read(buffer, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+          if (rows.length === 0) {
+            this.importSummary = 'Le fichier ne contient aucune ligne à importer.';
+            this.importError = true;
+            this.importLoading = false;
+            evt.target.value = '';
+            return;
+          }
+
+          const dirParCode = Object.fromEntries((await supa.from('directions').select('id, code')).data?.map(d => [d.code, d.id]) || []);
+          const svcParCode = Object.fromEntries((await supa.from('services').select('id, code')).data?.map(s => [s.code, s.id]) || []);
+
+          const payloads = rows.map(r => ({
+            matricule: (r['Matricule'] || '').trim() || null,
+            nom: (r['Nom'] || '').trim(),
+            prenoms: (r['Prénoms'] || r['Prenoms'] || '').trim(),
+            sexe: (r['Sexe'] || '').toString().trim().toUpperCase().startsWith('M') ? 'M'
+                : (r['Sexe'] || '').toString().trim().toUpperCase().startsWith('F') ? 'F' : null,
+            date_naissance: r['Date de naissance'] || null,
+            date_entree_fonction: r["Date d'entrée en fonction"] || r["Date d'entree en fonction"] || null,
+            direction_id: dirParCode[r['Code Direction']] || null,
+            service_id: svcParCode[r['Code Service']] || null,
+            statut: (r['Statut'] || 'actif').toString().trim().toLowerCase() || 'actif',
+          })).filter(p => p.nom && p.prenoms);
+
+          const ignores = rows.length - payloads.length;
+          const tailleLot = 50;
+          let succes = 0, echecs = 0;
+          const erreurs = [];
+
+          for (let i = 0; i < payloads.length; i += tailleLot) {
+            const lot = payloads.slice(i, i + tailleLot);
+            const { error } = await supa.from('agents').insert(lot);
+            if (error) {
+              echecs += lot.length;
+              erreurs.push(`Lignes ${i + 1}-${i + lot.length} : ${error.message}`);
+            } else {
+              succes += lot.length;
+            }
+          }
+
+          let resume = `${succes} agent(s) importé(s) avec succès.`;
+          if (ignores > 0) resume += ` ${ignores} ligne(s) ignorée(s) (nom/prénoms manquant).`;
+          if (echecs > 0) resume += ` ${echecs} en échec — ${erreurs.join(' | ')}`;
+          this.importSummary = resume;
+          this.importError = echecs > 0;
+
+          this.page = 0;
+          await this.load();
+        } catch (e) {
+          this.importSummary = "Erreur de lecture du fichier — vérifiez qu'il s'agit bien d'un .csv ou .xlsx valide.";
+          this.importError = true;
+          console.error(e);
+        }
+
+        this.importLoading = false;
+        evt.target.value = '';
       },
     };
   }
