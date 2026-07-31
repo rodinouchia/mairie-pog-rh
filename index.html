@@ -136,7 +136,7 @@
 
     <nav class="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
       <template x-for="item in modules" :key="item.id">
-        <button @click="currentView = item.id"
+        <button @click="currentView = item.id" x-show="moduleVisible(item)"
                 :class="currentView === item.id ? 'bg-lagoon-500/15 text-white border-lagoon-400/40' : 'text-navy-300 border-transparent hover:bg-white/5 hover:text-white'"
                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm transition group"
                 :title="!sidebarOpen ? item.label : ''">
@@ -2632,13 +2632,16 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_fFdCyt5wtHQ9Up7-SJhlkg_j7Gm6EA0';
 
   const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    db: { schema: 'rh' } // toutes les requêtes .from() ciblent le schéma rh par défaut
+    db: { schema: 'rh' }, // toutes les requêtes .from() ciblent le schéma rh par défaut
+    auth: { storageKey: 'sb-gpm-session-principale' },
   });
 
-  // Client dédié à la création de comptes (Administration) : sans session persistante,
-  // pour que la création d'un nouvel utilisateur ne remplace jamais la session de l'admin connecté.
+  // Client dédié à la création de comptes (Administration) : sans session persistante ET avec
+  // une clé de stockage distincte, pour que la création d'un nouvel utilisateur ne puisse jamais
+  // interférer avec la session de l'admin connecté (deux instances partageant la même clé se
+  // corrompent mutuellement — c'est ce qui s'est produit).
   const supaAuthOnly = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
+    auth: { persistSession: false, autoRefreshToken: false, storageKey: 'sb-gpm-creation-utilisateur' },
   });
 
   function rhApp() {
@@ -2657,15 +2660,22 @@
       modules: [
         { id: 'dashboard',   label: 'Tableau de bord', icon: 'layout-dashboard' },
         { id: 'agents',      label: 'Agents',           icon: 'users' },
-        { id: 'organisation',label: 'Organisation',     icon: 'building-2' },
-        { id: 'carriere',    label: 'Carrière',         icon: 'trending-up' },
-        { id: 'recrutement', label: 'Recrutement',      icon: 'user-plus' },
+        { id: 'organisation',label: 'Organisation',     icon: 'building-2', requiredPerm: 'organisation.gerer' },
+        { id: 'carriere',    label: 'Carrière',         icon: 'trending-up', requiredPerm: 'carriere.lire_tout' },
+        { id: 'recrutement', label: 'Recrutement',      icon: 'user-plus', requiredPerm: 'recrutement.lire_tout' },
         { id: 'temps',       label: 'Temps de travail', icon: 'calendar-clock' },
-        { id: 'paie',        label: 'Paie',             icon: 'wallet' },
-        { id: 'evaluation',  label: 'Évaluation',       icon: 'star' },
-        { id: 'formation',   label: 'Formation',        icon: 'graduation-cap' },
-        { id: 'administration', label: 'Administration', icon: 'shield' },
+        { id: 'paie',        label: 'Paie',             icon: 'wallet', requiredPerm: 'paie.lire_tout' },
+        { id: 'evaluation',  label: 'Évaluation',       icon: 'star', requiredPerm: 'evaluation.lire_tout' },
+        { id: 'formation',   label: 'Formation',        icon: 'graduation-cap', requiredPerm: 'formation.lire_tout' },
+        { id: 'administration', label: 'Administration', icon: 'shield', adminOnly: true },
       ],
+      acl: { codes: [], isSuperAdmin: false },
+
+      moduleVisible(item) {
+        if (item.adminOnly) return this.acl.isSuperAdmin;
+        if (!item.requiredPerm) return true;
+        return this.acl.isSuperAdmin || this.acl.codes.includes(item.requiredPerm);
+      },
 
       get currentModuleLabel() {
         return this.modules.find(m => m.id === this.currentView)?.label || '';
@@ -2699,7 +2709,7 @@
         const userId = this.session.user.id;
         const { data, error } = await supa
           .from('utilisateurs')
-          .select('*, user_roles(roles(code, nom))')
+          .select('*, user_roles(role_id, roles(code, nom))')
           .eq('id', userId)
           .maybeSingle();
 
@@ -2713,11 +2723,27 @@
           });
           this.utilisateur = { id: userId, email: this.session.user.email, nom_affichage: this.session.user.email };
           this.roles = [];
+          this.acl = { codes: [], isSuperAdmin: false };
           return;
         }
 
         this.utilisateur = data;
         this.roles = (data.user_roles || []).map(ur => ur.roles?.nom).filter(Boolean);
+        const roleCodes = (data.user_roles || []).map(ur => ur.roles?.code).filter(Boolean);
+        const roleIds = (data.user_roles || []).map(ur => ur.role_id).filter(Boolean);
+
+        let permCodes = [];
+        if (roleIds.length) {
+          const { data: rp } = await supa.from('role_permissions').select('permissions(code)').in('role_id', roleIds);
+          permCodes = [...new Set((rp || []).map(x => x.permissions?.code).filter(Boolean))];
+        }
+        this.acl = { codes: permCodes, isSuperAdmin: roleCodes.includes('SUPER_ADMIN') };
+
+        const moduleCourant = this.modules.find(m => m.id === this.currentView);
+        if (moduleCourant && !this.moduleVisible(moduleCourant)) this.currentView = 'dashboard';
+
+        // Trace la connexion : cette mise à jour est elle-même journalisée automatiquement (table utilisateurs suivie)
+        supa.from('utilisateurs').update({ derniere_connexion: new Date().toISOString() }).eq('id', userId).then(() => {});
       },
 
       async login() {
