@@ -2742,6 +2742,13 @@
         const moduleCourant = this.modules.find(m => m.id === this.currentView);
         if (moduleCourant && !this.moduleVisible(moduleCourant)) this.currentView = 'dashboard';
 
+        // Force la recréation du module actuellement affiché, pour qu'il recharge ses données
+        // avec la session du nouvel utilisateur (sans ça, un module déjà monté garde en mémoire
+        // les données de la session précédente tant que currentView ne change pas de valeur).
+        const vueActuelle = this.currentView;
+        this.currentView = '__reload__';
+        this.$nextTick(() => { this.currentView = vueActuelle; });
+
         // Trace la connexion : cette mise à jour est elle-même journalisée automatiquement (table utilisateurs suivie)
         supa.from('utilisateurs').update({ derniere_connexion: new Date().toISOString() }).eq('id', userId).then(() => {});
       },
