@@ -2530,35 +2530,82 @@
 
           <!-- Journal d'activité -->
           <template x-if="activeTab === 'journal'">
-            <div class="card overflow-hidden">
-              <table class="w-full text-sm">
-                <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
-                  <tr>
-                    <th class="text-left font-medium px-4 py-3">Utilisateur</th>
-                    <th class="text-left font-medium px-4 py-3">Action</th>
-                    <th class="text-left font-medium px-4 py-3">Table</th>
-                    <th class="text-left font-medium px-4 py-3">Date</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-navy-50">
-                  <template x-if="!loading && journal.length === 0">
-                    <tr><td colspan="4" class="px-4 py-8 text-center text-navy-400">
-                      Aucune entrée pour le moment — le journal se remplira automatiquement au fil des actions du système.
-                    </td></tr>
-                  </template>
-                  <template x-for="j in journal" :key="j.id">
+            <div class="space-y-3">
+              <div class="card p-4 flex flex-wrap items-end gap-3">
+                <div>
+                  <label class="block text-[11px] font-medium text-navy-500 mb-1">Mois</label>
+                  <select x-model="filtreJournal.mois" @change="loadJournal()" class="px-3 py-1.5 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                    <option value="">Tous</option>
+                    <template x-for="(m, i) in moisLibelles" :key="i">
+                      <option :value="i + 1" x-text="m"></option>
+                    </template>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-medium text-navy-500 mb-1">Année</label>
+                  <select x-model="filtreJournal.annee" @change="loadJournal()" class="px-3 py-1.5 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                    <option value="">Toutes</option>
+                    <template x-for="a in anneesDisponibles" :key="a"><option :value="a" x-text="a"></option></template>
+                  </select>
+                </div>
+                <button @click="filtreJournal = { mois: '', annee: '' }; loadJournal()" class="text-sm text-navy-500 hover:text-navy-800 underline">Réinitialiser</button>
+                <button x-show="filtreJournal.mois || filtreJournal.annee" @click="supprimerJournalFiltre()"
+                        class="ml-auto text-sm font-medium text-red-500 hover:text-red-700 flex items-center gap-1.5">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i> Supprimer le résultat filtré
+                </button>
+              </div>
+
+              <div class="card overflow-hidden">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
                     <tr>
-                      <td class="px-4 py-3 text-navy-700" x-text="j.utilisateurs?.email || '—'"></td>
-                      <td class="px-4 py-3 text-navy-600" x-text="j.action"></td>
-                      <td class="px-4 py-3 text-navy-500 text-xs" x-text="j.table_cible || '—'"></td>
-                      <td class="px-4 py-3 text-navy-500 text-xs" x-text="formatDateTime(j.created_at)"></td>
+                      <th class="text-left font-medium px-4 py-3">Utilisateur</th>
+                      <th class="text-left font-medium px-4 py-3">Action</th>
+                      <th class="text-left font-medium px-4 py-3">Table</th>
+                      <th class="text-left font-medium px-4 py-3">Ancienne valeur</th>
+                      <th class="text-left font-medium px-4 py-3">Nouvelle valeur</th>
+                      <th class="text-left font-medium px-4 py-3">Date</th>
+                      <th class="text-right font-medium px-4 py-3"></th>
                     </tr>
-                  </template>
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && journal.length === 0">
+                      <tr><td colspan="7" class="px-4 py-8 text-center text-navy-400">
+                        Aucune entrée pour cette période.
+                      </td></tr>
+                    </template>
+                    <template x-for="j in journal" :key="j.id">
+                      <tr>
+                        <td class="px-4 py-3 text-navy-700 align-top" x-text="j.utilisateurs?.email || '—'"></td>
+                        <td class="px-4 py-3 align-top">
+                          <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                                :class="{ creation: 'bg-lagoon-500/10 text-lagoon-700', modification: 'bg-amber-500/10 text-amber-700', suppression: 'bg-red-500/10 text-red-700' }[j.action]"
+                                x-text="j.action"></span>
+                        </td>
+                        <td class="px-4 py-3 text-navy-500 text-xs align-top" x-text="j.table_cible || '—'"></td>
+                        <td class="px-4 py-3 text-xs text-navy-500 align-top">
+                          <template x-for="c in champsModifies(j)" :key="c.champ">
+                            <div x-show="c.avant !== undefined"><span class="text-navy-400" x-text="c.champ + ': '"></span><span x-text="c.avant ?? '—'"></span></div>
+                          </template>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-navy-700 align-top">
+                          <template x-for="c in champsModifies(j)" :key="c.champ">
+                            <div x-show="c.apres !== undefined"><span class="text-navy-400" x-text="c.champ + ': '"></span><span x-text="c.apres ?? '—'"></span></div>
+                          </template>
+                        </td>
+                        <td class="px-4 py-3 text-navy-500 text-xs align-top whitespace-nowrap" x-text="formatDateTime(j.created_at)"></td>
+                        <td class="px-4 py-3 text-right align-top">
+                          <button @click="supprimerJournalLigne(j)" class="text-xs font-medium text-red-400 hover:text-red-600">Supprimer</button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </template>
         </div>
+
       </template>
 
       <!-- ================= MODULES EN CONSTRUCTION ================= -->
@@ -3678,6 +3725,9 @@
       showNouveauRole: false, nouveauRole: { code: '', nom: '' },
       showNouvelUtilisateur: false, nouvelUtilisateurLoading: false, nouvelUtilisateurError: '',
       nouvelUtilisateur: { email: '', nom_affichage: '', password: '', role_id: '' },
+      filtreJournal: { mois: '', annee: '' },
+      moisLibelles: ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
+      anneesDisponibles: Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i),
 
       get permissionsParModule() {
         const groupes = {};
@@ -3718,11 +3768,68 @@
         }
 
         if (this.activeTab === 'journal') {
-          const { data } = await supa.from('journal_activite').select('*, utilisateurs(email)').order('created_at', { ascending: false }).limit(200);
-          this.journal = data || [];
+          await this.loadJournal();
         }
 
         this.loading = false;
+      },
+
+      dateBornesJournal() {
+        const { mois, annee } = this.filtreJournal;
+        if (annee && mois) {
+          const debut = `${annee}-${String(mois).padStart(2, '0')}-01`;
+          const finDate = new Date(annee, mois, 1); // mois est 1-indexé -> ceci donne le 1er du mois suivant
+          const fin = finDate.toISOString().slice(0, 10);
+          return { debut, fin };
+        }
+        if (annee) {
+          return { debut: `${annee}-01-01`, fin: `${Number(annee) + 1}-01-01` };
+        }
+        return null;
+      },
+
+      async loadJournal() {
+        this.loading = true;
+        let query = supa.from('journal_activite').select('*, utilisateurs(email)');
+        const bornes = this.dateBornesJournal();
+        if (bornes) query = query.gte('created_at', bornes.debut).lt('created_at', bornes.fin);
+
+        const { data } = await query.order('created_at', { ascending: false }).limit(500);
+        this.journal = data || [];
+        this.loading = false;
+      },
+
+      async supprimerJournalLigne(j) {
+        if (!confirm('Supprimer cette entrée du journal ?')) return;
+        const { error } = await supa.from('journal_activite').delete().eq('id', j.id);
+        if (error) { console.error(error); return; }
+        this.journal = this.journal.filter(x => x.id !== j.id);
+      },
+
+      async supprimerJournalFiltre() {
+        if (!confirm(`Supprimer les ${this.journal.length} entrée(s) affichée(s) pour ce filtre ? Cette action est irréversible.`)) return;
+        let query = supa.from('journal_activite').delete();
+        const bornes = this.dateBornesJournal();
+        if (bornes) query = query.gte('created_at', bornes.debut).lt('created_at', bornes.fin);
+        const { error } = await query;
+        if (error) { console.error(error); return; }
+        this.journal = [];
+      },
+
+      champsModifies(j) {
+        const avant = j.donnees_avant || {};
+        const apres = j.donnees_apres || {};
+        const cles = new Set([...Object.keys(avant), ...Object.keys(apres)]);
+        const ignores = ['created_at', 'updated_at'];
+        const resultat = [];
+        for (const cle of cles) {
+          if (ignores.includes(cle)) continue;
+          const av = avant[cle];
+          const ap = apres[cle];
+          if (j.action === 'modification' && JSON.stringify(av) === JSON.stringify(ap)) continue;
+          resultat.push({ champ: cle, avant: j.action !== 'creation' ? av : undefined, apres: j.action !== 'suppression' ? ap : undefined });
+        }
+        return resultat;
       },
 
       // --- Utilisateurs ---
