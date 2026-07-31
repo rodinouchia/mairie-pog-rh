@@ -3809,10 +3809,16 @@
 
       dateBornesJournal() {
         const { mois, annee } = this.filtreJournal;
-        if (annee && mois) {
+        if (mois && annee) {
           const debut = `${annee}-${String(mois).padStart(2, '0')}-01`;
-          const finDate = new Date(annee, mois, 1); // mois est 1-indexé -> ceci donne le 1er du mois suivant
-          const fin = finDate.toISOString().slice(0, 10);
+          const fin = new Date(annee, mois, 1).toISOString().slice(0, 10); // 1er du mois suivant
+          return { debut, fin };
+        }
+        if (mois && !annee) {
+          // Mois choisi sans année : on filtre sur l'année en cours par défaut
+          const anneeCourante = new Date().getFullYear();
+          const debut = `${anneeCourante}-${String(mois).padStart(2, '0')}-01`;
+          const fin = new Date(anneeCourante, mois, 1).toISOString().slice(0, 10);
           return { debut, fin };
         }
         if (annee) {
@@ -3835,17 +3841,18 @@
       async supprimerJournalLigne(j) {
         if (!confirm('Supprimer cette entrée du journal ?')) return;
         const { error } = await supa.from('journal_activite').delete().eq('id', j.id);
-        if (error) { console.error(error); return; }
+        if (error) { alert('Échec de la suppression : ' + error.message); return; }
         this.journal = this.journal.filter(x => x.id !== j.id);
       },
 
       async supprimerJournalFiltre() {
-        if (!confirm(`Supprimer les ${this.journal.length} entrée(s) affichée(s) pour ce filtre ? Cette action est irréversible.`)) return;
-        let query = supa.from('journal_activite').delete();
         const bornes = this.dateBornesJournal();
-        if (bornes) query = query.gte('created_at', bornes.debut).lt('created_at', bornes.fin);
-        const { error } = await query;
-        if (error) { console.error(error); return; }
+        if (!bornes) { alert('Sélectionnez un mois et/ou une année avant de supprimer un lot.'); return; }
+        if (!confirm(`Supprimer les ${this.journal.length} entrée(s) affichée(s) pour ce filtre ? Cette action est irréversible.`)) return;
+
+        const { error } = await supa.from('journal_activite').delete()
+          .gte('created_at', bornes.debut).lt('created_at', bornes.fin);
+        if (error) { alert('Échec de la suppression : ' + error.message); return; }
         this.journal = [];
       },
 
