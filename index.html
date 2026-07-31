@@ -659,7 +659,7 @@
                 <button @click="openCreate()"
                         class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
                   <i data-lucide="plus" class="w-4 h-4"></i>
-                  <span x-text="'Nouvelle ' + tabLabelSingular"></span>
+                  <span x-text="'+ ' + tabLabelSingular"></span>
                 </button>
               </div>
 
@@ -712,7 +712,7 @@
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler
               </button>
               <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
-                <h3 class="font-display font-semibold text-navy-800" x-text="'Nouvelle ' + tabLabelSingular"></h3>
+                <h3 class="font-display font-semibold text-navy-800" x-text="'+ ' + tabLabelSingular"></h3>
 
                 <div class="grid sm:grid-cols-2 gap-4">
                   <div>
@@ -853,7 +853,7 @@
                     <button @click="openCreate()"
                             class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
                       <i data-lucide="plus" class="w-4 h-4"></i>
-                      <span x-text="'Nouvelle ' + tabLabelSingular"></span>
+                      <span x-text="'+ ' + tabLabelSingular"></span>
                     </button>
                   </div>
 
@@ -956,7 +956,7 @@
                     <i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler
                   </button>
                   <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
-                    <h3 class="font-display font-semibold text-navy-800" x-text="'Nouvelle ' + tabLabelSingular"></h3>
+                    <h3 class="font-display font-semibold text-navy-800" x-text="'+ ' + tabLabelSingular"></h3>
 
                     <!-- Champs Affectation -->
                     <template x-if="activeTab === 'affectations'">
@@ -1099,7 +1099,7 @@
                 <button @click="openCreate()"
                         class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
                   <i data-lucide="plus" class="w-4 h-4"></i>
-                  <span x-text="'Nouveau·elle ' + tabLabelSingular"></span>
+                  <span x-text="'+ ' + tabLabelSingular"></span>
                 </button>
               </div>
 
@@ -1232,7 +1232,7 @@
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler
               </button>
               <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
-                <h3 class="font-display font-semibold text-navy-800" x-text="'Nouveau·elle ' + tabLabelSingular"></h3>
+                <h3 class="font-display font-semibold text-navy-800" x-text="'+ ' + tabLabelSingular"></h3>
 
                 <!-- Concours -->
                 <template x-if="activeTab === 'concours'">
@@ -1379,7 +1379,7 @@
                 <button @click="openCreate()"
                         class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
                   <i data-lucide="plus" class="w-4 h-4"></i>
-                  <span x-text="'Nouvelle ' + tabLabelSingular"></span>
+                  <span x-text="'+ ' + tabLabelSingular"></span>
                 </button>
               </div>
 
@@ -1551,7 +1551,7 @@
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler
               </button>
               <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
-                <h3 class="font-display font-semibold text-navy-800" x-text="'Nouvelle ' + tabLabelSingular"></h3>
+                <h3 class="font-display font-semibold text-navy-800" x-text="'+ ' + tabLabelSingular"></h3>
 
                 <div>
                   <label class="block text-xs font-medium text-navy-500 mb-1">Agent *</label>
@@ -1683,7 +1683,7 @@
                 <div class="space-y-3">
                   <div class="flex justify-end">
                     <button @click="openCreateRubrique()" class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
-                      <i data-lucide="plus" class="w-4 h-4"></i> Nouvelle rubrique
+                      <i data-lucide="plus" class="w-4 h-4"></i> + Rubrique
                     </button>
                   </div>
                   <div class="card overflow-hidden">
@@ -1730,7 +1730,7 @@
                 <div class="max-w-2xl space-y-3">
                   <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler</button>
                   <form @submit.prevent="submitRubrique()" class="card p-6 space-y-4">
-                    <h3 class="font-display font-semibold text-navy-800">Nouvelle rubrique de paie</h3>
+                    <h3 class="font-display font-semibold text-navy-800">+ Rubrique de paie</h3>
                     <div class="grid sm:grid-cols-2 gap-4">
                       <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
                         <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
@@ -1950,7 +1950,7 @@
               <div class="flex justify-end">
                 <button @click="openCreate()" class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
                   <i data-lucide="plus" class="w-4 h-4"></i>
-                  <span x-text="'Nouvelle ' + tabLabelSingular"></span>
+                  <span x-text="'+ ' + tabLabelSingular"></span>
                 </button>
               </div>
 
@@ -2043,7 +2043,7 @@
             <div class="space-y-3 max-w-xl">
               <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler</button>
               <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
-                <h3 class="font-display font-semibold text-navy-800" x-text="'Nouvelle ' + tabLabelSingular"></h3>
+                <h3 class="font-display font-semibold text-navy-800" x-text="'+ ' + tabLabelSingular"></h3>
 
                 <!-- Campagne -->
                 <template x-if="activeTab === 'campagnes'">
@@ -2068,10 +2068,17 @@
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
                       <input required x-model="form.libelle" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie</label>
-                      <select x-model="form.categorie" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                        <option value="">—</option><option value="technique">Technique</option>
-                        <option value="comportementale">Comportementale</option><option value="manageriale">Managériale</option>
-                      </select></div>
+                      <select x-show="form.categorie !== '__nouvelle__'" x-model="form.categorie" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="c in referentiels.categoriesCompetence" :key="c"><option :value="c" x-text="c"></option></template>
+                        <option value="__nouvelle__">+ Nouvelle catégorie…</option>
+                      </select>
+                      <div x-show="form.categorie === '__nouvelle__'" class="flex gap-2">
+                        <input x-model="form.nouvelleCategorie" placeholder="Nom de la nouvelle catégorie" autofocus
+                               class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <button type="button" @click="form.categorie = ''; form.nouvelleCategorie = ''" class="px-3 py-2 rounded-lg border border-navy-100 text-xs text-navy-500 hover:bg-navy-50">Annuler</button>
+                      </div>
+                    </div>
                   </div>
                 </template>
 
@@ -2134,7 +2141,7 @@
               <div class="flex justify-end">
                 <button @click="openCreate()" class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
                   <i data-lucide="plus" class="w-4 h-4"></i>
-                  <span x-text="'Nouveau·elle ' + tabLabelSingular"></span>
+                  <span x-text="'+ ' + tabLabelSingular"></span>
                 </button>
               </div>
 
@@ -2158,7 +2165,7 @@
                         <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="it.code"></td>
                         <td class="px-4 py-3 font-medium text-navy-800" x-text="it.intitule"></td>
                         <td class="px-4 py-3 text-navy-600" x-text="it.domaine || '—'"></td>
-                        <td class="px-4 py-3 text-navy-600" x-text="it.duree_heures ? it.duree_heures + ' h' : '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="[it.duree_jours ? it.duree_jours + ' j' : null, it.duree_heures ? it.duree_heures + ' h' : null].filter(Boolean).join(' / ') || '—'"></td>
                         <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="it.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="it.actif ? 'Active' : 'Inactive'"></span></td>
                         <td class="px-4 py-3 text-right">
                           <button @click="toggleActifFormation(it)" class="text-xs font-medium text-navy-500 hover:text-navy-800">
@@ -2264,7 +2271,7 @@
             <div class="space-y-3 max-w-xl">
               <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler</button>
               <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
-                <h3 class="font-display font-semibold text-navy-800" x-text="'Nouveau·elle ' + tabLabelSingular"></h3>
+                <h3 class="font-display font-semibold text-navy-800" x-text="'+ ' + tabLabelSingular"></h3>
 
                 <!-- Catalogue -->
                 <template x-if="activeTab === 'catalogue'">
@@ -2277,6 +2284,8 @@
                       <input x-model="form.domaine" placeholder="Bureautique, management…" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Durée (heures)</label>
                       <input type="number" x-model.number="form.duree_heures" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Durée (jours)</label>
+                      <input type="number" step="0.5" x-model.number="form.duree_jours" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Organisme</label>
                       <input x-model="form.organisme" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Coût unitaire</label>
@@ -2369,51 +2378,92 @@
 
           <!-- Utilisateurs -->
           <template x-if="activeTab === 'utilisateurs'">
-            <div class="card overflow-hidden">
-              <table class="w-full text-sm">
-                <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
-                  <tr>
-                    <th class="text-left font-medium px-4 py-3">E-mail</th>
-                    <th class="text-left font-medium px-4 py-3">Rôles</th>
-                    <th class="text-left font-medium px-4 py-3">Statut</th>
-                    <th class="text-left font-medium px-4 py-3">Attribuer un rôle</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-navy-50">
-                  <template x-if="!loading && utilisateurs.length === 0"><tr><td colspan="4" class="px-4 py-6 text-center text-navy-400">Aucun utilisateur.</td></tr></template>
-                  <template x-for="u in utilisateurs" :key="u.id">
+            <div class="space-y-3">
+              <template x-if="!showNouvelUtilisateur">
+                <div class="flex justify-end">
+                  <button @click="showNouvelUtilisateur = true"
+                          class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i> + Utilisateur
+                  </button>
+                </div>
+              </template>
+
+              <template x-if="showNouvelUtilisateur">
+                <form @submit.prevent="creerUtilisateur()" class="card p-6 space-y-4 max-w-lg">
+                  <h3 class="font-display font-semibold text-navy-800">+ Utilisateur</h3>
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">E-mail *</label>
+                      <input type="email" required x-model="nouvelUtilisateur.email" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Nom affiché</label>
+                      <input x-model="nouvelUtilisateur.nom_affichage" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Mot de passe temporaire *</label>
+                      <input type="text" required minlength="6" x-model="nouvelUtilisateur.password" placeholder="À communiquer à l'utilisateur, à changer à la 1ère connexion" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Rôle initial</label>
+                      <select x-model="nouvelUtilisateur.role_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">Aucun (à attribuer plus tard)</option>
+                        <template x-for="r in roles" :key="r.id"><option :value="r.id" x-text="r.nom"></option></template>
+                      </select></div>
+                  </div>
+                  <p x-show="nouvelUtilisateurError" x-text="nouvelUtilisateurError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
+                  <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @click="showNouvelUtilisateur = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
+                    <button type="submit" :disabled="nouvelUtilisateurLoading" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                      <span x-text="nouvelUtilisateurLoading ? 'Création…' : 'Créer le compte'"></span>
+                    </button>
+                  </div>
+                </form>
+              </template>
+
+              <div class="card overflow-hidden">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
                     <tr>
-                      <td class="px-4 py-3 font-medium text-navy-800" x-text="u.email"></td>
-                      <td class="px-4 py-3">
-                        <div class="flex flex-wrap gap-1.5">
-                          <template x-for="r in u.rolesActifs" :key="r.role_id">
-                            <span class="text-xs bg-navy-100 text-navy-600 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <span x-text="r.nom"></span>
-                              <button @click="retirerRole(u, r)" class="text-navy-400 hover:text-red-500">×</button>
-                            </span>
-                          </template>
-                          <span x-show="u.rolesActifs.length === 0" class="text-xs text-navy-400">Aucun rôle</span>
-                        </div>
-                      </td>
-                      <td class="px-4 py-3">
-                        <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="u.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="u.actif ? 'Actif' : 'Inactif'"></span>
-                      </td>
-                      <td class="px-4 py-3">
-                        <div class="flex items-center gap-2">
-                          <select x-model="u._nouveauRole" class="text-xs px-2 py-1 rounded-lg border border-navy-100 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                            <option value="">—</option>
-                            <template x-for="r in roles" :key="r.id"><option :value="r.id" x-text="r.nom"></option></template>
-                          </select>
-                          <button @click="assignerRole(u)" class="text-xs font-medium text-navy-600 hover:text-navy-900">Ajouter</button>
-                          <button @click="toggleActifUtilisateur(u)" class="text-xs font-medium text-navy-400 hover:text-navy-700 ml-2">
-                            <span x-text="u.actif ? 'Désactiver' : 'Activer'"></span>
-                          </button>
-                        </div>
-                      </td>
+                      <th class="text-left font-medium px-4 py-3">E-mail</th>
+                      <th class="text-left font-medium px-4 py-3">Rôles</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                      <th class="text-left font-medium px-4 py-3">Attribuer un rôle</th>
+                      <th class="text-right font-medium px-4 py-3"></th>
                     </tr>
-                  </template>
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && utilisateurs.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucun utilisateur.</td></tr></template>
+                    <template x-for="u in utilisateurs" :key="u.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="u.email"></td>
+                        <td class="px-4 py-3">
+                          <div class="flex flex-wrap gap-1.5">
+                            <template x-for="r in u.rolesActifs" :key="r.role_id">
+                              <span class="text-xs bg-navy-100 text-navy-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span x-text="r.nom"></span>
+                                <button @click="retirerRole(u, r)" class="text-navy-400 hover:text-red-500">×</button>
+                              </span>
+                            </template>
+                            <span x-show="u.rolesActifs.length === 0" class="text-xs text-navy-400">Aucun rôle</span>
+                          </div>
+                        </td>
+                        <td class="px-4 py-3">
+                          <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="u.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="u.actif ? 'Actif' : 'Inactif'"></span>
+                        </td>
+                        <td class="px-4 py-3">
+                          <div class="flex items-center gap-2">
+                            <select x-model="u._nouveauRole" class="text-xs px-2 py-1 rounded-lg border border-navy-100 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                              <option value="">—</option>
+                              <template x-for="r in roles" :key="r.id"><option :value="r.id" x-text="r.nom"></option></template>
+                            </select>
+                            <button @click="assignerRole(u)" class="text-xs font-medium text-navy-600 hover:text-navy-900">Ajouter</button>
+                            <button @click="toggleActifUtilisateur(u)" class="text-xs font-medium text-navy-400 hover:text-navy-700 ml-2">
+                              <span x-text="u.actif ? 'Désactiver' : 'Activer'"></span>
+                            </button>
+                          </div>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                          <button @click="supprimerUtilisateur(u)" class="text-xs font-medium text-red-500 hover:text-red-700">Supprimer</button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </template>
 
@@ -2424,7 +2474,7 @@
                 <div class="flex items-center justify-between mb-3">
                   <h3 class="font-display font-semibold text-navy-800 text-sm">Rôles</h3>
                   <button @click="showNouveauRole = true" class="text-xs font-medium text-navy-600 hover:text-navy-900 flex items-center gap-1">
-                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Nouveau
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> + Rôle
                   </button>
                 </div>
                 <template x-if="showNouveauRole">
@@ -2536,6 +2586,12 @@
 
   const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     db: { schema: 'rh' } // toutes les requêtes .from() ciblent le schéma rh par défaut
+  });
+
+  // Client dédié à la création de comptes (Administration) : sans session persistante,
+  // pour que la création d'un nouvel utilisateur ne remplace jamais la session de l'admin connecté.
+  const supaAuthOnly = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 
   function rhApp() {
@@ -3413,7 +3469,7 @@
       items: [], loading: true,
       showForm: false, formLoading: false, formError: '',
       form: {},
-      referentiels: { agents: [], campagnes: [] },
+      referentiels: { agents: [], campagnes: [], categoriesCompetence: [] },
 
       get tabLabelSingular() {
         return { campagnes: 'campagne', competences: 'compétence', evaluations: 'évaluation' }[this.activeTab];
@@ -3457,6 +3513,11 @@
           this.referentiels.agents = a || [];
           this.referentiels.campagnes = c || [];
         }
+
+        if (this.activeTab === 'competences') {
+          const { data } = await supa.from('competences').select('categorie').not('categorie', 'is', null);
+          this.referentiels.categoriesCompetence = [...new Set((data || []).map(x => x.categorie))].sort();
+        }
       },
 
       async submitCreate() {
@@ -3467,6 +3528,9 @@
 
         if (this.activeTab === 'campagnes') {
           table = 'campagnes_evaluation';
+        } else if (this.activeTab === 'competences') {
+          payload = { code: this.form.code, libelle: this.form.libelle,
+                      categorie: this.form.categorie === '__nouvelle__' ? (this.form.nouvelleCategorie || null) : (this.form.categorie || null) };
         } else if (this.activeTab === 'evaluations') {
           payload = { campagne_id: this.form.campagne_id, agent_id: this.form.agent_id,
                       evaluateur_id: this.form.evaluateur_id || null, note_globale: this.form.note_globale || null,
@@ -3612,6 +3676,8 @@
       utilisateurs: [], roles: [], permissions: [], journal: [],
       roleSelectionne: null, permissionsDuRole: [],
       showNouveauRole: false, nouveauRole: { code: '', nom: '' },
+      showNouvelUtilisateur: false, nouvelUtilisateurLoading: false, nouvelUtilisateurError: '',
+      nouvelUtilisateur: { email: '', nom_affichage: '', password: '', role_id: '' },
 
       get permissionsParModule() {
         const groupes = {};
@@ -3660,6 +3726,52 @@
       },
 
       // --- Utilisateurs ---
+      async creerUtilisateur() {
+        this.nouvelUtilisateurLoading = true;
+        this.nouvelUtilisateurError = '';
+
+        // Création du compte via le client sans session persistante (ne touche pas à la session admin en cours)
+        const { data, error } = await supaAuthOnly.auth.signUp({
+          email: this.nouvelUtilisateur.email,
+          password: this.nouvelUtilisateur.password,
+        });
+
+        if (error) {
+          this.nouvelUtilisateurError = error.message;
+          this.nouvelUtilisateurLoading = false;
+          return;
+        }
+
+        const nouvelId = data.user?.id;
+        if (!nouvelId) {
+          this.nouvelUtilisateurError = "Le compte n'a pas pu être créé (vérifiez que l'e-mail n'est pas déjà utilisé).";
+          this.nouvelUtilisateurLoading = false;
+          return;
+        }
+
+        const { error: errProfil } = await supa.from('utilisateurs').insert({
+          id: nouvelId, email: this.nouvelUtilisateur.email,
+          nom_affichage: this.nouvelUtilisateur.nom_affichage || this.nouvelUtilisateur.email,
+        });
+        if (errProfil) { this.nouvelUtilisateurError = errProfil.message; this.nouvelUtilisateurLoading = false; return; }
+
+        if (this.nouvelUtilisateur.role_id) {
+          await supa.from('user_roles').insert({ utilisateur_id: nouvelId, role_id: this.nouvelUtilisateur.role_id });
+        }
+
+        this.nouvelUtilisateurLoading = false;
+        this.showNouvelUtilisateur = false;
+        this.nouvelUtilisateur = { email: '', nom_affichage: '', password: '', role_id: '' };
+        this.load();
+      },
+
+      async supprimerUtilisateur(u) {
+        if (!confirm(`Retirer l'accès de ${u.email} à l'application ? Son compte de connexion Supabase restera techniquement actif (sa suppression complète nécessite une action côté administrateur Supabase), mais il perdra tout profil et tout rôle dans GPM.`)) return;
+        const { error } = await supa.from('utilisateurs').delete().eq('id', u.id);
+        if (error) { console.error(error); return; }
+        this.utilisateurs = this.utilisateurs.filter(x => x.id !== u.id);
+      },
+
       async assignerRole(u) {
         if (!u._nouveauRole) return;
         const { error } = await supa.from('user_roles').insert({ utilisateur_id: u.id, role_id: u._nouveauRole });
