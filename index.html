@@ -640,21 +640,22 @@
       </template>
 
       <!-- ================= ORGANISATION ================= -->
+      <!-- ================= ORGANISATION ================= -->
       <template x-if="currentView === 'organisation'">
         <div x-data="organisationModule()" x-init="load()" class="space-y-4">
 
-          <div class="flex items-center gap-2 border-b border-navy-100">
+          <div class="flex items-center gap-2 border-b border-navy-100 overflow-x-auto">
             <template x-for="tab in tabs" :key="tab.id">
               <button @click="switchTab(tab.id)"
                       :class="activeTab === tab.id ? 'border-navy-800 text-navy-900' : 'border-transparent text-navy-400 hover:text-navy-700'"
-                      class="px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px">
+                      class="px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px whitespace-nowrap">
                 <span x-text="tab.label"></span>
               </button>
             </template>
           </div>
 
           <template x-if="!showForm">
-            <div class="space-y-4">
+            <div class="space-y-3">
               <div class="flex justify-end">
                 <button @click="openCreate()"
                         class="flex items-center gap-2 bg-navy-800 hover:bg-navy-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
@@ -663,7 +664,8 @@
                 </button>
               </div>
 
-              <div class="card overflow-hidden">
+              <!-- Directions / Services / Sections -->
+              <div class="card overflow-hidden" x-show="['directions','services','sections'].includes(activeTab)">
                 <table class="w-full text-sm">
                   <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
                     <tr>
@@ -675,27 +677,111 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-navy-50">
-                    <template x-if="loading">
-                      <tr><td colspan="5" class="px-4 py-8 text-center text-navy-400">Chargement…</td></tr>
-                    </template>
-                    <template x-if="!loading && items.length === 0">
-                      <tr><td colspan="5" class="px-4 py-8 text-center text-navy-400">Aucun élément.</td></tr>
-                    </template>
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucun élément.</td></tr></template>
                     <template x-for="item in items" :key="item.id">
-                      <tr class="hover:bg-navy-50/60 transition">
+                      <tr>
                         <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="item.code"></td>
                         <td class="px-4 py-3 font-medium text-navy-800" x-text="item.nom"></td>
                         <td class="px-4 py-3 text-navy-600" x-show="activeTab !== 'directions'"
                             x-text="activeTab === 'services' ? (item.directions?.nom || '—') : (item.services?.nom || '—')"></td>
                         <td class="px-4 py-3">
-                          <span class="text-xs px-2 py-0.5 rounded-full font-medium"
-                                :class="item.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'"
-                                x-text="item.actif ? 'Actif' : 'Inactif'"></span>
+                          <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="item.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="item.actif ? 'Actif' : 'Inactif'"></span>
                         </td>
                         <td class="px-4 py-3 text-right">
-                          <button @click="toggleActif(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800 transition">
-                            <span x-text="item.actif ? 'Désactiver' : 'Activer'"></span>
-                          </button>
+                          <button @click="toggleActif(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800"><span x-text="item.actif ? 'Désactiver' : 'Activer'"></span></button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Postes budgétaires -->
+              <div class="card overflow-hidden" x-show="activeTab === 'postes_budgetaires'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Libellé</th>
+                      <th class="text-left font-medium px-4 py-3">Rattachement</th>
+                      <th class="text-left font-medium px-4 py-3">Effectif</th>
+                      <th class="text-left font-medium px-4 py-3">Primes liées</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                      <th class="text-right font-medium px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="6" class="px-4 py-6 text-center text-navy-400">Aucun poste budgétaire.</td></tr></template>
+                    <template x-for="item in items" :key="item.id">
+                      <tr>
+                        <td class="px-4 py-3">
+                          <p class="font-medium text-navy-800" x-text="item.intitule"></p>
+                          <p class="text-[11px] text-navy-400 font-mono" x-text="item.code"></p>
+                        </td>
+                        <td class="px-4 py-3 text-navy-600 text-xs" x-text="[item.directions?.nom, item.services?.nom].filter(Boolean).join(' / ') || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="item.effectif_pourvu + ' / ' + item.effectif_prevu"></td>
+                        <td class="px-4 py-3 text-navy-600 text-xs" x-text="(item.postes_budgetaires_primes || []).map(p => p.primes?.libelle).filter(Boolean).join(', ') || '—'"></td>
+                        <td class="px-4 py-3">
+                          <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="item.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="item.actif ? 'Actif' : 'Inactif'"></span>
+                        </td>
+                        <td class="px-4 py-3 text-right flex items-center justify-end gap-2">
+                          <button @click="openEdit(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800">Modifier</button>
+                          <button @click="toggleActif(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800"><span x-text="item.actif ? 'Désactiver' : 'Activer'"></span></button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Primes -->
+              <div class="card overflow-hidden" x-show="activeTab === 'primes'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Libellé</th>
+                      <th class="text-left font-medium px-4 py-3">Montant</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                      <th class="text-right font-medium px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="4" class="px-4 py-6 text-center text-navy-400">Aucune prime.</td></tr></template>
+                    <template x-for="item in items" :key="item.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="item.libelle"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="Number(item.montant).toLocaleString('fr-FR') + ' F'"></td>
+                        <td class="px-4 py-3">
+                          <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="item.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="item.actif ? 'Active' : 'Inactive'"></span>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                          <button @click="toggleActif(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800"><span x-text="item.actif ? 'Désactiver' : 'Activer'"></span></button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Localisations / Statuts agent / Imputations (référentiels simples) -->
+              <div class="card overflow-hidden" x-show="['localisations','statuts_agent','imputations'].includes(activeTab)">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Libellé</th>
+                      <th class="text-left font-medium px-4 py-3">Statut</th>
+                      <th class="text-right font-medium px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="3" class="px-4 py-6 text-center text-navy-400">Aucun élément.</td></tr></template>
+                    <template x-for="item in items" :key="item.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="item.libelle"></td>
+                        <td class="px-4 py-3">
+                          <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="item.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="item.actif ? 'Actif' : 'Inactif'"></span>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                          <button @click="toggleActif(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800"><span x-text="item.actif ? 'Désactiver' : 'Activer'"></span></button>
                         </td>
                       </tr>
                     </template>
@@ -705,58 +791,94 @@
             </div>
           </template>
 
-          <!-- Formulaire création -->
+          <!-- Formulaire création / modification -->
           <template x-if="showForm">
-            <div class="space-y-4 max-w-xl">
-              <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler
-              </button>
-              <form @submit.prevent="submitCreate()" class="card p-6 space-y-4">
-                <h3 class="font-display font-semibold text-navy-800" x-text="'+ ' + tabLabelSingular"></h3>
+            <div class="space-y-3 max-w-2xl">
+              <button @click="showForm = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler</button>
+              <form @submit.prevent="submitForm()" class="card p-6 space-y-4">
+                <h3 class="font-display font-semibold text-navy-800" x-text="(editingId ? 'Modifier — ' : '+ ') + tabLabelSingular"></h3>
 
-                <div class="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
-                    <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                <!-- Directions / Services / Sections -->
+                <template x-if="['directions','services','sections'].includes(activeTab)">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
+                      <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Nom *</label>
+                      <input required x-model="form.nom" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div x-show="activeTab === 'services'"><label class="block text-xs font-medium text-navy-500 mb-1">Direction de rattachement *</label>
+                      <select x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="d in referentiels.directions" :key="d.id"><option :value="d.id" x-text="d.nom"></option></template>
+                      </select></div>
+                    <div x-show="activeTab === 'sections'"><label class="block text-xs font-medium text-navy-500 mb-1">Service de rattachement *</label>
+                      <select x-model="form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
+                      </select></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Description</label>
+                      <textarea x-model="form.description" rows="2" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></textarea></div>
                   </div>
-                  <div>
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Nom *</label>
-                    <input required x-model="form.nom" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                  </div>
+                </template>
 
-                  <div x-show="activeTab === 'services'">
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Direction de rattachement *</label>
-                    <select x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                      <option value="">—</option>
-                      <template x-for="d in referentiels.directions" :key="d.id">
-                        <option :value="d.id" x-text="d.nom"></option>
-                      </template>
-                    </select>
+                <!-- Poste budgétaire -->
+                <template x-if="activeTab === 'postes_budgetaires'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
+                      <input required x-model="form.intitule" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code</label>
+                      <input x-model="form.code" placeholder="Généré si vide" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie</label>
+                      <input x-model="form.categorie" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Direction</label>
+                      <select x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="d in referentiels.directions" :key="d.id"><option :value="d.id" x-text="d.nom"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Service</label>
+                      <select x-model="form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Grade requis</label>
+                      <input x-model="form.grade_requis" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Effectif prévu</label>
+                      <input type="number" min="1" x-model.number="form.effectif_prevu" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div class="sm:col-span-2">
+                      <label class="block text-xs font-medium text-navy-500 mb-2">Primes liées à ce poste</label>
+                      <div class="flex flex-wrap gap-3">
+                        <template x-for="p in referentiels.primes" :key="p.id">
+                          <label class="flex items-center gap-1.5 text-sm text-navy-700 bg-navy-50 px-2.5 py-1.5 rounded-lg">
+                            <input type="checkbox" :value="p.id" x-model="form.primes_ids" class="w-4 h-4">
+                            <span x-text="p.libelle"></span>
+                          </label>
+                        </template>
+                        <p x-show="referentiels.primes.length === 0" class="text-xs text-navy-400">Aucune prime au catalogue — créez-en depuis l'onglet Primes.</p>
+                      </div>
+                    </div>
                   </div>
+                </template>
 
-                  <div x-show="activeTab === 'sections'">
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Service de rattachement *</label>
-                    <select x-model="form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                      <option value="">—</option>
-                      <template x-for="s in referentiels.services" :key="s.id">
-                        <option :value="s.id" x-text="s.nom"></option>
-                      </template>
-                    </select>
+                <!-- Prime -->
+                <template x-if="activeTab === 'primes'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
+                      <input required x-model="form.libelle" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Montant *</label>
+                      <input type="number" step="0.01" required x-model.number="form.montant" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                   </div>
+                </template>
 
-                  <div class="sm:col-span-2">
-                    <label class="block text-xs font-medium text-navy-500 mb-1">Description</label>
-                    <textarea x-model="form.description" rows="2" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></textarea>
-                  </div>
-                </div>
+                <!-- Référentiels simples -->
+                <template x-if="['localisations','statuts_agent','imputations'].includes(activeTab)">
+                  <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
+                    <input required x-model="form.libelle" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                </template>
 
                 <p x-show="formError" x-text="formError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
-
                 <div class="flex justify-end gap-3 pt-2">
                   <button type="button" @click="showForm = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
-                  <button type="submit" :disabled="formLoading"
-                          class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
-                    <span x-text="formLoading ? 'Enregistrement…' : 'Créer'"></span>
+                  <button type="submit" :disabled="formLoading" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                    <span x-text="formLoading ? 'Enregistrement…' : (editingId ? 'Enregistrer' : 'Créer')"></span>
                   </button>
                 </div>
               </form>
@@ -764,6 +886,7 @@
           </template>
         </div>
       </template>
+
 
       <!-- ================= CARRIÈRE ================= -->
       <template x-if="currentView === 'carriere'">
@@ -1281,7 +1404,7 @@
 
                 <!-- Embauche (crée l'agent + le contrat) -->
                 <template x-if="activeTab === 'embauches'">
-                  <div class="space-y-4">
+                  <div class="space-y-5">
                     <div>
                       <label class="block text-xs font-medium text-navy-500 mb-1">Candidature retenue (optionnel)</label>
                       <select x-model="form.candidature_id" @change="prefillFromCandidature()" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
@@ -1289,42 +1412,166 @@
                         <template x-for="c in referentiels.candidaturesRetenues" :key="c.id"><option :value="c.id" x-text="c.nom + ' ' + c.prenoms"></option></template>
                       </select>
                     </div>
-                    <p class="text-xs text-navy-400 border-t border-navy-100 pt-3">Informations du nouvel agent</p>
-                    <div class="grid sm:grid-cols-2 gap-4">
-                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Nom *</label>
-                        <input required x-model="form.nom" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
-                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Prénoms *</label>
-                        <input required x-model="form.prenoms" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
-                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Sexe</label>
-                        <select x-model="form.sexe" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                          <option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option>
-                        </select></div>
-                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de naissance</label>
-                        <input type="date" x-model="form.date_naissance" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
-                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Direction</label>
-                        <select x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                          <option value="">—</option>
-                          <template x-for="d in referentiels.directions" :key="d.id"><option :value="d.id" x-text="d.nom"></option></template>
-                        </select></div>
-                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Service</label>
-                        <select x-model="form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                          <option value="">—</option>
-                          <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
-                        </select></div>
-                      <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Poste budgétaire</label>
-                        <select x-model="form.poste_budgetaire_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                          <option value="">—</option>
-                          <template x-for="p in referentiels.postesBudgetaires" :key="p.id"><option :value="p.id" x-text="p.intitule"></option></template>
-                        </select></div>
-                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Date d'embauche *</label>
-                        <input type="date" required x-model="form.date_embauche" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
-                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Type de contrat initial *</label>
-                        <select required x-model="form.type_contrat_initial" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
-                          <option value="">—</option><option value="stagiaire">Stagiaire</option>
-                          <option value="contractuel">Contractuel</option><option value="titulaire">Titulaire</option>
-                        </select></div>
-                      <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">N° d'acte</label>
-                        <input x-model="form.numero_acte" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+
+                    <!-- Identité -->
+                    <div class="border-t border-navy-100 pt-4">
+                      <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Identité</p>
+                      <div class="grid sm:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Nom & Prénom *</label>
+                          <input required x-model="form.nom" placeholder="Tel que dans votre fichier Excel" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Prénom supplémentaire *</label>
+                          <input required x-model="form.prenoms" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Sexe *</label>
+                          <select required x-model="form.sexe" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de naissance *</label>
+                          <input type="date" required x-model="form.date_naissance" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                          <p x-show="dateRetraitePreview" class="text-[11px] text-navy-400 mt-1">Retraite prévue : <span x-text="dateRetraitePreview" class="font-medium"></span></p></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Lieu de naissance</label>
+                          <input x-model="form.lieu_naissance" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Nationalité</label>
+                          <input x-model="form.nationalite" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Situation familiale</label>
+                          <select x-model="form.situation_matrimoniale" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option><option value="celibataire">Célibataire</option>
+                            <option value="marie">Marié(e)</option><option value="divorce">Divorcé(e)</option><option value="veuf">Veuf(ve)</option>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Nombre d'enfants</label>
+                          <input type="number" min="0" x-model.number="form.nombre_enfants" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Téléphone</label>
+                          <input x-model="form.telephone" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Photo de l'agent</label>
+                          <input type="file" accept="image/*" @change="form.photoFile = $event.target.files[0]" class="w-full text-sm text-navy-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-navy-100 file:text-navy-700 file:text-xs"></div>
+                      </div>
+                    </div>
+
+                    <!-- Identifiants sociaux -->
+                    <div class="border-t border-navy-100 pt-4">
+                      <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Identifiants sociaux</p>
+                      <div class="grid sm:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Numéro CNSS</label>
+                          <input x-model="form.numero_cnss" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Numéro CNAMGS</label>
+                          <input x-model="form.numero_cnamgs" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      </div>
+                    </div>
+
+                    <!-- Affectation -->
+                    <div class="border-t border-navy-100 pt-4">
+                      <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Affectation</p>
+                      <div class="grid sm:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Direction *</label>
+                          <select required x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="d in referentiels.directions" :key="d.id"><option :value="d.id" x-text="d.nom"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Service *</label>
+                          <select required x-model="form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Poste</label>
+                          <select x-model="form.poste_budgetaire_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="p in referentiels.postesBudgetaires" :key="p.id"><option :value="p.id" x-text="p.intitule"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Localisation</label>
+                          <select x-model="form.localisation_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="l in referentiels.localisations" :key="l.id"><option :value="l.id" x-text="l.libelle"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Imputation</label>
+                          <select x-model="form.imputation_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="i in referentiels.imputations" :key="i.id"><option :value="i.id" x-text="i.libelle"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Statut</label>
+                          <select x-model="form.statut_agent_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <template x-for="s in referentiels.statutsAgent" :key="s.id"><option :value="s.id" x-text="s.libelle"></option></template>
+                          </select></div>
+                        <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Diplôme le plus récent</label>
+                          <input x-model="form.diplome_recent" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      </div>
+                    </div>
+
+                    <!-- Position indiciaire (grade) -->
+                    <div class="border-t border-navy-100 pt-4">
+                      <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Position indiciaire</p>
+                      <div class="grid sm:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Hiérarchie</label>
+                          <select x-model="form.hierarchie_id" @change="onHierarchieChange()" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="h in referentiels.hierarchies" :key="h.id"><option :value="h.id" x-text="h.code"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie</label>
+                          <select x-model="form.categorie_id" @change="onCategorieChange()" :disabled="!form.hierarchie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="c in referentiels.categories" :key="c.id"><option :value="c.id" x-text="c.numero"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Classe</label>
+                          <select x-model="form.classe_id" @change="onClasseChange()" :disabled="!form.categorie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="cl in referentiels.classes" :key="cl.id"><option :value="cl.id" x-text="cl.libelle"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Échelon</label>
+                          <select x-model="form.echelon_id" @change="onEchelonChange()" :disabled="!form.classe_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="e in referentiels.echelonsDisponibles" :key="e.id"><option :value="e.id" x-text="e.numero + 'e — indice ' + e.valeur_indiciaire"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Grade (corps de métier)</label>
+                          <select x-model="form.grade_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="g in referentiels.grades" :key="g.id"><option :value="g.id" x-text="g.libelle"></option></template>
+                          </select></div>
+                        <div class="flex items-end">
+                          <p class="text-sm text-navy-600" x-show="salaireBaseCalcule">
+                            Salaire de base : <span class="font-semibold text-navy-900" x-text="salaireBaseCalcule ? Number(salaireBaseCalcule).toLocaleString('fr-FR') + ' F' : ''"></span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Contrat -->
+                    <div class="border-t border-navy-100 pt-4">
+                      <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Contrat</p>
+                      <div class="grid sm:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Date d'embauche *</label>
+                          <input type="date" required x-model="form.date_embauche" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Type de contrat *</label>
+                          <select required x-model="form.type_contrat_initial" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option><option value="stagiaire">Stagiaire</option>
+                            <option value="contractuel">Contractuel (CDD)</option><option value="titulaire">Titulaire</option>
+                          </select></div>
+                        <template x-if="form.type_contrat_initial === 'contractuel'">
+                          <div><label class="block text-xs font-medium text-navy-500 mb-1">Fin de contrat 1</label>
+                            <input type="date" x-model="form.date_fin_contrat1" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        </template>
+                        <div></div>
+                        <template x-if="form.type_contrat_initial === 'contractuel'">
+                          <div><label class="block text-xs font-medium text-navy-500 mb-1">Début de contrat 2</label>
+                            <input type="date" x-model="form.debut_contrat2" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        </template>
+                        <template x-if="form.type_contrat_initial === 'contractuel'">
+                          <div><label class="block text-xs font-medium text-navy-500 mb-1">Fin de contrat 2</label>
+                            <input type="date" x-model="form.fin_contrat2" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        </template>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Date de cessation</label>
+                          <input type="date" x-model="form.date_cessation" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">N° d'acte</label>
+                          <input x-model="form.numero_acte" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      </div>
+                    </div>
+
+                    <!-- Paie -->
+                    <div class="border-t border-navy-100 pt-4">
+                      <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Paie</p>
+                      <div class="grid sm:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Prime de transport</label>
+                          <input type="number" step="0.01" x-model.number="form.prime_transport" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Prime de logement</label>
+                          <input type="number" step="0.01" x-model.number="form.prime_logement" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      </div>
                     </div>
                   </div>
                 </template>
@@ -2663,7 +2910,7 @@
         { id: 'organisation',label: 'Organisation',     icon: 'building-2', requiredPerm: 'organisation.gerer' },
         { id: 'carriere',    label: 'Carrière',         icon: 'trending-up', requiredPerm: 'carriere.lire_tout' },
         { id: 'recrutement', label: 'Recrutement',      icon: 'user-plus', requiredPerm: 'recrutement.lire_tout' },
-        { id: 'temps',       label: 'Temps de travail', icon: 'calendar-clock' },
+        { id: 'temps',       label: 'Temps de travail', icon: 'calendar-clock', requiredPerm: 'temps.lire_tout' },
         { id: 'paie',        label: 'Paie',             icon: 'wallet', requiredPerm: 'paie.lire_tout' },
         { id: 'evaluation',  label: 'Évaluation',       icon: 'star', requiredPerm: 'evaluation.lire_tout' },
         { id: 'formation',   label: 'Formation',        icon: 'graduation-cap', requiredPerm: 'formation.lire_tout' },
@@ -3140,12 +3387,29 @@
       items: [], loading: true,
       showForm: false, formLoading: false, formError: '',
       form: {},
-      referentiels: { postesBudgetaires: [], concours: [], candidaturesRetenues: [], directions: [], services: [], agents: [] },
+      referentiels: {
+        postesBudgetaires: [], concours: [], candidaturesRetenues: [], directions: [], services: [], agents: [],
+        localisations: [], imputations: [], statutsAgent: [], hierarchies: [], categories: [], classes: [],
+        echelonsDisponibles: [], grades: [],
+      },
+      valeurPointActuelle: null,
       statutsCandidature: ['recue', 'en_etude', 'preselectionnee', 'entretien', 'retenue', 'rejetee'],
       statutsPeriodeEssai: ['en_cours', 'concluante', 'prolongee', 'rompue'],
 
       get tabLabelSingular() {
         return { concours: 'concours', candidatures: 'candidature', embauches: 'embauche', periodes_essai: "période d'essai" }[this.activeTab];
+      },
+
+      get dateRetraitePreview() {
+        if (!this.form.date_naissance) return null;
+        const d = new Date(this.form.date_naissance);
+        d.setFullYear(d.getFullYear() + 60);
+        return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      },
+
+      get salaireBaseCalcule() {
+        if (!this.form.valeur_indiciaire || !this.valeurPointActuelle) return null;
+        return this.form.valeur_indiciaire * this.valeurPointActuelle.valeur + this.valeurPointActuelle.montant_forfaitaire;
       },
 
       switchTab(tab) {
@@ -3179,7 +3443,7 @@
       async openCreate() {
         this.showForm = true;
         this.formError = '';
-        this.form = { nombre_postes: 1 };
+        this.form = { nombre_postes: 1, nationalite: 'Gabonaise' };
 
         if (this.activeTab === 'concours' && this.referentiels.postesBudgetaires.length === 0) {
           const { data } = await supa.from('postes_budgetaires').select('id, intitule').eq('actif', true).order('intitule');
@@ -3190,21 +3454,63 @@
           this.referentiels.concours = data || [];
         }
         if (this.activeTab === 'embauches') {
-          const [{ data: cand }, { data: d }, { data: s }, { data: pb }] = await Promise.all([
+          const [{ data: cand }, { data: d }, { data: s }, { data: pb }, { data: loc }, { data: imp }, { data: sta },
+                 { data: hie }, { data: gr }, { data: vp }] = await Promise.all([
             supa.from('candidatures').select('id, nom, prenoms').eq('statut', 'retenue').order('nom'),
             supa.from('directions').select('id, nom').eq('actif', true).order('nom'),
             supa.from('services').select('id, nom').eq('actif', true).order('nom'),
             supa.from('postes_budgetaires').select('id, intitule').eq('actif', true).order('intitule'),
+            supa.from('localisations').select('id, libelle').eq('actif', true).order('libelle'),
+            supa.from('imputations').select('id, libelle').eq('actif', true).order('libelle'),
+            supa.from('statuts_agent').select('id, libelle').eq('actif', true).order('libelle'),
+            supa.from('hierarchies').select('id, code').order('ordre'),
+            supa.from('grades').select('id, libelle').order('libelle'),
+            supa.from('valeurs_point_indiciaire').select('*').order('date_effet', { ascending: false }).limit(1),
           ]);
           this.referentiels.candidaturesRetenues = cand || [];
           this.referentiels.directions = d || [];
           this.referentiels.services = s || [];
           this.referentiels.postesBudgetaires = pb || [];
+          this.referentiels.localisations = loc || [];
+          this.referentiels.imputations = imp || [];
+          this.referentiels.statutsAgent = sta || [];
+          this.referentiels.hierarchies = hie || [];
+          this.referentiels.grades = gr || [];
+          this.valeurPointActuelle = vp?.[0] || null;
+
+          const statutParDefaut = (sta || []).find(x => x.libelle === 'En service');
+          if (statutParDefaut) this.form.statut_agent_id = statutParDefaut.id;
         }
         if (this.activeTab === 'periodes_essai') {
           const { data } = await supa.from('agents').select('id, matricule, nom, prenoms').eq('statut', 'actif').order('nom').limit(200);
           this.referentiels.agents = data || [];
         }
+      },
+
+      async onHierarchieChange() {
+        this.form.categorie_id = ''; this.form.classe_id = ''; this.form.echelon_id = ''; this.form.valeur_indiciaire = null;
+        this.referentiels.categories = []; this.referentiels.classes = []; this.referentiels.echelonsDisponibles = [];
+        if (!this.form.hierarchie_id) return;
+        const { data } = await supa.from('categories').select('id, numero').eq('hierarchie_id', this.form.hierarchie_id).order('numero');
+        this.referentiels.categories = data || [];
+      },
+      async onCategorieChange() {
+        this.form.classe_id = ''; this.form.echelon_id = ''; this.form.valeur_indiciaire = null;
+        this.referentiels.classes = []; this.referentiels.echelonsDisponibles = [];
+        if (!this.form.categorie_id) return;
+        const { data } = await supa.from('classes').select('id, libelle, ordre').eq('categorie_id', this.form.categorie_id).order('ordre');
+        this.referentiels.classes = data || [];
+      },
+      async onClasseChange() {
+        this.form.echelon_id = ''; this.form.valeur_indiciaire = null;
+        this.referentiels.echelonsDisponibles = [];
+        if (!this.form.classe_id) return;
+        const { data } = await supa.from('echelons').select('id, numero, valeur_indiciaire').eq('classe_id', this.form.classe_id).order('numero');
+        this.referentiels.echelonsDisponibles = data || [];
+      },
+      onEchelonChange() {
+        const e = this.referentiels.echelonsDisponibles.find(x => x.id === this.form.echelon_id);
+        this.form.valeur_indiciaire = e?.valeur_indiciaire || null;
       },
 
       prefillFromCandidature() {
@@ -3236,14 +3542,29 @@
           } else if (this.activeTab === 'embauches') {
             // 1) Création de l'agent
             const { data: agent, error: errAgent } = await supa.from('agents').insert({
-              nom: this.form.nom, prenoms: this.form.prenoms, sexe: this.form.sexe || null,
-              date_naissance: this.form.date_naissance || null, direction_id: this.form.direction_id || null,
-              service_id: this.form.service_id || null, poste_budgetaire_id: this.form.poste_budgetaire_id || null,
-              date_entree_fonction: this.form.date_embauche, statut: 'actif',
+              nom: this.form.nom, prenoms: this.form.prenoms, sexe: this.form.sexe,
+              date_naissance: this.form.date_naissance, lieu_naissance: this.form.lieu_naissance || null,
+              nationalite: this.form.nationalite || null, situation_matrimoniale: this.form.situation_matrimoniale || null,
+              nombre_enfants: this.form.nombre_enfants || 0, numero_cnss: this.form.numero_cnss || null,
+              numero_cnamgs: this.form.numero_cnamgs || null,
+              direction_id: this.form.direction_id, service_id: this.form.service_id,
+              poste_budgetaire_id: this.form.poste_budgetaire_id || null,
+              localisation_id: this.form.localisation_id || null, imputation_id: this.form.imputation_id || null,
+              statut_agent_id: this.form.statut_agent_id || null, diplome_recent: this.form.diplome_recent || null,
+              echelon_id: this.form.echelon_id || null, grade_id: this.form.grade_id || null,
+              date_entree_fonction: this.form.date_embauche, date_cessation: this.form.date_cessation || null,
+              statut: 'actif',
             }).select().single();
             if (errAgent) throw errAgent;
 
-            // 2) Enregistrement de l'embauche
+            // 2) Coordonnées (téléphone)
+            if (this.form.telephone) {
+              await supa.from('agents_coordonnees').insert({
+                agent_id: agent.id, type: 'telephone_mobile', valeur: this.form.telephone, principal: true,
+              });
+            }
+
+            // 3) Enregistrement de l'embauche
             const { error: errEmb } = await supa.from('embauches').insert({
               candidature_id: this.form.candidature_id || null, agent_id: agent.id,
               poste_budgetaire_id: this.form.poste_budgetaire_id || null, date_embauche: this.form.date_embauche,
@@ -3251,12 +3572,41 @@
             });
             if (errEmb) throw errEmb;
 
-            // 3) Création du premier contrat
+            // 4) Contrat(s)
             const { error: errContrat } = await supa.from('contrats').insert({
               agent_id: agent.id, type_contrat: this.form.type_contrat_initial, date_debut: this.form.date_embauche,
-              statut: 'actif', numero_acte: this.form.numero_acte || null,
+              date_fin: this.form.date_fin_contrat1 || null, statut: 'actif', numero_acte: this.form.numero_acte || null,
             });
             if (errContrat) throw errContrat;
+
+            if (this.form.debut_contrat2) {
+              await supa.from('contrats').insert({
+                agent_id: agent.id, type_contrat: this.form.type_contrat_initial, date_debut: this.form.debut_contrat2,
+                date_fin: this.form.fin_contrat2 || null, statut: 'actif', numero_acte: this.form.numero_acte || null,
+              });
+            }
+
+            // 5) Primes de transport / logement (éléments de paie individuels)
+            if (this.form.prime_transport || this.form.prime_logement) {
+              const { data: rubriques } = await supa.from('rubriques_paie').select('id, code').in('code', ['IND_TRANSP', 'IND_LOG']);
+              const elements = [];
+              const rTransp = rubriques?.find(r => r.code === 'IND_TRANSP');
+              const rLog = rubriques?.find(r => r.code === 'IND_LOG');
+              if (this.form.prime_transport && rTransp) {
+                elements.push({ agent_id: agent.id, rubrique_id: rTransp.id, montant: this.form.prime_transport, date_debut: this.form.date_embauche });
+              }
+              if (this.form.prime_logement && rLog) {
+                elements.push({ agent_id: agent.id, rubrique_id: rLog.id, montant: this.form.prime_logement, date_debut: this.form.date_embauche });
+              }
+              if (elements.length) await supa.from('elements_paie_agent').insert(elements);
+            }
+
+            // 6) Photo (si fournie) — envoyée après coup puisqu'on a besoin de l'id de l'agent
+            if (this.form.photoFile) {
+              const chemin = `${agent.id}/photo_${Date.now()}.${this.form.photoFile.name.split('.').pop()}`;
+              const { error: errUpload } = await supa.storage.from('photos-agents').upload(chemin, this.form.photoFile);
+              if (!errUpload) await supa.from('agents').update({ photo_url: chemin }).eq('id', agent.id);
+            }
 
           } else if (this.activeTab === 'periodes_essai') {
             const { error } = await supa.from('periodes_essai').insert({
@@ -3978,6 +4328,11 @@
         { id: 'directions', label: 'Directions' },
         { id: 'services', label: 'Services' },
         { id: 'sections', label: 'Sections' },
+        { id: 'postes_budgetaires', label: 'Postes budgétaires' },
+        { id: 'primes', label: 'Primes' },
+        { id: 'localisations', label: 'Localisations' },
+        { id: 'statuts_agent', label: 'Statuts agent' },
+        { id: 'imputations', label: 'Imputations' },
       ],
       activeTab: 'directions',
       items: [],
@@ -3985,11 +4340,16 @@
       showForm: false,
       formLoading: false,
       formError: '',
-      form: { code: '', nom: '', description: '', direction_id: '', service_id: '' },
-      referentiels: { directions: [], services: [] },
+      form: {},
+      editingId: null,
+      referentiels: { directions: [], services: [], primes: [] },
 
       get tabLabelSingular() {
-        return { directions: 'direction', services: 'service', sections: 'section' }[this.activeTab];
+        return {
+          directions: 'direction', services: 'service', sections: 'section',
+          postes_budgetaires: 'poste budgétaire', primes: 'prime',
+          localisations: 'localisation', statuts_agent: 'statut', imputations: 'imputation',
+        }[this.activeTab];
       },
 
       switchTab(tab) {
@@ -4000,49 +4360,120 @@
 
       async load() {
         this.loading = true;
+
+        if (this.activeTab === 'postes_budgetaires') {
+          const { data, error } = await supa.from('postes_budgetaires')
+            .select('*, directions(nom), services(nom), postes_budgetaires_primes(primes(libelle))')
+            .order('intitule');
+          if (error) console.error(error);
+          this.items = data || [];
+          this.loading = false;
+          return;
+        }
+
         let select = '*';
         if (this.activeTab === 'services') select = '*, directions(nom)';
         if (this.activeTab === 'sections') select = '*, services(nom)';
+        const orderCol = ['localisations', 'statuts_agent', 'imputations', 'primes'].includes(this.activeTab) ? 'libelle' : 'nom';
 
-        const { data, error } = await supa
-          .from(this.activeTab)
-          .select(select)
-          .order('nom');
-
-        if (error) { console.error(error); this.loading = false; return; }
+        const { data, error } = await supa.from(this.activeTab).select(select).order(orderCol);
+        if (error) console.error(error);
         this.items = data || [];
         this.loading = false;
       },
 
       async openCreate() {
         this.showForm = true;
+        this.editingId = null;
         this.formError = '';
-        this.form = { code: '', nom: '', description: '', direction_id: '', service_id: '' };
+        this.form = { effectif_prevu: 1, primes_ids: [] };
+        await this.chargerReferentiels();
+      },
 
-        if (this.activeTab === 'services') {
+      async openEdit(item) {
+        this.showForm = true;
+        this.editingId = item.id;
+        this.formError = '';
+        await this.chargerReferentiels();
+        this.form = {
+          intitule: item.intitule, code: item.code, categorie: item.categorie,
+          direction_id: item.direction_id || '', service_id: item.service_id || '',
+          grade_requis: item.grade_requis, effectif_prevu: item.effectif_prevu,
+          primes_ids: (item.postes_budgetaires_primes || []).map(p => p.prime_id).filter(Boolean),
+        };
+        // Récupère les vrais prime_id (la jointure ci-dessus ne remonte que le libellé, on requête à part)
+        const { data } = await supa.from('postes_budgetaires_primes').select('prime_id').eq('poste_budgetaire_id', item.id);
+        this.form.primes_ids = (data || []).map(p => p.prime_id);
+      },
+
+      async chargerReferentiels() {
+        if (this.activeTab === 'services' || this.activeTab === 'postes_budgetaires') {
           const { data } = await supa.from('directions').select('id, nom').eq('actif', true).order('nom');
           this.referentiels.directions = data || [];
         }
-        if (this.activeTab === 'sections') {
+        if (this.activeTab === 'sections' || this.activeTab === 'postes_budgetaires') {
           const { data } = await supa.from('services').select('id, nom').eq('actif', true).order('nom');
           this.referentiels.services = data || [];
         }
+        if (this.activeTab === 'postes_budgetaires') {
+          const { data } = await supa.from('primes').select('id, libelle').eq('actif', true).order('libelle');
+          this.referentiels.primes = data || [];
+        }
       },
 
-      async submitCreate() {
+      async submitForm() {
         this.formLoading = true;
         this.formError = '';
 
-        const payload = { code: this.form.code, nom: this.form.nom, description: this.form.description || null };
-        if (this.activeTab === 'services') payload.direction_id = this.form.direction_id || null;
-        if (this.activeTab === 'sections') payload.service_id = this.form.service_id || null;
+        try {
+          if (['directions', 'services', 'sections'].includes(this.activeTab)) {
+            const payload = { code: this.form.code, nom: this.form.nom, description: this.form.description || null };
+            if (this.activeTab === 'services') payload.direction_id = this.form.direction_id || null;
+            if (this.activeTab === 'sections') payload.service_id = this.form.service_id || null;
+            const { error } = await supa.from(this.activeTab).insert(payload);
+            if (error) throw error;
 
-        const { error } = await supa.from(this.activeTab).insert(payload);
+          } else if (this.activeTab === 'postes_budgetaires') {
+            const payload = {
+              intitule: this.form.intitule, code: this.form.code || ('PB-' + Date.now().toString().slice(-6)),
+              categorie: this.form.categorie || null, direction_id: this.form.direction_id || null,
+              service_id: this.form.service_id || null, grade_requis: this.form.grade_requis || null,
+              effectif_prevu: this.form.effectif_prevu || 1,
+            };
+            let posteId = this.editingId;
+            if (this.editingId) {
+              const { error } = await supa.from('postes_budgetaires').update(payload).eq('id', this.editingId);
+              if (error) throw error;
+            } else {
+              const { data, error } = await supa.from('postes_budgetaires').insert(payload).select().single();
+              if (error) throw error;
+              posteId = data.id;
+            }
+            // Resynchronise les primes liées
+            await supa.from('postes_budgetaires_primes').delete().eq('poste_budgetaire_id', posteId);
+            if (this.form.primes_ids?.length) {
+              await supa.from('postes_budgetaires_primes').insert(
+                this.form.primes_ids.map(pid => ({ poste_budgetaire_id: posteId, prime_id: pid }))
+              );
+            }
+
+          } else if (this.activeTab === 'primes') {
+            const { error } = await supa.from('primes').insert({ libelle: this.form.libelle, montant: this.form.montant });
+            if (error) throw error;
+
+          } else {
+            // localisations, statuts_agent, imputations
+            const { error } = await supa.from(this.activeTab).insert({ libelle: this.form.libelle });
+            if (error) throw error;
+          }
+
+          this.showForm = false;
+          this.load();
+        } catch (e) {
+          this.formError = e.message || 'Une erreur est survenue.';
+        }
+
         this.formLoading = false;
-
-        if (error) { this.formError = error.message; return; }
-        this.showForm = false;
-        this.load();
       },
 
       async toggleActif(item) {
@@ -4052,6 +4483,7 @@
       },
     };
   }
+
 
   // ============================================================
   // MODULE : Agents
