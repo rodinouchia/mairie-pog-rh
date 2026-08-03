@@ -586,10 +586,22 @@
                   </div>
                   <div class="sm:col-span-2">
                     <label class="block text-[11px] font-medium text-navy-500 mb-1">Poste budgétaire</label>
-                    <select x-model="editForm.poste_budgetaire_id" :disabled="!editing" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 disabled:text-navy-600 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                    <select x-model="editForm.poste_budgetaire_id" @change="onPosteChangeEdit()" :disabled="!editing" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 disabled:text-navy-600 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                       <option value="">—</option>
                       <template x-for="p in referentiels.postesBudgetaires" :key="p.id"><option :value="p.id" x-text="p.intitule"></option></template>
                     </select>
+                  </div>
+
+                  <div class="sm:col-span-2" x-show="primesDuPoste.length > 0">
+                    <label class="block text-[11px] font-medium text-navy-500 mb-2">Primes liées à ce poste</label>
+                    <div class="flex flex-wrap gap-2">
+                      <template x-for="p in primesDuPoste" :key="p.id">
+                        <label class="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg" :class="editing ? 'bg-navy-50 text-navy-700' : 'bg-navy-50/50 text-navy-500'">
+                          <input type="checkbox" :value="p.id" x-model="primesActivesIds" :disabled="!editing" class="w-4 h-4">
+                          <span x-text="p.libelle"></span>
+                        </label>
+                      </template>
+                    </div>
                   </div>
 
                   <div class="sm:col-span-2 border-t border-navy-100 pt-4 grid sm:grid-cols-2 gap-4">
@@ -642,18 +654,19 @@
       <!-- ================= ORGANISATION ================= -->
       <!-- ================= ORGANISATION ================= -->
       <template x-if="currentView === 'organisation'">
-        <div x-data="organisationModule()" x-init="load()" class="space-y-4">
+        <div x-data="organisationModule()" x-init="load()" class="flex gap-5 items-start">
 
-          <div class="flex items-center gap-2 border-b border-navy-100 overflow-x-auto">
+          <div class="card p-2 w-56 shrink-0 space-y-0.5">
             <template x-for="tab in tabs" :key="tab.id">
               <button @click="switchTab(tab.id)"
-                      :class="activeTab === tab.id ? 'border-navy-800 text-navy-900' : 'border-transparent text-navy-400 hover:text-navy-700'"
-                      class="px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px whitespace-nowrap">
+                      :class="activeTab === tab.id ? 'bg-navy-800 text-white' : 'text-navy-600 hover:bg-navy-50'"
+                      class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition">
                 <span x-text="tab.label"></span>
               </button>
             </template>
           </div>
 
+          <div class="flex-1 min-w-0 space-y-4">
           <template x-if="!showForm">
             <div class="space-y-3">
               <div class="flex justify-end">
@@ -1049,6 +1062,7 @@
               </form>
             </div>
           </template>
+          </div>
         </div>
       </template>
 
@@ -1637,7 +1651,7 @@
                             <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
                           </select></div>
                         <div><label class="block text-xs font-medium text-navy-500 mb-1">Poste budgétaire</label>
-                          <select x-model="form.poste_budgetaire_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                          <select x-model="form.poste_budgetaire_id" @change="onPosteChange()" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                             <option value="">—</option>
                             <template x-for="p in referentiels.postesBudgetaires" :key="p.id"><option :value="p.id" x-text="p.intitule"></option></template>
                           </select></div>
@@ -1657,6 +1671,20 @@
                           </select></div>
                         <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Diplôme le plus récent</label>
                           <input x-model="form.diplome_recent" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      </div>
+                    </div>
+
+                    <!-- Primes liées au poste -->
+                    <div class="border-t border-navy-100 pt-4" x-show="form.poste_budgetaire_id">
+                      <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Primes liées à ce poste</p>
+                      <div class="flex flex-wrap gap-3">
+                        <template x-for="p in referentiels.primesDuPoste" :key="p.id">
+                          <label class="flex items-center gap-1.5 text-sm text-navy-700 bg-navy-50 px-2.5 py-1.5 rounded-lg">
+                            <input type="checkbox" :value="p.id" x-model="form.primes_actives_ids" class="w-4 h-4">
+                            <span x-text="p.libelle + ' (' + Number(p.montant).toLocaleString('fr-FR') + ' F)'"></span>
+                          </label>
+                        </template>
+                        <p x-show="referentiels.primesDuPoste.length === 0" class="text-xs text-navy-400">Aucune prime liée à ce poste.</p>
                       </div>
                     </div>
 
@@ -3555,7 +3583,7 @@
       referentiels: {
         postesBudgetaires: [], concours: [], candidaturesRetenues: [], directions: [], services: [], agents: [],
         localisations: [], imputations: [], statutsAgent: [], hierarchies: [], categories: [], classes: [],
-        echelonsDisponibles: [], grades: [],
+        echelonsDisponibles: [], grades: [], primesDuPoste: [],
       },
       valeurPointActuelle: null,
       statutsCandidature: ['recue', 'en_etude', 'preselectionnee', 'entretien', 'retenue', 'rejetee'],
@@ -3683,6 +3711,16 @@
         if (c) { this.form.nom = c.nom; this.form.prenoms = c.prenoms; }
       },
 
+      async onPosteChange() {
+        this.form.primes_actives_ids = [];
+        this.referentiels.primesDuPoste = [];
+        if (!this.form.poste_budgetaire_id) return;
+        const { data } = await supa.from('postes_budgetaires_primes')
+          .select('primes(id, libelle, montant)')
+          .eq('poste_budgetaire_id', this.form.poste_budgetaire_id);
+        this.referentiels.primesDuPoste = (data || []).map(x => x.primes).filter(Boolean);
+      },
+
       async submitCreate() {
         this.formLoading = true;
         this.formError = '';
@@ -3766,7 +3804,14 @@
               if (elements.length) await supa.from('elements_paie_agent').insert(elements);
             }
 
-            // 6) Photo (si fournie) — envoyée après coup puisqu'on a besoin de l'id de l'agent
+            // 6) Activation des primes liées au poste, cochées pour cet agent
+            if (this.form.primes_actives_ids?.length) {
+              await supa.from('agents_primes').insert(
+                this.form.primes_actives_ids.map(pid => ({ agent_id: agent.id, prime_id: pid }))
+              );
+            }
+
+            // 7) Photo (si fournie) — envoyée après coup puisqu'on a besoin de l'id de l'agent
             if (this.form.photoFile) {
               const chemin = `${agent.id}/photo_${Date.now()}.${this.form.photoFile.name.split('.').pop()}`;
               const { error: errUpload } = await supa.storage.from('photos-agents').upload(chemin, this.form.photoFile);
@@ -4511,7 +4556,7 @@
       formError: '',
       form: {},
       editingId: null,
-      referentiels: { directions: [], services: [], primes: [], categories: [], hierarchiesPourCategorie: [], categoriesPourClasse: [], classesPourEchelon: [] },
+      referentiels: { directions: [], services: [], primes: [], categories: [], hierarchiesPourCategorie: [], categoriesPourClasse: [], categoriesFiltrees: [], classesFiltrees: [] },
       showModifierPrime: false,
       primeSelectionnee: null,
       formModifPrime: {},
@@ -4629,9 +4674,26 @@
           this.referentiels.categoriesPourClasse = (data || []).map(c => ({ id: c.id, label: `${c.hierarchies?.code} — Catégorie ${c.numero}` }));
         }
         if (this.activeTab === 'echelons') {
-          const { data } = await supa.from('classes').select('id, libelle, categories(numero, hierarchies(code))').order('ordre');
-          this.referentiels.classesPourEchelon = (data || []).map(cl => ({ id: cl.id, label: `${cl.categories?.hierarchies?.code}-${cl.categories?.numero}-${cl.libelle}` }));
+          const { data } = await supa.from('hierarchies').select('id, code').order('ordre');
+          this.referentiels.hierarchiesPourCategorie = data || [];
+          this.referentiels.categoriesFiltrees = [];
+          this.referentiels.classesFiltrees = [];
         }
+      },
+
+      async onHierarchieChangeEchelon() {
+        this.form.categorie_id = ''; this.form.classe_id = '';
+        this.referentiels.categoriesFiltrees = []; this.referentiels.classesFiltrees = [];
+        if (!this.form.hierarchie_id) return;
+        const { data } = await supa.from('categories').select('id, numero').eq('hierarchie_id', this.form.hierarchie_id).order('numero');
+        this.referentiels.categoriesFiltrees = data || [];
+      },
+      async onCategorieChangeEchelon() {
+        this.form.classe_id = '';
+        this.referentiels.classesFiltrees = [];
+        if (!this.form.categorie_id) return;
+        const { data } = await supa.from('classes').select('id, libelle').eq('categorie_id', this.form.categorie_id).order('ordre');
+        this.referentiels.classesFiltrees = data || [];
       },
 
       async submitForm() {
@@ -4763,6 +4825,7 @@
       selectedAgent: null, editing: false, savingEdit: false, editError: '',
       editForm: {},
       fichePos: { x: 0, y: 0 }, dragging: false, dragOffset: { x: 0, y: 0 },
+      primesDuPoste: [], primesActivesIds: [],
 
       importLoading: false, importSummary: '', importError: false,
 
@@ -4824,6 +4887,7 @@
         this.editing = false;
         this.editError = '';
         this.resetEditForm();
+        this.chargerPrimesPoste();
         this.fichePos = { x: window.innerWidth / 2 - 280, y: 90 };
       },
       closeDetail() {
@@ -4836,6 +4900,21 @@
           nom: a.nom, prenoms: a.prenoms, sexe: a.sexe, statut: a.statut,
           direction_id: a.direction_id || '', service_id: a.service_id || '', poste_budgetaire_id: a.poste_budgetaire_id || '',
         };
+      },
+      async chargerPrimesPoste() {
+        this.primesDuPoste = [];
+        this.primesActivesIds = [];
+        if (!this.editForm.poste_budgetaire_id) return;
+
+        const [{ data: liees }, { data: actives }] = await Promise.all([
+          supa.from('postes_budgetaires_primes').select('primes(id, libelle, montant)').eq('poste_budgetaire_id', this.editForm.poste_budgetaire_id),
+          supa.from('agents_primes').select('prime_id').eq('agent_id', this.selectedAgent.id).eq('actif', true),
+        ]);
+        this.primesDuPoste = (liees || []).map(x => x.primes).filter(Boolean);
+        this.primesActivesIds = (actives || []).map(x => x.prime_id);
+      },
+      async onPosteChangeEdit() {
+        await this.chargerPrimesPoste();
       },
       startDrag(evt) {
         this.dragging = true;
@@ -4860,9 +4939,18 @@
         Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
 
         const { error } = await supa.from('agents').update(payload).eq('id', this.selectedAgent.id);
-        this.savingEdit = false;
+        if (error) { this.editError = error.message; this.savingEdit = false; return; }
 
-        if (error) { this.editError = error.message; return; }
+        // Synchronise les primes cochées/décochées pour ce poste
+        for (const prime of this.primesDuPoste) {
+          const doitEtreActive = this.primesActivesIds.includes(prime.id);
+          await supa.from('agents_primes').upsert({
+            agent_id: this.selectedAgent.id, prime_id: prime.id, actif: doitEtreActive,
+            date_desactivation: doitEtreActive ? null : new Date().toISOString().slice(0, 10),
+          }, { onConflict: 'agent_id,prime_id' });
+        }
+
+        this.savingEdit = false;
         this.editing = false;
         await this.load();
         const refreshed = this.agents.find(a => a.id === this.selectedAgent.id);
