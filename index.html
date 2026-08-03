@@ -1032,13 +1032,16 @@
                         <template x-for="c in referentiels.categoriesFiltrees" :key="c.id"><option :value="c.id" x-text="c.numero"></option></template>
                       </select></div>
                     <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Classe *</label>
-                      <select required x-model="form.classe_id" :disabled="!form.categorie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                      <select required x-model="form.classe_id" @change="form.numero = ''" :disabled="!form.categorie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                         <option value="">—</option>
                         <template x-for="cl in referentiels.classesFiltrees" :key="cl.id"><option :value="cl.id" x-text="cl.libelle"></option></template>
                       </select></div>
-                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Échelon (numéro) *</label>
-                      <input type="number" required x-model.number="form.numero" placeholder="1, 2, 3…" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
-                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Indice *</label>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Échelon *</label>
+                      <select required x-model.number="form.numero" :disabled="!form.classe_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="n in echelonsPossibles()" :key="n"><option :value="n" x-text="n + 'e'"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Valeur indiciaire *</label>
                       <input type="number" required x-model.number="form.valeur_indiciaire" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Durée (mois)</label>
                       <input type="number" x-model.number="form.duree_mois" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
@@ -4694,6 +4697,11 @@
         if (!this.form.categorie_id) return;
         const { data } = await supa.from('classes').select('id, libelle').eq('categorie_id', this.form.categorie_id).order('ordre');
         this.referentiels.classesFiltrees = data || [];
+      },
+      echelonsPossibles() {
+        const classe = this.referentiels.classesFiltrees.find(c => c.id === this.form.classe_id);
+        if (!classe) return [];
+        return classe.libelle === 'Classe unique' ? [1, 2, 3, 4, 5] : [1, 2, 3];
       },
 
       async submitForm() {
