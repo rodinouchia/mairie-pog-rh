@@ -1043,8 +1043,6 @@
                       </select></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Valeur indiciaire *</label>
                       <input type="number" required x-model.number="form.valeur_indiciaire" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
-                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Durée (mois)</label>
-                      <input type="number" x-model.number="form.duree_mois" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                   </div>
                 </template>
 
@@ -4466,7 +4464,13 @@
         if (errProfil) { this.nouvelUtilisateurError = errProfil.message; this.nouvelUtilisateurLoading = false; return; }
 
         if (this.nouvelUtilisateur.role_id) {
-          await supa.from('user_roles').insert({ utilisateur_id: nouvelId, role_id: this.nouvelUtilisateur.role_id });
+          const { error: errRole } = await supa.from('user_roles').insert({ utilisateur_id: nouvelId, role_id: this.nouvelUtilisateur.role_id });
+          if (errRole) {
+            this.nouvelUtilisateurLoading = false;
+            this.nouvelUtilisateurError = `Compte créé, mais l'attribution du rôle a échoué : ${errRole.message}`;
+            this.load();
+            return;
+          }
         }
 
         this.nouvelUtilisateurLoading = false;
@@ -4478,20 +4482,20 @@
       async supprimerUtilisateur(u) {
         if (!confirm(`Retirer l'accès de ${u.email} à l'application ? Son compte de connexion Supabase restera techniquement actif (sa suppression complète nécessite une action côté administrateur Supabase), mais il perdra tout profil et tout rôle dans GPM.`)) return;
         const { error } = await supa.from('utilisateurs').delete().eq('id', u.id);
-        if (error) { console.error(error); return; }
+        if (error) { alert('Échec de la suppression : ' + error.message); return; }
         this.utilisateurs = this.utilisateurs.filter(x => x.id !== u.id);
       },
 
       async assignerRole(u) {
-        if (!u._nouveauRole) return;
+        if (!u._nouveauRole) { alert('Choisissez un rôle avant de cliquer sur Ajouter.'); return; }
         const { error } = await supa.from('user_roles').insert({ utilisateur_id: u.id, role_id: u._nouveauRole });
-        if (error) { console.error(error); return; }
+        if (error) { alert("Échec de l'attribution du rôle : " + error.message); return; }
         u._nouveauRole = '';
         this.load();
       },
       async retirerRole(u, r) {
         const { error } = await supa.from('user_roles').delete().eq('utilisateur_id', u.id).eq('role_id', r.role_id);
-        if (error) { console.error(error); return; }
+        if (error) { alert('Échec du retrait du rôle : ' + error.message); return; }
         u.rolesActifs = u.rolesActifs.filter(x => x.role_id !== r.role_id);
       },
       async toggleActifUtilisateur(u) {
