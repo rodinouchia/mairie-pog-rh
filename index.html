@@ -753,9 +753,77 @@
                         <td class="px-4 py-3">
                           <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="item.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="item.actif ? 'Active' : 'Inactive'"></span>
                         </td>
-                        <td class="px-4 py-3 text-right">
+                        <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
+                          <button @click="openModifierPrime(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800">Modifier le montant</button>
                           <button @click="toggleActif(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800"><span x-text="item.actif ? 'Désactiver' : 'Activer'"></span></button>
                         </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Hiérarchies -->
+              <div class="card overflow-hidden" x-show="activeTab === 'hierarchies'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr><th class="text-left font-medium px-4 py-3">Code</th><th class="text-left font-medium px-4 py-3">Libellé</th></tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="2" class="px-4 py-6 text-center text-navy-400">Aucune hiérarchie.</td></tr></template>
+                    <template x-for="item in items" :key="item.id">
+                      <tr><td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="item.code"></td><td class="px-4 py-3 font-medium text-navy-800" x-text="item.libelle"></td></tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Catégories -->
+              <div class="card overflow-hidden" x-show="activeTab === 'categories'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr><th class="text-left font-medium px-4 py-3">Hiérarchie</th><th class="text-left font-medium px-4 py-3">Numéro</th></tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="2" class="px-4 py-6 text-center text-navy-400">Aucune catégorie.</td></tr></template>
+                    <template x-for="item in items" :key="item.id">
+                      <tr><td class="px-4 py-3 font-medium text-navy-800" x-text="item.hierarchies?.code"></td><td class="px-4 py-3 text-navy-600" x-text="item.numero"></td></tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Classes -->
+              <div class="card overflow-hidden" x-show="activeTab === 'classes'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr><th class="text-left font-medium px-4 py-3">Catégorie</th><th class="text-left font-medium px-4 py-3">Libellé</th></tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="2" class="px-4 py-6 text-center text-navy-400">Aucune classe.</td></tr></template>
+                    <template x-for="item in items" :key="item.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(item.categories?.hierarchies?.code || '') + ' — Catégorie ' + (item.categories?.numero || '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="item.libelle"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Échelons -->
+              <div class="card overflow-hidden" x-show="activeTab === 'echelons'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr><th class="text-left font-medium px-4 py-3">Classe</th><th class="text-left font-medium px-4 py-3">Échelon</th><th class="text-left font-medium px-4 py-3">Indice</th></tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="3" class="px-4 py-6 text-center text-navy-400">Aucun échelon.</td></tr></template>
+                    <template x-for="item in items" :key="item.id">
+                      <tr>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="(item.classes?.categories?.hierarchies?.code || '') + '-' + (item.classes?.categories?.numero || '') + '-' + (item.classes?.libelle || '')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="item.numero + 'e'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="item.valeur_indiciaire"></td>
                       </tr>
                     </template>
                   </tbody>
@@ -791,6 +859,32 @@
             </div>
           </template>
 
+          <!-- Modification du montant d'une prime -->
+          <template x-if="showModifierPrime">
+            <div class="space-y-3 max-w-lg">
+              <button @click="showModifierPrime = false" class="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> Annuler</button>
+              <form @submit.prevent="submitModifierPrime()" class="card p-6 space-y-4">
+                <h3 class="font-display font-semibold text-navy-800">Modifier le montant — <span x-text="primeSelectionnee?.libelle"></span></h3>
+                <p class="text-sm text-navy-500">Montant actuel : <span class="font-medium text-navy-800" x-text="Number(primeSelectionnee?.montant || 0).toLocaleString('fr-FR') + ' F'"></span></p>
+                <div class="grid sm:grid-cols-2 gap-4">
+                  <div><label class="block text-xs font-medium text-navy-500 mb-1">Nouveau montant *</label>
+                    <input type="number" step="0.01" required x-model.number="formModifPrime.nouveau_montant" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  <div><label class="block text-xs font-medium text-navy-500 mb-1">Date d'effet</label>
+                    <input type="date" x-model="formModifPrime.date_effet" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">N° d'acte *</label>
+                    <input required x-model="formModifPrime.numero_acte" placeholder="Référence de la décision justifiant ce changement" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                </div>
+                <p x-show="formModifPrimeError" x-text="formModifPrimeError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
+                <div class="flex justify-end gap-3 pt-2">
+                  <button type="button" @click="showModifierPrime = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
+                  <button type="submit" :disabled="formModifPrimeLoading" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
+                    <span x-text="formModifPrimeLoading ? 'Enregistrement…' : 'Enregistrer'"></span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </template>
+
           <!-- Formulaire création / modification -->
           <template x-if="showForm">
             <div class="space-y-3 max-w-2xl">
@@ -801,8 +895,8 @@
                 <!-- Directions / Services / Sections -->
                 <template x-if="['directions','services','sections'].includes(activeTab)">
                   <div class="grid sm:grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
-                      <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code</label>
+                      <input x-model="form.code" placeholder="Généré automatiquement si vide" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Nom *</label>
                       <input required x-model="form.nom" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div x-show="activeTab === 'services'"><label class="block text-xs font-medium text-navy-500 mb-1">Direction de rattachement *</label>
@@ -828,7 +922,10 @@
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Code</label>
                       <input x-model="form.code" placeholder="Généré si vide" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie</label>
-                      <input x-model="form.categorie" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <select x-model="form.categorie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="c in referentiels.categories" :key="c.id"><option :value="c.id" x-text="c.label"></option></template>
+                      </select></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Direction</label>
                       <select x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                         <option value="">—</option>
@@ -867,6 +964,74 @@
                       <input type="number" step="0.01" required x-model.number="form.montant" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                   </div>
                 </template>
+
+                <!-- Hiérarchie -->
+                <template x-if="activeTab === 'hierarchies'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
+                      <input required x-model="form.code" placeholder="Ex : A" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
+                      <input required x-model="form.libelle" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Ordre</label>
+                      <input type="number" x-model.number="form.ordre" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <!-- Catégorie -->
+                <template x-if="activeTab === 'categories'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Hiérarchie *</label>
+                      <select required x-model="form.hierarchie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="h in referentiels.hierarchiesPourCategorie" :key="h.id"><option :value="h.id" x-text="h.code"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Numéro *</label>
+                      <input type="number" required x-model.number="form.numero" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <!-- Classe -->
+                <template x-if="activeTab === 'classes'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie *</label>
+                      <select required x-model="form.categorie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="c in referentiels.categoriesPourClasse" :key="c.id"><option :value="c.id" x-text="c.label"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
+                      <input required x-model="form.libelle" placeholder="Ex : 1er, Classe unique…" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Ordre</label>
+                      <input type="number" x-model.number="form.ordre" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
+                <!-- Position indiciaire (Échelon) -->
+                <template x-if="activeTab === 'echelons'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Hiérarchie *</label>
+                      <select required x-model="form.hierarchie_id" @change="onHierarchieChangeEchelon()" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="h in referentiels.hierarchiesPourCategorie" :key="h.id"><option :value="h.id" x-text="h.code"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie *</label>
+                      <select required x-model="form.categorie_id" @change="onCategorieChangeEchelon()" :disabled="!form.hierarchie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="c in referentiels.categoriesFiltrees" :key="c.id"><option :value="c.id" x-text="c.numero"></option></template>
+                      </select></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Classe *</label>
+                      <select required x-model="form.classe_id" :disabled="!form.categorie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="cl in referentiels.classesFiltrees" :key="cl.id"><option :value="cl.id" x-text="cl.libelle"></option></template>
+                      </select></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Échelon (numéro) *</label>
+                      <input type="number" required x-model.number="form.numero" placeholder="1, 2, 3…" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Indice *</label>
+                      <input type="number" required x-model.number="form.valeur_indiciaire" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Durée (mois)</label>
+                      <input type="number" x-model.number="form.duree_mois" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                  </div>
+                </template>
+
 
                 <!-- Référentiels simples -->
                 <template x-if="['localisations','statuts_agent','imputations'].includes(activeTab)">
@@ -1360,8 +1525,8 @@
                 <!-- Concours -->
                 <template x-if="activeTab === 'concours'">
                   <div class="grid sm:grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
-                      <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code</label>
+                      <input x-model="form.code" placeholder="Généré automatiquement si vide" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Intitulé *</label>
                       <input required x-model="form.intitule" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Type *</label>
@@ -1418,7 +1583,7 @@
                       <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Identité</p>
                       <div class="grid sm:grid-cols-2 gap-4">
                         <div><label class="block text-xs font-medium text-navy-500 mb-1">Nom & Prénom *</label>
-                          <input required x-model="form.nom" placeholder="Tel que dans votre fichier Excel" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                          <input required x-model="form.nom" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                         <div><label class="block text-xs font-medium text-navy-500 mb-1">Prénom supplémentaire *</label>
                           <input required x-model="form.prenoms" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                         <div><label class="block text-xs font-medium text-navy-500 mb-1">Sexe *</label>
@@ -1471,7 +1636,7 @@
                             <option value="">—</option>
                             <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
                           </select></div>
-                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Poste</label>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Poste budgétaire</label>
                           <select x-model="form.poste_budgetaire_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                             <option value="">—</option>
                             <template x-for="p in referentiels.postesBudgetaires" :key="p.id"><option :value="p.id" x-text="p.intitule"></option></template>
@@ -1979,8 +2144,8 @@
                   <form @submit.prevent="submitRubrique()" class="card p-6 space-y-4">
                     <h3 class="font-display font-semibold text-navy-800">+ Rubrique de paie</h3>
                     <div class="grid sm:grid-cols-2 gap-4">
-                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
-                        <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                      <div><label class="block text-xs font-medium text-navy-500 mb-1">Code</label>
+                        <input x-model="form.code" placeholder="Généré automatiquement si vide" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                       <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
                         <input required x-model="form.libelle" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                       <div><label class="block text-xs font-medium text-navy-500 mb-1">Type *</label>
@@ -2310,8 +2475,8 @@
                 <!-- Compétence -->
                 <template x-if="activeTab === 'competences'">
                   <div class="grid sm:grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
-                      <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code</label>
+                      <input x-model="form.code" placeholder="Généré automatiquement si vide" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
                       <input required x-model="form.libelle" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie</label>
@@ -2523,8 +2688,8 @@
                 <!-- Catalogue -->
                 <template x-if="activeTab === 'catalogue'">
                   <div class="grid sm:grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code *</label>
-                      <input required x-model="form.code" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code</label>
+                      <input x-model="form.code" placeholder="Généré automatiquement si vide" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Intitulé *</label>
                       <input required x-model="form.intitule" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Domaine</label>
@@ -4330,6 +4495,10 @@
         { id: 'sections', label: 'Sections' },
         { id: 'postes_budgetaires', label: 'Postes budgétaires' },
         { id: 'primes', label: 'Primes' },
+        { id: 'hierarchies', label: 'Hiérarchies' },
+        { id: 'categories', label: 'Catégories' },
+        { id: 'classes', label: 'Classes' },
+        { id: 'echelons', label: 'Position indiciaire' },
         { id: 'localisations', label: 'Localisations' },
         { id: 'statuts_agent', label: 'Statuts agent' },
         { id: 'imputations', label: 'Imputations' },
@@ -4342,12 +4511,18 @@
       formError: '',
       form: {},
       editingId: null,
-      referentiels: { directions: [], services: [], primes: [] },
+      referentiels: { directions: [], services: [], primes: [], categories: [], hierarchiesPourCategorie: [], categoriesPourClasse: [], classesPourEchelon: [] },
+      showModifierPrime: false,
+      primeSelectionnee: null,
+      formModifPrime: {},
+      formModifPrimeLoading: false,
+      formModifPrimeError: '',
 
       get tabLabelSingular() {
         return {
           directions: 'direction', services: 'service', sections: 'section',
           postes_budgetaires: 'poste budgétaire', primes: 'prime',
+          hierarchies: 'hiérarchie', categories: 'catégorie', classes: 'classe', echelons: 'position indiciaire',
           localisations: 'localisation', statuts_agent: 'statut', imputations: 'imputation',
         }[this.activeTab];
       },
@@ -4371,10 +4546,33 @@
           return;
         }
 
+        if (this.activeTab === 'categories') {
+          const { data, error } = await supa.from('categories').select('*, hierarchies(code)').order('numero');
+          if (error) console.error(error);
+          this.items = data || [];
+          this.loading = false;
+          return;
+        }
+        if (this.activeTab === 'classes') {
+          const { data, error } = await supa.from('classes').select('*, categories(numero, hierarchies(code))').order('ordre');
+          if (error) console.error(error);
+          this.items = data || [];
+          this.loading = false;
+          return;
+        }
+        if (this.activeTab === 'echelons') {
+          const { data, error } = await supa.from('echelons').select('*, classes(libelle, categories(numero, hierarchies(code)))').order('numero');
+          if (error) console.error(error);
+          this.items = data || [];
+          this.loading = false;
+          return;
+        }
+
         let select = '*';
         if (this.activeTab === 'services') select = '*, directions(nom)';
         if (this.activeTab === 'sections') select = '*, services(nom)';
-        const orderCol = ['localisations', 'statuts_agent', 'imputations', 'primes'].includes(this.activeTab) ? 'libelle' : 'nom';
+        const orderCol = ['localisations', 'statuts_agent', 'imputations', 'primes'].includes(this.activeTab) ? 'libelle'
+                        : (this.activeTab === 'hierarchies' ? 'ordre' : 'nom');
 
         const { data, error } = await supa.from(this.activeTab).select(select).order(orderCol);
         if (error) console.error(error);
@@ -4396,7 +4594,7 @@
         this.formError = '';
         await this.chargerReferentiels();
         this.form = {
-          intitule: item.intitule, code: item.code, categorie: item.categorie,
+          intitule: item.intitule, code: item.code, categorie_id: item.categorie_id || '',
           direction_id: item.direction_id || '', service_id: item.service_id || '',
           grade_requis: item.grade_requis, effectif_prevu: item.effectif_prevu,
           primes_ids: (item.postes_budgetaires_primes || []).map(p => p.prime_id).filter(Boolean),
@@ -4418,6 +4616,21 @@
         if (this.activeTab === 'postes_budgetaires') {
           const { data } = await supa.from('primes').select('id, libelle').eq('actif', true).order('libelle');
           this.referentiels.primes = data || [];
+
+          const { data: cats } = await supa.from('categories').select('id, numero, hierarchies(code)').order('numero');
+          this.referentiels.categories = (cats || []).map(c => ({ id: c.id, label: `${c.hierarchies?.code} — Catégorie ${c.numero}` }));
+        }
+        if (this.activeTab === 'categories') {
+          const { data } = await supa.from('hierarchies').select('id, code').order('ordre');
+          this.referentiels.hierarchiesPourCategorie = data || [];
+        }
+        if (this.activeTab === 'classes') {
+          const { data } = await supa.from('categories').select('id, numero, hierarchies(code)').order('numero');
+          this.referentiels.categoriesPourClasse = (data || []).map(c => ({ id: c.id, label: `${c.hierarchies?.code} — Catégorie ${c.numero}` }));
+        }
+        if (this.activeTab === 'echelons') {
+          const { data } = await supa.from('classes').select('id, libelle, categories(numero, hierarchies(code))').order('ordre');
+          this.referentiels.classesPourEchelon = (data || []).map(cl => ({ id: cl.id, label: `${cl.categories?.hierarchies?.code}-${cl.categories?.numero}-${cl.libelle}` }));
         }
       },
 
@@ -4435,8 +4648,8 @@
 
           } else if (this.activeTab === 'postes_budgetaires') {
             const payload = {
-              intitule: this.form.intitule, code: this.form.code || ('PB-' + Date.now().toString().slice(-6)),
-              categorie: this.form.categorie || null, direction_id: this.form.direction_id || null,
+              intitule: this.form.intitule, code: this.form.code || null,
+              categorie_id: this.form.categorie_id || null, direction_id: this.form.direction_id || null,
               service_id: this.form.service_id || null, grade_requis: this.form.grade_requis || null,
               effectif_prevu: this.form.effectif_prevu || 1,
             };
@@ -4461,6 +4674,27 @@
             const { error } = await supa.from('primes').insert({ libelle: this.form.libelle, montant: this.form.montant });
             if (error) throw error;
 
+          } else if (this.activeTab === 'hierarchies') {
+            const { error } = await supa.from('hierarchies').insert({ code: this.form.code, libelle: this.form.libelle, ordre: this.form.ordre || null });
+            if (error) throw error;
+
+          } else if (this.activeTab === 'categories') {
+            const { error } = await supa.from('categories').insert({ hierarchie_id: this.form.hierarchie_id, numero: this.form.numero });
+            if (error) throw error;
+
+          } else if (this.activeTab === 'classes') {
+            const { error } = await supa.from('classes').insert({ categorie_id: this.form.categorie_id, libelle: this.form.libelle, ordre: this.form.ordre || null });
+            if (error) throw error;
+
+          } else if (this.activeTab === 'echelons') {
+            const { data: ech, error } = await supa.from('echelons').insert({
+              classe_id: this.form.classe_id, numero: this.form.numero,
+              valeur_indiciaire: this.form.valeur_indiciaire, duree_mois: this.form.duree_mois || null,
+            }).select().single();
+            if (error) throw error;
+            // Trace aussi la valeur initiale dans l'historique indiciaire
+            await supa.from('valeurs_indiciaires').insert({ echelon_id: ech.id, valeur: this.form.valeur_indiciaire });
+
           } else {
             // localisations, statuts_agent, imputations
             const { error } = await supa.from(this.activeTab).insert({ libelle: this.form.libelle });
@@ -4480,6 +4714,34 @@
         const { error } = await supa.from(this.activeTab).update({ actif: !item.actif }).eq('id', item.id);
         if (error) { console.error(error); return; }
         item.actif = !item.actif;
+      },
+
+      openModifierPrime(item) {
+        this.primeSelectionnee = item;
+        this.showModifierPrime = true;
+        this.formModifPrimeError = '';
+        this.formModifPrime = { nouveau_montant: item.montant, numero_acte: '', date_effet: new Date().toISOString().slice(0, 10) };
+      },
+
+      async submitModifierPrime() {
+        this.formModifPrimeLoading = true;
+        this.formModifPrimeError = '';
+
+        const { error: errHisto } = await supa.from('primes_historique').insert({
+          prime_id: this.primeSelectionnee.id,
+          ancien_montant: this.primeSelectionnee.montant,
+          nouveau_montant: this.formModifPrime.nouveau_montant,
+          numero_acte: this.formModifPrime.numero_acte,
+          date_effet: this.formModifPrime.date_effet,
+        });
+        if (errHisto) { this.formModifPrimeError = errHisto.message; this.formModifPrimeLoading = false; return; }
+
+        const { error: errMaj } = await supa.from('primes').update({ montant: this.formModifPrime.nouveau_montant }).eq('id', this.primeSelectionnee.id);
+        this.formModifPrimeLoading = false;
+        if (errMaj) { this.formModifPrimeError = errMaj.message; return; }
+
+        this.showModifierPrime = false;
+        this.load();
       },
     };
   }
