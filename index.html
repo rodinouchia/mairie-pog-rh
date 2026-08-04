@@ -677,14 +677,15 @@
                 </button>
               </div>
 
-              <!-- Directions / Services / Sections -->
-              <div class="card overflow-hidden" x-show="['directions','services','sections'].includes(activeTab)">
+              <!-- Directions générales / Directions / Services / Sections -->
+              <div class="card overflow-hidden" x-show="['directions_generales','directions','services','sections'].includes(activeTab)">
                 <table class="w-full text-sm">
                   <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
                     <tr>
                       <th class="text-left font-medium px-4 py-3">Code</th>
                       <th class="text-left font-medium px-4 py-3">Nom</th>
-                      <th class="text-left font-medium px-4 py-3" x-show="activeTab !== 'directions'" x-text="activeTab === 'services' ? 'Direction' : 'Service'"></th>
+                      <th class="text-left font-medium px-4 py-3" x-show="!['directions_generales'].includes(activeTab)"
+                          x-text="activeTab === 'directions' ? 'Direction générale' : (activeTab === 'services' ? 'Direction' : 'Service')"></th>
                       <th class="text-left font-medium px-4 py-3">Statut</th>
                       <th class="text-right font-medium px-4 py-3"></th>
                     </tr>
@@ -695,13 +696,43 @@
                       <tr>
                         <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="item.code"></td>
                         <td class="px-4 py-3 font-medium text-navy-800" x-text="item.nom"></td>
-                        <td class="px-4 py-3 text-navy-600" x-show="activeTab !== 'directions'"
-                            x-text="activeTab === 'services' ? (item.directions?.nom || '—') : (item.services?.nom || '—')"></td>
+                        <td class="px-4 py-3 text-navy-600" x-show="!['directions_generales'].includes(activeTab)"
+                            x-text="activeTab === 'directions' ? (item.directions_generales?.nom || '—') : (activeTab === 'services' ? (item.directions?.nom || '—') : (item.services?.nom || '—'))"></td>
                         <td class="px-4 py-3">
                           <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="item.actif ? 'bg-lagoon-500/10 text-lagoon-700' : 'bg-navy-100 text-navy-500'" x-text="item.actif ? 'Actif' : 'Inactif'"></span>
                         </td>
-                        <td class="px-4 py-3 text-right">
+                        <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
+                          <button @click="openEdit(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800">Modifier</button>
                           <button @click="toggleActif(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800"><span x-text="item.actif ? 'Désactiver' : 'Activer'"></span></button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Grades -->
+              <div class="card overflow-hidden" x-show="activeTab === 'grades'">
+                <table class="w-full text-sm">
+                  <thead class="bg-navy-50 text-navy-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="text-left font-medium px-4 py-3">Code</th>
+                      <th class="text-left font-medium px-4 py-3">Libellé</th>
+                      <th class="text-left font-medium px-4 py-3">Corps</th>
+                      <th class="text-left font-medium px-4 py-3">Catégorie</th>
+                      <th class="text-right font-medium px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-navy-50">
+                    <template x-if="!loading && items.length === 0"><tr><td colspan="5" class="px-4 py-6 text-center text-navy-400">Aucun grade.</td></tr></template>
+                    <template x-for="item in items" :key="item.id">
+                      <tr>
+                        <td class="px-4 py-3 font-mono text-xs text-navy-500" x-text="item.code"></td>
+                        <td class="px-4 py-3 font-medium text-navy-800" x-text="item.libelle"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="item.corps || '—'"></td>
+                        <td class="px-4 py-3 text-navy-600" x-text="item.categories ? (item.categories.hierarchies?.code + ' — Catégorie ' + item.categories.numero) : '—'"></td>
+                        <td class="px-4 py-3 text-right">
+                          <button @click="openEdit(item)" class="text-xs font-medium text-navy-500 hover:text-navy-800">Modifier</button>
                         </td>
                       </tr>
                     </template>
@@ -905,13 +936,18 @@
               <form @submit.prevent="submitForm()" class="card p-6 space-y-4">
                 <h3 class="font-display font-semibold text-navy-800" x-text="(editingId ? 'Modifier — ' : '+ ') + tabLabelSingular"></h3>
 
-                <!-- Directions / Services / Sections -->
-                <template x-if="['directions','services','sections'].includes(activeTab)">
+                <!-- Directions générales / Directions / Services / Sections -->
+                <template x-if="['directions_generales','directions','services','sections'].includes(activeTab)">
                   <div class="grid sm:grid-cols-2 gap-4">
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Code</label>
                       <input x-model="form.code" placeholder="Généré automatiquement si vide" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                     <div><label class="block text-xs font-medium text-navy-500 mb-1">Nom *</label>
                       <input required x-model="form.nom" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div x-show="activeTab === 'directions'"><label class="block text-xs font-medium text-navy-500 mb-1">Direction générale de rattachement</label>
+                      <select x-model="form.direction_generale_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="dg in referentiels.directionsGenerales" :key="dg.id"><option :value="dg.id" x-text="dg.nom"></option></template>
+                      </select></div>
                     <div x-show="activeTab === 'services'"><label class="block text-xs font-medium text-navy-500 mb-1">Direction de rattachement *</label>
                       <select x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                         <option value="">—</option>
@@ -921,6 +957,25 @@
                       <select x-model="form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                         <option value="">—</option>
                         <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
+                      </select></div>
+                    <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Description</label>
+                      <textarea x-model="form.description" rows="2" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></textarea></div>
+                  </div>
+                </template>
+
+                <!-- Grade -->
+                <template x-if="activeTab === 'grades'">
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Code</label>
+                      <input x-model="form.code" placeholder="Généré automatiquement si vide" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Libellé *</label>
+                      <input required x-model="form.libelle" placeholder="Ex : Ingénieur des travaux" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Corps</label>
+                      <input x-model="form.corps" placeholder="Ex : Corps des ingénieurs" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
+                    <div><label class="block text-xs font-medium text-navy-500 mb-1">Catégorie</label>
+                      <select x-model="form.categorie_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                        <option value="">—</option>
+                        <template x-for="c in referentiels.categories" :key="c.id"><option :value="c.id" x-text="c.label"></option></template>
                       </select></div>
                     <div class="sm:col-span-2"><label class="block text-xs font-medium text-navy-500 mb-1">Description</label>
                       <textarea x-model="form.description" rows="2" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></textarea></div>
@@ -1585,6 +1640,22 @@
                 <!-- Embauche (crée l'agent + le contrat) -->
                 <template x-if="activeTab === 'embauches'">
                   <div class="space-y-5">
+
+                    <!-- Indicateur d'étapes -->
+                    <div class="flex items-center gap-2">
+                      <template x-for="n in 4" :key="n">
+                        <div class="flex items-center gap-2 flex-1">
+                          <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
+                               :class="etapeEmbauche >= n ? 'bg-navy-800 text-white' : 'bg-navy-100 text-navy-400'" x-text="n"></div>
+                          <div class="h-0.5 flex-1" :class="etapeEmbauche > n ? 'bg-navy-800' : 'bg-navy-100'" x-show="n < 4"></div>
+                        </div>
+                      </template>
+                    </div>
+                    <p class="text-xs font-semibold text-navy-500 uppercase -mt-3">
+                      <span x-text="{1:'Étape 1 — Identité', 2:'Étape 2 — Affectation', 3:'Étape 3 — Position indiciaire', 4:'Étape 4 — Contrat & Paie'}[etapeEmbauche]"></span>
+                    </p>
+
+                    <div x-show="etapeEmbauche === 1">
                     <div>
                       <label class="block text-xs font-medium text-navy-500 mb-1">Candidature retenue (optionnel)</label>
                       <select x-model="form.candidature_id" @change="prefillFromCandidature()" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
@@ -1636,20 +1707,27 @@
                           <input x-model="form.numero_cnamgs" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                       </div>
                     </div>
+                    </div>
 
+                    <div x-show="etapeEmbauche === 2">
                     <!-- Affectation -->
-                    <div class="border-t border-navy-100 pt-4">
+                    <div class="pt-1">
                       <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Affectation</p>
                       <div class="grid sm:grid-cols-2 gap-4">
                         <div><label class="block text-xs font-medium text-navy-500 mb-1">Direction *</label>
-                          <select required x-model="form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                          <select required x-model="form.direction_id" @change="onDirectionChangeEmbauche()" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                             <option value="">—</option>
                             <template x-for="d in referentiels.directions" :key="d.id"><option :value="d.id" x-text="d.nom"></option></template>
                           </select></div>
                         <div><label class="block text-xs font-medium text-navy-500 mb-1">Service *</label>
-                          <select required x-model="form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                          <select required x-model="form.service_id" @change="onServiceChangeEmbauche()" :disabled="!form.direction_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
                             <option value="">—</option>
-                            <template x-for="s in referentiels.services" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
+                            <template x-for="s in referentiels.servicesFiltres" :key="s.id"><option :value="s.id" x-text="s.nom"></option></template>
+                          </select></div>
+                        <div><label class="block text-xs font-medium text-navy-500 mb-1">Section</label>
+                          <select x-model="form.section_id" :disabled="!form.service_id" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm disabled:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-lagoon-400">
+                            <option value="">—</option>
+                            <template x-for="sec in referentiels.sectionsFiltrees" :key="sec.id"><option :value="sec.id" x-text="sec.nom"></option></template>
                           </select></div>
                         <div><label class="block text-xs font-medium text-navy-500 mb-1">Poste budgétaire</label>
                           <select x-model="form.poste_budgetaire_id" @change="onPosteChange()" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400">
@@ -1688,9 +1766,11 @@
                         <p x-show="referentiels.primesDuPoste.length === 0" class="text-xs text-navy-400">Aucune prime liée à ce poste.</p>
                       </div>
                     </div>
+                    </div>
 
+                    <div x-show="etapeEmbauche === 3">
                     <!-- Position indiciaire (grade) -->
-                    <div class="border-t border-navy-100 pt-4">
+                    <div class="pt-1">
                       <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Position indiciaire</p>
                       <div class="grid sm:grid-cols-2 gap-4">
                         <div><label class="block text-xs font-medium text-navy-500 mb-1">Hiérarchie</label>
@@ -1725,9 +1805,11 @@
                         </div>
                       </div>
                     </div>
+                    </div>
 
+                    <div x-show="etapeEmbauche === 4">
                     <!-- Contrat -->
-                    <div class="border-t border-navy-100 pt-4">
+                    <div class="pt-1">
                       <p class="text-xs font-semibold text-navy-500 uppercase mb-3">Contrat</p>
                       <div class="grid sm:grid-cols-2 gap-4">
                         <div><label class="block text-xs font-medium text-navy-500 mb-1">Date d'embauche *</label>
@@ -1767,6 +1849,7 @@
                           <input type="number" step="0.01" x-model.number="form.prime_logement" class="w-full px-3 py-2 rounded-lg border border-navy-100 text-sm focus:outline-none focus:ring-2 focus:ring-lagoon-400"></div>
                       </div>
                     </div>
+                    </div>
                   </div>
                 </template>
 
@@ -1789,7 +1872,11 @@
 
                 <div class="flex justify-end gap-3 pt-2">
                   <button type="button" @click="showForm = false" class="px-4 py-2 rounded-lg text-sm font-medium text-navy-500 hover:bg-navy-50">Annuler</button>
-                  <button type="submit" :disabled="formLoading"
+                  <button type="button" x-show="activeTab === 'embauches' && etapeEmbauche > 1" @click="etapeEmbauche--"
+                          class="px-4 py-2 rounded-lg text-sm font-medium text-navy-600 border border-navy-100 hover:bg-navy-50">Précédent</button>
+                  <button type="button" x-show="activeTab === 'embauches' && etapeEmbauche < 4" @click="etapeEmbauche++"
+                          class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900">Suivant</button>
+                  <button type="submit" x-show="!(activeTab === 'embauches' && etapeEmbauche < 4)" :disabled="formLoading"
                           class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-800 hover:bg-navy-900 disabled:opacity-60">
                     <span x-text="formLoading ? 'Enregistrement…' : 'Créer'"></span>
                   </button>
@@ -3025,13 +3112,13 @@
                         </td>
                         <td class="px-4 py-3 text-navy-500 text-xs align-top" x-text="j.table_cible || '—'"></td>
                         <td class="px-4 py-3 text-xs text-navy-500 align-top">
-                          <template x-for="c in champsModifies(j)" :key="c.champ">
-                            <div x-show="c.avant !== undefined"><span class="text-navy-400" x-text="c.champ + ': '"></span><span x-text="c.avant ?? '—'"></span></div>
+                          <template x-for="c in (j._diff || [])" :key="c.champ">
+                            <div x-show="c.avant !== undefined" class="capitalize"><span class="text-navy-400" x-text="c.champ + ': '"></span><span x-text="c.avant"></span></div>
                           </template>
                         </td>
                         <td class="px-4 py-3 text-xs text-navy-700 align-top">
-                          <template x-for="c in champsModifies(j)" :key="c.champ">
-                            <div x-show="c.apres !== undefined"><span class="text-navy-400" x-text="c.champ + ': '"></span><span x-text="c.apres ?? '—'"></span></div>
+                          <template x-for="c in (j._diff || [])" :key="c.champ">
+                            <div x-show="c.apres !== undefined" class="capitalize"><span class="text-navy-400" x-text="c.champ + ': '"></span><span x-text="c.apres"></span></div>
                           </template>
                         </td>
                         <td class="px-4 py-3 text-navy-500 text-xs align-top whitespace-nowrap" x-text="formatDateTime(j.created_at)"></td>
@@ -3584,9 +3671,10 @@
       referentiels: {
         postesBudgetaires: [], concours: [], candidaturesRetenues: [], directions: [], services: [], agents: [],
         localisations: [], imputations: [], statutsAgent: [], hierarchies: [], categories: [], classes: [],
-        echelonsDisponibles: [], grades: [], primesDuPoste: [],
+        echelonsDisponibles: [], grades: [], primesDuPoste: [], servicesFiltres: [], sectionsFiltrees: [],
       },
       valeurPointActuelle: null,
+      etapeEmbauche: 1,
       statutsCandidature: ['recue', 'en_etude', 'preselectionnee', 'entretien', 'retenue', 'rejetee'],
       statutsPeriodeEssai: ['en_cours', 'concluante', 'prolongee', 'rompue'],
 
@@ -3637,6 +3725,7 @@
       async openCreate() {
         this.showForm = true;
         this.formError = '';
+        this.etapeEmbauche = 1;
         this.form = { nombre_postes: 1, nationalite: 'Gabonaise' };
 
         if (this.activeTab === 'concours' && this.referentiels.postesBudgetaires.length === 0) {
@@ -3722,6 +3811,21 @@
         this.referentiels.primesDuPoste = (data || []).map(x => x.primes).filter(Boolean);
       },
 
+      async onDirectionChangeEmbauche() {
+        this.form.service_id = ''; this.form.section_id = '';
+        this.referentiels.servicesFiltres = []; this.referentiels.sectionsFiltrees = [];
+        if (!this.form.direction_id) return;
+        const { data } = await supa.from('services').select('id, nom').eq('direction_id', this.form.direction_id).eq('actif', true).order('nom');
+        this.referentiels.servicesFiltres = data || [];
+      },
+      async onServiceChangeEmbauche() {
+        this.form.section_id = '';
+        this.referentiels.sectionsFiltrees = [];
+        if (!this.form.service_id) return;
+        const { data } = await supa.from('sections').select('id, nom').eq('service_id', this.form.service_id).eq('actif', true).order('nom');
+        this.referentiels.sectionsFiltrees = data || [];
+      },
+
       async submitCreate() {
         this.formLoading = true;
         this.formError = '';
@@ -3751,7 +3855,7 @@
               nationalite: this.form.nationalite || null, situation_matrimoniale: this.form.situation_matrimoniale || null,
               nombre_enfants: this.form.nombre_enfants || 0, numero_cnss: this.form.numero_cnss || null,
               numero_cnamgs: this.form.numero_cnamgs || null,
-              direction_id: this.form.direction_id, service_id: this.form.service_id,
+              direction_id: this.form.direction_id, service_id: this.form.service_id, section_id: this.form.section_id || null,
               poste_budgetaire_id: this.form.poste_budgetaire_id || null,
               localisation_id: this.form.localisation_id || null, imputation_id: this.form.imputation_id || null,
               statut_agent_id: this.form.statut_agent_id || null, diplome_recent: this.form.diplome_recent || null,
@@ -4322,6 +4426,7 @@
       filtreJournal: { mois: '', annee: '' },
       moisLibelles: ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
       anneesDisponibles: Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i),
+      libellesCache: {},
 
       get permissionsParModule() {
         const groupes = {};
@@ -4396,7 +4501,87 @@
 
         const { data } = await query.order('created_at', { ascending: false }).limit(500);
         this.journal = data || [];
+        await this.resoudreLibellesJournal();
         this.loading = false;
+      },
+
+      mappingChampsId: {
+        agent_id: { table: 'agents', cols: 'id, nom, prenoms', label: r => `${r.nom} ${r.prenoms}` },
+        evaluateur_id: { table: 'agents', cols: 'id, nom, prenoms', label: r => `${r.nom} ${r.prenoms}` },
+        direction_id: { table: 'directions', cols: 'id, nom', label: r => r.nom },
+        direction_generale_id: { table: 'directions_generales', cols: 'id, nom', label: r => r.nom },
+        service_id: { table: 'services', cols: 'id, nom', label: r => r.nom },
+        section_id: { table: 'sections', cols: 'id, nom', label: r => r.nom },
+        bureau_id: { table: 'bureaux', cols: 'id, nom', label: r => r.nom },
+        poste_budgetaire_id: { table: 'postes_budgetaires', cols: 'id, intitule', label: r => r.intitule },
+        role_id: { table: 'roles', cols: 'id, nom', label: r => r.nom },
+        permission_id: { table: 'permissions', cols: 'id, description, code', label: r => r.description || r.code },
+        prime_id: { table: 'primes', cols: 'id, libelle', label: r => r.libelle },
+        grade_id: { table: 'grades', cols: 'id, libelle', label: r => r.libelle },
+        echelon_id: { table: 'echelons', cols: 'id, valeur_indiciaire', label: r => `indice ${r.valeur_indiciaire}` },
+        classe_id: { table: 'classes', cols: 'id, libelle', label: r => r.libelle },
+        categorie_id: { table: 'categories', cols: 'id, numero', label: r => `Catégorie ${r.numero}` },
+        hierarchie_id: { table: 'hierarchies', cols: 'id, code', label: r => r.code },
+        concours_id: { table: 'concours', cols: 'id, intitule', label: r => r.intitule },
+        candidature_id: { table: 'candidatures', cols: 'id, nom, prenoms', label: r => `${r.nom} ${r.prenoms}` },
+        utilisateur_id: { table: 'utilisateurs', cols: 'id, email', label: r => r.email },
+        type_conge_id: { table: 'types_conges', cols: 'id, libelle', label: r => r.libelle },
+        rubrique_id: { table: 'rubriques_paie', cols: 'id, libelle', label: r => r.libelle },
+        formation_id: { table: 'catalogue_formations', cols: 'id, intitule', label: r => r.intitule },
+        campagne_id: { table: 'campagnes_evaluation', cols: 'id, intitule', label: r => r.intitule },
+        localisation_id: { table: 'localisations', cols: 'id, libelle', label: r => r.libelle },
+        statut_agent_id: { table: 'statuts_agent', cols: 'id, libelle', label: r => r.libelle },
+        imputation_id: { table: 'imputations', cols: 'id, libelle', label: r => r.libelle },
+      },
+
+      libellesChamps: {
+        nom: 'Nom', prenoms: 'Prénoms', sexe: 'Sexe', matricule: 'Matricule', statut: 'Statut',
+        actif: 'Actif', code: 'Code', libelle: 'Libellé', intitule: 'Intitulé', description: 'Description',
+        email: 'E-mail', nom_affichage: 'Nom affiché', montant: 'Montant', numero_acte: "N° d'acte",
+        date_debut: 'Date de début', date_fin: 'Date de fin', date_naissance: 'Date de naissance',
+        date_entree_fonction: "Date d'entrée en fonction", date_embauche: "Date d'embauche",
+        type_contrat: 'Type de contrat', nombre_jours: 'Nombre de jours', nombre_heures: "Nombre d'heures",
+        telephone: 'Téléphone', numero_cnss: 'Numéro CNSS', numero_cnamgs: 'Numéro CNAMGS',
+        diplome_recent: 'Diplôme le plus récent', nationalite: 'Nationalité', situation_matrimoniale: 'Situation familiale',
+        nombre_enfants: "Nombre d'enfants", lieu_naissance: 'Lieu de naissance',
+      },
+
+      async resoudreLibellesJournal() {
+        const besoins = {};
+        for (const j of this.journal) {
+          for (const source of [j.donnees_avant, j.donnees_apres]) {
+            if (!source) continue;
+            for (const [champ, valeur] of Object.entries(source)) {
+              if (this.mappingChampsId[champ] && valeur) {
+                const table = this.mappingChampsId[champ].table;
+                besoins[table] = besoins[table] || new Set();
+                besoins[table].add(valeur);
+              }
+            }
+          }
+        }
+
+        await Promise.all(Object.entries(besoins).map(async ([table, ids]) => {
+          const conf = Object.values(this.mappingChampsId).find(m => m.table === table);
+          const { data } = await supa.from(table).select(conf.cols).in('id', [...ids]);
+          for (const row of data || []) {
+            this.libellesCache[`${table}:${row.id}`] = conf.label(row);
+          }
+        }));
+
+        for (const j of this.journal) j._diff = this.calculerDiff(j);
+      },
+
+      resolveValeur(champ, valeur) {
+        if (valeur === null || valeur === undefined || valeur === '') return '—';
+        if (typeof valeur === 'boolean') return valeur ? 'Oui' : 'Non';
+        const conf = this.mappingChampsId[champ];
+        if (conf) return this.libellesCache[`${conf.table}:${valeur}`] || '(supprimé)';
+        return valeur;
+      },
+
+      libelleChamp(champ) {
+        return this.libellesChamps[champ] || (champ.endsWith('_id') ? champ.slice(0, -3).replace(/_/g, ' ') : champ.replace(/_/g, ' '));
       },
 
       async supprimerJournalLigne(j) {
@@ -4417,18 +4602,22 @@
         this.journal = [];
       },
 
-      champsModifies(j) {
+      calculerDiff(j) {
         const avant = j.donnees_avant || {};
         const apres = j.donnees_apres || {};
         const cles = new Set([...Object.keys(avant), ...Object.keys(apres)]);
-        const ignores = ['created_at', 'updated_at'];
+        const ignores = ['created_at', 'updated_at', 'id'];
         const resultat = [];
         for (const cle of cles) {
           if (ignores.includes(cle)) continue;
           const av = avant[cle];
           const ap = apres[cle];
           if (j.action === 'modification' && JSON.stringify(av) === JSON.stringify(ap)) continue;
-          resultat.push({ champ: cle, avant: j.action !== 'creation' ? av : undefined, apres: j.action !== 'suppression' ? ap : undefined });
+          resultat.push({
+            champ: this.libelleChamp(cle),
+            avant: j.action !== 'creation' ? this.resolveValeur(cle, av) : undefined,
+            apres: j.action !== 'suppression' ? this.resolveValeur(cle, ap) : undefined,
+          });
         }
         return resultat;
       },
@@ -4542,11 +4731,13 @@
   function organisationModule() {
     return {
       tabs: [
+        { id: 'directions_generales', label: 'Directions générales' },
         { id: 'directions', label: 'Directions' },
         { id: 'services', label: 'Services' },
         { id: 'sections', label: 'Sections' },
         { id: 'postes_budgetaires', label: 'Postes budgétaires' },
         { id: 'primes', label: 'Primes' },
+        { id: 'grades', label: 'Grades' },
         { id: 'hierarchies', label: 'Hiérarchies' },
         { id: 'categories', label: 'Catégories' },
         { id: 'classes', label: 'Classes' },
@@ -4555,7 +4746,7 @@
         { id: 'statuts_agent', label: 'Statuts agent' },
         { id: 'imputations', label: 'Imputations' },
       ],
-      activeTab: 'directions',
+      activeTab: 'directions_generales',
       items: [],
       loading: true,
       showForm: false,
@@ -4563,7 +4754,7 @@
       formError: '',
       form: {},
       editingId: null,
-      referentiels: { directions: [], services: [], primes: [], categories: [], hierarchiesPourCategorie: [], categoriesPourClasse: [], categoriesFiltrees: [], classesFiltrees: [] },
+      referentiels: { directions: [], services: [], primes: [], categories: [], hierarchiesPourCategorie: [], categoriesPourClasse: [], categoriesFiltrees: [], classesFiltrees: [], directionsGenerales: [] },
       showModifierPrime: false,
       primeSelectionnee: null,
       formModifPrime: {},
@@ -4572,8 +4763,8 @@
 
       get tabLabelSingular() {
         return {
-          directions: 'direction', services: 'service', sections: 'section',
-          postes_budgetaires: 'poste budgétaire', primes: 'prime',
+          directions_generales: 'direction générale', directions: 'direction', services: 'service', sections: 'section',
+          postes_budgetaires: 'poste budgétaire', primes: 'prime', grades: 'grade',
           hierarchies: 'hiérarchie', categories: 'catégorie', classes: 'classe', echelons: 'position indiciaire',
           localisations: 'localisation', statuts_agent: 'statut', imputations: 'imputation',
         }[this.activeTab];
@@ -4620,7 +4811,16 @@
           return;
         }
 
+        if (this.activeTab === 'grades') {
+          const { data, error } = await supa.from('grades').select('*, categories(numero, hierarchies(code))').order('libelle');
+          if (error) console.error(error);
+          this.items = data || [];
+          this.loading = false;
+          return;
+        }
+
         let select = '*';
+        if (this.activeTab === 'directions') select = '*, directions_generales(nom)';
         if (this.activeTab === 'services') select = '*, directions(nom)';
         if (this.activeTab === 'sections') select = '*, services(nom)';
         const orderCol = ['localisations', 'statuts_agent', 'imputations', 'primes'].includes(this.activeTab) ? 'libelle'
@@ -4645,18 +4845,41 @@
         this.editingId = item.id;
         this.formError = '';
         await this.chargerReferentiels();
-        this.form = {
-          intitule: item.intitule, code: item.code, categorie_id: item.categorie_id || '',
-          direction_id: item.direction_id || '', service_id: item.service_id || '',
-          grade_requis: item.grade_requis, effectif_prevu: item.effectif_prevu,
-          primes_ids: (item.postes_budgetaires_primes || []).map(p => p.prime_id).filter(Boolean),
-        };
-        // Récupère les vrais prime_id (la jointure ci-dessus ne remonte que le libellé, on requête à part)
-        const { data } = await supa.from('postes_budgetaires_primes').select('prime_id').eq('poste_budgetaire_id', item.id);
-        this.form.primes_ids = (data || []).map(p => p.prime_id);
+
+        if (this.activeTab === 'postes_budgetaires') {
+          this.form = {
+            intitule: item.intitule, code: item.code, categorie_id: item.categorie_id || '',
+            direction_id: item.direction_id || '', service_id: item.service_id || '',
+            grade_requis: item.grade_requis, effectif_prevu: item.effectif_prevu,
+            primes_ids: (item.postes_budgetaires_primes || []).map(p => p.prime_id).filter(Boolean),
+          };
+          const { data } = await supa.from('postes_budgetaires_primes').select('prime_id').eq('poste_budgetaire_id', item.id);
+          this.form.primes_ids = (data || []).map(p => p.prime_id);
+
+        } else if (['directions', 'services', 'sections', 'directions_generales'].includes(this.activeTab)) {
+          this.form = {
+            code: item.code, nom: item.nom, description: item.description || '',
+            direction_id: item.direction_id || '', service_id: item.service_id || '',
+            direction_generale_id: item.direction_generale_id || '',
+          };
+
+        } else if (this.activeTab === 'primes') {
+          this.form = { libelle: item.libelle, montant: item.montant };
+
+        } else if (this.activeTab === 'grades') {
+          this.form = { code: item.code, libelle: item.libelle, corps: item.corps, description: item.description || '', categorie_id: item.categorie_id || '' };
+
+        } else {
+          // localisations, statuts_agent, imputations
+          this.form = { libelle: item.libelle };
+        }
       },
 
       async chargerReferentiels() {
+        if (this.activeTab === 'directions') {
+          const { data } = await supa.from('directions_generales').select('id, nom').eq('actif', true).order('nom');
+          this.referentiels.directionsGenerales = data || [];
+        }
         if (this.activeTab === 'services' || this.activeTab === 'postes_budgetaires') {
           const { data } = await supa.from('directions').select('id, nom').eq('actif', true).order('nom');
           this.referentiels.directions = data || [];
@@ -4665,12 +4888,13 @@
           const { data } = await supa.from('services').select('id, nom').eq('actif', true).order('nom');
           this.referentiels.services = data || [];
         }
+        if (this.activeTab === 'postes_budgetaires' || this.activeTab === 'grades') {
+          const { data: cats } = await supa.from('categories').select('id, numero, hierarchies(code)').order('numero');
+          this.referentiels.categories = (cats || []).map(c => ({ id: c.id, label: `${c.hierarchies?.code} — Catégorie ${c.numero}` }));
+        }
         if (this.activeTab === 'postes_budgetaires') {
           const { data } = await supa.from('primes').select('id, libelle').eq('actif', true).order('libelle');
           this.referentiels.primes = data || [];
-
-          const { data: cats } = await supa.from('categories').select('id, numero, hierarchies(code)').order('numero');
-          this.referentiels.categories = (cats || []).map(c => ({ id: c.id, label: `${c.hierarchies?.code} — Catégorie ${c.numero}` }));
         }
         if (this.activeTab === 'categories') {
           const { data } = await supa.from('hierarchies').select('id, code').order('ordre');
@@ -4713,12 +4937,30 @@
         this.formError = '';
 
         try {
-          if (['directions', 'services', 'sections'].includes(this.activeTab)) {
-            const payload = { code: this.form.code, nom: this.form.nom, description: this.form.description || null };
+          if (['directions', 'services', 'sections', 'directions_generales'].includes(this.activeTab)) {
+            const payload = { code: this.form.code || null, nom: this.form.nom, description: this.form.description || null };
+            if (this.activeTab === 'directions') payload.direction_generale_id = this.form.direction_generale_id || null;
             if (this.activeTab === 'services') payload.direction_id = this.form.direction_id || null;
             if (this.activeTab === 'sections') payload.service_id = this.form.service_id || null;
-            const { error } = await supa.from(this.activeTab).insert(payload);
-            if (error) throw error;
+
+            if (this.editingId) {
+              const { error } = await supa.from(this.activeTab).update(payload).eq('id', this.editingId);
+              if (error) throw error;
+            } else {
+              const { error } = await supa.from(this.activeTab).insert(payload);
+              if (error) throw error;
+            }
+
+          } else if (this.activeTab === 'grades') {
+            const payload = { code: this.form.code || null, libelle: this.form.libelle, corps: this.form.corps || null,
+                               description: this.form.description || null, categorie_id: this.form.categorie_id || null };
+            if (this.editingId) {
+              const { error } = await supa.from('grades').update(payload).eq('id', this.editingId);
+              if (error) throw error;
+            } else {
+              const { error } = await supa.from('grades').insert(payload);
+              if (error) throw error;
+            }
 
           } else if (this.activeTab === 'postes_budgetaires') {
             const payload = {
